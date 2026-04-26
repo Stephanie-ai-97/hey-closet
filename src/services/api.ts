@@ -1,9 +1,11 @@
 import { TableName } from '../types';
 
-const BASE_URL = '/api/storage';
+const BASE_URL = 'https://nuqpcxgonlqlxtujxmhx.supabase.co/functions/v1/storage';
+const API_KEY = (import.meta as any).env.VITE_SUPABASE_API_KEY || (process.env as any).VITE_SUPABASE_API_KEY;
 
 async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
   const headers = {
+    'apikey': API_KEY,
     'Content-Type': 'application/json',
     ...options.headers,
   };
@@ -29,6 +31,10 @@ async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
 
     return response.json();
   } catch (err) {
+    console.error('Fetch operation failed:', err);
+    if (err instanceof TypeError && err.message === 'Failed to fetch') {
+      throw new Error('Connection failed. This might be a CORS issue or the Supabase service might be unreachable.');
+    }
     if (err instanceof Error) throw err;
     throw new Error('An unexpected error occurred during the request.');
   }
