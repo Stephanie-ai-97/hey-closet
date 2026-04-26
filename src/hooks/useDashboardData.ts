@@ -18,9 +18,9 @@ export function useDashboardData() {
           api.list<Storage>('storage'),
           api.list<Item>('item'),
         ]);
-        setHomes(h);
-        setStorages(s);
-        setItems(i);
+        setHomes(Array.isArray(h) ? h : []);
+        setStorages(Array.isArray(s) ? s : []);
+        setItems(Array.isArray(i) ? i : []);
       } catch (err) {
         setError(err instanceof Error ? err.message : 'Failed to fetch dashboard data');
       } finally {
