@@ -19,12 +19,16 @@ export function useMetadata() {
           api.list<Style>('style'),
           api.list<Info>('info'),
         ]);
-        setColours(c);
-        setMaterials(m);
-        setStyles(s);
-        setInfos(i);
+        setColours(Array.isArray(c) ? c : []);
+        setMaterials(Array.isArray(m) ? m : []);
+        setStyles(Array.isArray(s) ? s : []);
+        setInfos(Array.isArray(i) ? i : []);
       } catch (err) {
         console.error('Failed to fetch metadata', err);
+        setColours([]);
+        setMaterials([]);
+        setStyles([]);
+        setInfos([]);
       } finally {
         setLoading(false);
       }
