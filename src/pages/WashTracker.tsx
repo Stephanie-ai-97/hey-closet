@@ -28,9 +28,10 @@ export default function WashTracker() {
     try {
       setLoadingWashes(true);
       const data = await api.list<Wash>('wash');
-      setWashes(data);
+      setWashes(Array.isArray(data) ? data : []);
     } catch (err) {
       console.error(err);
+      setWashes([]);
     } finally {
       setLoadingWashes(false);
     }
