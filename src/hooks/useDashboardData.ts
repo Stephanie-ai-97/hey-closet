@@ -9,26 +9,27 @@ export function useDashboardData() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    async function fetchData() {
-      try {
-        setLoading(true);
-        const [h, s, i] = await Promise.all([
-          api.list<Home>('home'),
-          api.list<Storage>('storage'),
-          api.list<Item>('item'),
-        ]);
-        setHomes(Array.isArray(h) ? h : []);
-        setStorages(Array.isArray(s) ? s : []);
-        setItems(Array.isArray(i) ? i : []);
-      } catch (err) {
-        setError(err instanceof Error ? err.message : 'Failed to fetch dashboard data');
-      } finally {
-        setLoading(false);
-      }
+  const fetchData = async () => {
+    try {
+      setLoading(true);
+      const [h, s, i] = await Promise.all([
+        api.list<Home>('home'),
+        api.list<Storage>('storage'),
+        api.list<Item>('item'),
+      ]);
+      setHomes(Array.isArray(h) ? h : []);
+      setStorages(Array.isArray(s) ? s : []);
+      setItems(Array.isArray(i) ? i : []);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to fetch dashboard data');
+    } finally {
+      setLoading(false);
     }
+  };
+
+  useEffect(() => {
     fetchData();
   }, []);
 
-  return { homes, storages, items, loading, error };
+  return { homes, storages, items, loading, error, refetch: fetchData };
 }

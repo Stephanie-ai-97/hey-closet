@@ -1,4 +1,5 @@
 import { PageContainer } from '../components/PageContainer';
+import { StorageModal } from '../components/StorageModal';
 import { useDashboardData } from '../hooks/useDashboardData';
 import { useState } from 'react';
 import { 
@@ -15,9 +16,10 @@ import { motion, AnimatePresence } from 'motion/react';
 import { Home, Storage, Item } from '../types';
 
 export default function Warehouse() {
-  const { homes, storages, items, loading, error } = useDashboardData();
+  const { homes, storages, items, loading, error, refetch } = useDashboardData();
   const [selectedHomeId, setSelectedHomeId] = useState<number | null>(null);
   const [selectedStorageId, setSelectedStorageId] = useState<number | null>(null);
+  const [isStorageModalOpen, setIsStorageModalOpen] = useState(false);
 
   if (loading) return <div className="p-8 animate-pulse">Scanning storage facilities...</div>;
 
@@ -37,7 +39,10 @@ export default function Warehouse() {
       subtitle="Navigate through your physical storage infrastructure."
       actions={
         <div className="flex gap-2">
-          <button className="flex items-center gap-2 px-3 py-1.5 bg-zinc-900 text-white rounded-lg text-sm font-medium hover:bg-zinc-800 transition-colors">
+          <button 
+            onClick={() => setIsStorageModalOpen(true)}
+            className="flex items-center gap-2 px-3 py-1.5 bg-zinc-900 text-white rounded-lg text-sm font-medium hover:bg-zinc-800 transition-colors"
+          >
             <Plus size={16} />
             Add Storage
           </button>
@@ -195,6 +200,16 @@ export default function Warehouse() {
           </motion.div>
         )}
       </AnimatePresence>
+
+      <StorageModal 
+        isOpen={isStorageModalOpen}
+        homeId={selectedHomeId}
+        onClose={() => setIsStorageModalOpen(false)}
+        onStorageAdded={() => {
+          refetch();
+          setIsStorageModalOpen(false);
+        }}
+      />
     </PageContainer>
   );
 }
