@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { X } from 'lucide-react';
 import { Storage, Home } from '../types';
 import { api } from '../services/api';
@@ -6,20 +6,38 @@ import { api } from '../services/api';
 interface StorageModalProps {
   isOpen: boolean;
   homes: Home[];
+  storages: Storage[];
   onClose: () => void;
   onStorageAdded: () => void;
 }
 
-export function StorageModal({ isOpen, homes, onClose, onStorageAdded }: StorageModalProps) {
+export function StorageModal({ isOpen, homes, storages, onClose, onStorageAdded }: StorageModalProps) {
   const [selectedHomeId, setSelectedHomeId] = useState<number | null>(null);
   const [isCreatingNewHome, setIsCreatingNewHome] = useState(false);
   const [newHomeName, setNewHomeName] = useState('');
   const [newHomeAddress, setNewHomeAddress] = useState('');
+  
   const [closetName, setClosetName] = useState('');
+  const [isCustomClosetName, setIsCustomClosetName] = useState(false);
   const [partition, setPartition] = useState('');
+  const [isCustomPartition, setIsCustomPartition] = useState(false);
+  
   const [hasStorageCover, setHasStorageCover] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  // Get unique storage names and partitions for the selected home
+  const existingStorageNames = useMemo(() => {
+    if (!selectedHomeId) return [];
+    const filtered = storages.filter(s => s.dk_homelocation === selectedHomeId);
+    return [...new Set(filtered.map(s => s.closet))].filter(Boolean);
+  }, [selectedHomeId, storages]);
+
+  const existingPartitions = useMemo(() => {
+    if (!selectedHomeId) return [];
+    const filtered = storages.filter(s => s.dk_homelocation === selectedHomeId);
+    return [...new Set(filtered.map(s => s.closetpartition))].filter(Boolean);
+  }, [selectedHomeId, storages]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -68,7 +86,9 @@ export function StorageModal({ isOpen, homes, onClose, onStorageAdded }: Storage
       setNewHomeName('');
       setNewHomeAddress('');
       setClosetName('');
+      setIsCustomClosetName(false);
       setPartition('');
+      setIsCustomPartition(false);
       setHasStorageCover(false);
       onStorageAdded();
       onClose();
@@ -175,14 +195,53 @@ export function StorageModal({ isOpen, homes, onClose, onStorageAdded }: Storage
             <label className="block text-sm font-bold text-zinc-700 mb-2 uppercase tracking-widest text-xs">
               Storage Name
             </label>
-            <input
-              type="text"
-              value={closetName}
-              onChange={(e) => setClosetName(e.target.value)}
-              placeholder="e.g., Front Closet, Bedroom Shelves"
-              className="w-full px-3 py-2 border border-zinc-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
-              required
-            />
+            {existingStorageNames.length > 0 && !isCustomClosetName ? (
+              <div className="space-y-2">
+                <select
+                  value={closetName}
+                  onChange={(e) => setClosetName(e.target.value)}
+                  className="w-full px-3 py-2 border border-zinc-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                >
+                  <option value="">Select or type new...</option>
+                  {existingStorageNames.map(name => (
+                    <option key={name} value={name}>{name}</option>
+                  ))}
+                </select>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setIsCustomClosetName(true);
+                    setClosetName('');
+                  }}
+                  className="w-full px-3 py-2 text-sm text-indigo-600 hover:bg-indigo-50 rounded-lg transition-colors font-medium"
+                >
+                  + Create New Name
+                </button>
+              </div>
+            ) : (
+              <div className="space-y-2">
+                <input
+                  type="text"
+                  value={closetName}
+                  onChange={(e) => setClosetName(e.target.value)}
+                  placeholder="e.g., Front Closet, Bedroom Shelves"
+                  className="w-full px-3 py-2 border border-zinc-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                  required
+                />
+                {existingStorageNames.length > 0 && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setIsCustomClosetName(false);
+                      setClosetName('');
+                    }}
+                    className="w-full px-3 py-2 text-sm text-zinc-600 hover:bg-zinc-50 rounded-lg transition-colors font-medium"
+                  >
+                    ← Back to existing
+                  </button>
+                )}
+              </div>
+            )}
           </div>
 
           {/* Partition */}
@@ -190,14 +249,53 @@ export function StorageModal({ isOpen, homes, onClose, onStorageAdded }: Storage
             <label className="block text-sm font-bold text-zinc-700 mb-2 uppercase tracking-widest text-xs">
               Partition
             </label>
-            <input
-              type="text"
-              value={partition}
-              onChange={(e) => setPartition(e.target.value)}
-              placeholder="e.g., Top Shelf, Left Side"
-              className="w-full px-3 py-2 border border-zinc-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
-              required
-            />
+            {existingPartitions.length > 0 && !isCustomPartition ? (
+              <div className="space-y-2">
+                <select
+                  value={partition}
+                  onChange={(e) => setPartition(e.target.value)}
+                  className="w-full px-3 py-2 border border-zinc-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                >
+                  <option value="">Select or type new...</option>
+                  {existingPartitions.map(part => (
+                    <option key={part} value={part}>{part}</option>
+                  ))}
+                </select>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setIsCustomPartition(true);
+                    setPartition('');
+                  }}
+                  className="w-full px-3 py-2 text-sm text-indigo-600 hover:bg-indigo-50 rounded-lg transition-colors font-medium"
+                >
+                  + Create New Partition
+                </button>
+              </div>
+            ) : (
+              <div className="space-y-2">
+                <input
+                  type="text"
+                  value={partition}
+                  onChange={(e) => setPartition(e.target.value)}
+                  placeholder="e.g., Top Shelf, Left Side"
+                  className="w-full px-3 py-2 border border-zinc-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                  required
+                />
+                {existingPartitions.length > 0 && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setIsCustomPartition(false);
+                      setPartition('');
+                    }}
+                    className="w-full px-3 py-2 text-sm text-zinc-600 hover:bg-zinc-50 rounded-lg transition-colors font-medium"
+                  >
+                    ← Back to existing
+                  </button>
+                )}
+              </div>
+            )}
           </div>
 
           {/* Storage Cover */}
