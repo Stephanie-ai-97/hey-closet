@@ -203,7 +203,7 @@ export default function Warehouse() {
 
       <StorageModal 
         isOpen={isStorageModalOpen}
-        homeId={selectedHomeId}
+        homes={homes}
         onClose={() => setIsStorageModalOpen(false)}
         onStorageAdded={() => {
           refetch();
