@@ -25,8 +25,6 @@ export default function Warehouse() {
   const [isStorageModalOpen, setIsStorageModalOpen] = useState(false);
   const [viewMode, setViewMode] = useState<ViewMode>('grid');
 
-  if (loading) return <div className="p-8 animate-pulse">Scanning storage facilities...</div>;
-
   const currentHome = homes.find(h => h.id === selectedHomeId);
 
   // Get storage units for selected home, grouped by storage name
@@ -71,6 +69,8 @@ export default function Warehouse() {
       byType: typeCount,
     };
   }, [itemsForPartition]);
+
+  if (loading) return <div className="p-8 animate-pulse">Scanning storage facilities...</div>;
 
   return (
     <PageContainer 
