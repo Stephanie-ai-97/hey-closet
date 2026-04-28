@@ -19,6 +19,16 @@ type ViewMode = 'grid' | 'list';
 
 export default function Warehouse() {
   const { homes, storages, items, loading, error, refetch } = useDashboardData();
+  
+  console.debug('[Warehouse] Data from useDashboardData:', { 
+    homesCount: homes.length, 
+    homes: homes,
+    storagesCount: storages.length,
+    itemsCount: items.length,
+    loading,
+    error
+  });
+  
   const [selectedHomeId, setSelectedHomeId] = useState<number | null>(null);
   const [selectedStorageName, setSelectedStorageName] = useState<string | null>(null);
   const [selectedPartition, setSelectedPartition] = useState<string | null>(null);

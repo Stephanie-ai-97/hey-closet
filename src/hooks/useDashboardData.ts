@@ -12,15 +12,29 @@ export function useDashboardData() {
   const fetchData = async () => {
     try {
       setLoading(true);
+      console.debug('[useDashboardData] Starting data fetch...');
       const [h, s, i] = await Promise.all([
         api.list<Home>('home'),
         api.list<Storage>('storage'),
         api.list<Item>('item'),
       ]);
-      setHomes(Array.isArray(h) ? h : []);
-      setStorages(Array.isArray(s) ? s : []);
-      setItems(Array.isArray(i) ? i : []);
+      console.debug('[useDashboardData] Raw API response - homes:', h);
+      console.debug('[useDashboardData] Raw API response - storages:', s);
+      console.debug('[useDashboardData] Raw API response - items:', i);
+      
+      const homesData = Array.isArray(h) ? h : [];
+      const storagesData = Array.isArray(s) ? s : [];
+      const itemsData = Array.isArray(i) ? i : [];
+      
+      console.debug('[useDashboardData] After processing - homes:', homesData, 'count:', homesData.length);
+      console.debug('[useDashboardData] After processing - storages:', storagesData, 'count:', storagesData.length);
+      console.debug('[useDashboardData] After processing - items:', itemsData, 'count:', itemsData.length);
+      
+      setHomes(homesData);
+      setStorages(storagesData);
+      setItems(itemsData);
     } catch (err) {
+      console.error('[useDashboardData] Error fetching data:', err);
       setError(err instanceof Error ? err.message : 'Failed to fetch dashboard data');
     } finally {
       setLoading(false);
