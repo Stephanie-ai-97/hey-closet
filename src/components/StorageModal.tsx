@@ -17,6 +17,11 @@ export function StorageModal({ isOpen, homes, storages, onClose, onStorageAdded 
   const [newHomeName, setNewHomeName] = useState('');
   const [newHomeAddress, setNewHomeAddress] = useState('');
   
+  // Log when modal receives homes prop
+  if (isOpen) {
+    console.debug('[StorageModal] Modal opened with homes:', homes, 'count:', homes.length);
+  }
+  
   const [closetName, setClosetName] = useState('');
   const [isCustomClosetName, setIsCustomClosetName] = useState(false);
   const [partition, setPartition] = useState('');
@@ -54,10 +59,13 @@ export function StorageModal({ isOpen, homes, storages, onClose, onStorageAdded 
     console.debug('[StorageModal] Form submission started', {
       isCreatingNewHome,
       selectedHomeId,
+      selectedHomeIdType: typeof selectedHomeId,
+      selectedHomeIdIsNull: selectedHomeId === null,
       closetName,
       partition,
       hasStorageCover,
     });
+    console.debug('[StorageModal] Available homes at submission:', homes.map(h => ({ id: h.id, name: h.homename })));
     
     // Create new home if needed
     if (isCreatingNewHome) {
