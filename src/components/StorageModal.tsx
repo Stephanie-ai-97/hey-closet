@@ -26,23 +26,38 @@ export function StorageModal({ isOpen, homes, storages, onClose, onStorageAdded 
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // Get unique storage names and partitions for the selected home
+  // Get unique storage names for the selected home
   const existingStorageNames = useMemo(() => {
     if (!selectedHomeId) return [];
     const filtered = storages.filter(s => s.dk_homelocation === selectedHomeId);
-    return [...new Set(filtered.map(s => s.closet))].filter(Boolean);
+    const names = [...new Set(filtered.map(s => s.closet))].filter(Boolean);
+    console.debug('[StorageModal] Available storage names for home', selectedHomeId, ':', names);
+    return names;
   }, [selectedHomeId, storages]);
 
+  // Get partitions for the selected closet (not just the home)
   const existingPartitions = useMemo(() => {
-    if (!selectedHomeId) return [];
-    const filtered = storages.filter(s => s.dk_homelocation === selectedHomeId);
-    return [...new Set(filtered.map(s => s.closetpartition))].filter(Boolean);
-  }, [selectedHomeId, storages]);
+    if (!selectedHomeId || !closetName) return [];
+    const filtered = storages.filter(
+      s => s.dk_homelocation === selectedHomeId && s.closet === closetName
+    );
+    const partitions = [...new Set(filtered.map(s => s.closetpartition))].filter(Boolean);
+    console.debug('[StorageModal] Available partitions for closet', closetName, ':', partitions);
+    return partitions;
+  }, [selectedHomeId, closetName, storages]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
     let homeId = selectedHomeId;
+    
+    console.debug('[StorageModal] Form submission started', {
+      isCreatingNewHome,
+      selectedHomeId,
+      closetName,
+      partition,
+      hasStorageCover,
+    });
     
     // Create new home if needed
     if (isCreatingNewHome) {
@@ -52,13 +67,15 @@ export function StorageModal({ isOpen, homes, storages, onClose, onStorageAdded 
       }
       try {
         setIsLoading(true);
+        console.debug('[StorageModal] Creating new home:', { newHomeName, newHomeAddress });
         const newHome = await api.create<Home>('home', {
           homename: newHomeName,
           homeaddress: newHomeAddress,
         });
         homeId = newHome.id;
+        console.debug('[StorageModal] Home created successfully:', newHome);
       } catch (err) {
-        console.error('Failed to create home:', err);
+        console.error('[StorageModal] Failed to create home:', err);
         setError(err instanceof Error ? err.message : 'Failed to create home');
         setIsLoading(false);
         return;
@@ -66,19 +83,33 @@ export function StorageModal({ isOpen, homes, storages, onClose, onStorageAdded 
     }
 
     if (!homeId || !closetName || !partition) {
-      setError('Please fill in all required fields');
+      const missingFields = [
+        !homeId ? 'Home' : null,
+        !closetName ? 'Closet/Storage Name' : null,
+        !partition ? 'Partition' : null,
+      ].filter(Boolean);
+      const errorMsg = `Please fill in all required fields: ${missingFields.join(', ')}`;
+      setError(errorMsg);
+      console.warn('[StorageModal] Validation failed:', errorMsg);
       return;
     }
 
     setError(null);
 
     try {
-      await api.create<Storage>('storage', {
+      setIsLoading(true);
+      const payload = {
         closet: closetName,
         closetpartition: partition,
         hasstoragecover: hasStorageCover,
         dk_homelocation: homeId,
-      });
+      };
+      
+      console.debug('[StorageModal] Sending API request to create storage:', payload);
+      
+      const result = await api.create<Storage>('storage', payload);
+      
+      console.debug('[StorageModal] Storage created successfully:', result);
 
       // Reset form
       setSelectedHomeId(null);
@@ -90,11 +121,14 @@ export function StorageModal({ isOpen, homes, storages, onClose, onStorageAdded 
       setPartition('');
       setIsCustomPartition(false);
       setHasStorageCover(false);
+      
+      console.debug('[StorageModal] Form reset, calling onStorageAdded callback');
       onStorageAdded();
       onClose();
     } catch (err) {
-      console.error('Failed to add storage:', err);
-      setError(err instanceof Error ? err.message : 'Failed to add storage');
+      console.error('[StorageModal] Failed to add storage:', err);
+      const errorMessage = err instanceof Error ? err.message : 'Failed to add storage';
+      setError(errorMessage);
     } finally {
       setIsLoading(false);
     }

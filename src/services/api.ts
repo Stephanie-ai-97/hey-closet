@@ -10,8 +10,25 @@ async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
     ...options.headers,
   };
 
+  const url = `${BASE_URL}${path}`;
+  const method = options.method || 'GET';
+  
+  console.debug('[API]', method, url, {
+    body: options.body ? JSON.parse(options.body as string) : undefined,
+    headers: {
+      'apikey': API_KEY ? '***REDACTED***' : 'MISSING',
+      'Content-Type': 'application/json',
+    },
+  });
+
   try {
-    const response = await fetch(`${BASE_URL}${path}`, { ...options, headers });
+    const response = await fetch(url, { ...options, headers });
+    
+    console.debug('[API Response]', method, url, {
+      status: response.status,
+      statusText: response.statusText,
+      contentType: response.headers.get('content-type'),
+    });
     
     if (!response.ok) {
       const errorBody = await response.text();
@@ -22,16 +39,20 @@ async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
       } catch {
         errorMessage = errorBody || errorMessage;
       }
+      console.error('[API Error]', method, url, errorMessage, errorBody);
       throw new Error(errorMessage);
     }
 
     if (response.status === 204 || response.headers.get('content-length') === '0') {
+      console.debug('[API] No content in response (204 or empty)');
       return {} as T;
     }
 
-    return response.json();
+    const data = await response.json();
+    console.debug('[API] Response data:', data);
+    return data;
   } catch (err) {
-    console.error('Fetch operation failed:', err);
+    console.error('[API] Fetch operation failed:', err);
     if (err instanceof TypeError && err.message === 'Failed to fetch') {
       throw new Error('Connection failed. This might be a CORS issue or the Supabase service might be unreachable.');
     }
