@@ -18,8 +18,12 @@ export function StorageModal({ isOpen, homes, storages, onClose, onStorageAdded 
   const [newHomeAddress, setNewHomeAddress] = useState('');
   
   // Log when modal receives homes prop
+  console.debug('[StorageModal] Component rendering - homes:', homes, 'homes.length:', homes.length, 'isOpen:', isOpen);
   if (isOpen) {
     console.debug('[StorageModal] Modal opened with homes:', homes, 'count:', homes.length);
+    homes.forEach((home, idx) => {
+      console.debug(`[StorageModal] Home ${idx}:`, { id: home.id, homename: home.homename, homeaddress: home.homeaddress });
+    });
   }
   
   const [closetName, setClosetName] = useState('');
@@ -180,6 +184,7 @@ export function StorageModal({ isOpen, homes, storages, onClose, onStorageAdded 
           <div>
             <label className="block text-sm font-bold text-zinc-700 mb-2 uppercase tracking-widest text-xs">
               Home Location
+              <span className="text-xs text-gray-500 ml-2">(Found: {homes.length})</span>
             </label>
             {!isCreatingNewHome ? (
               <div className="space-y-2">
@@ -189,11 +194,15 @@ export function StorageModal({ isOpen, homes, storages, onClose, onStorageAdded 
                   className="w-full px-3 py-2 border border-zinc-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
                 >
                   <option value="">Select a home...</option>
-                  {homes.map(home => (
-                    <option key={home.id} value={home.id}>
-                      {home.homename} - {home.homeaddress}
-                    </option>
-                  ))}
+                  {homes.length === 0 ? (
+                    <option disabled>No homes available</option>
+                  ) : (
+                    homes.map(home => (
+                      <option key={home.id} value={home.id}>
+                        {home.homename} - {home.homeaddress}
+                      </option>
+                    ))
+                  )}
                 </select>
                 <button
                   type="button"

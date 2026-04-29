@@ -22,14 +22,18 @@ export function useDashboardData() {
       console.debug('[useDashboardData] Raw API response - storages:', s);
       console.debug('[useDashboardData] Raw API response - items:', i);
       
-      // Map API response to Home interface - API returns pk_homelocation but interface expects id
-      const homesData = Array.isArray(h) ? h.map(home => ({
+      // Extract data from response wrapper if it exists, then map API response to Home interface
+      const homesList = h?.data || h || [];
+      const storagesList = s?.data || s || [];
+      const itemsList = i?.data || i || [];
+      
+      const homesData = Array.isArray(homesList) ? homesList.map(home => ({
         id: home.pk_homelocation || home.id,
         homename: home.homename,
         homeaddress: home.homeaddress,
       })) : [];
-      const storagesData = Array.isArray(s) ? s : [];
-      const itemsData = Array.isArray(i) ? i : [];
+      const storagesData = Array.isArray(storagesList) ? storagesList : [];
+      const itemsData = Array.isArray(itemsList) ? itemsList : [];
       
       console.debug('[useDashboardData] After processing - homes:', homesData, 'count:', homesData.length);
       console.debug('[useDashboardData] After processing - storages:', storagesData, 'count:', storagesData.length);
