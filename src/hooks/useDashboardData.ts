@@ -32,7 +32,13 @@ export function useDashboardData() {
         homename: home.homename,
         homeaddress: home.homeaddress,
       })) : [];
-      const storagesData = Array.isArray(storagesList) ? storagesList : [];
+      const storagesData = Array.isArray(storagesList) ? storagesList.map(storage => ({
+        id: storage.pk_closet || storage.id,
+        closet: storage.closet,
+        closetpartition: storage.closetpartition,
+        hasstoragecover: storage.hasstoragecover,
+        dk_homelocation: storage.dk_homelocation,
+      })) : [];
       const itemsData = Array.isArray(itemsList) ? itemsList : [];
       
       console.debug('[useDashboardData] After processing - homes:', homesData, 'count:', homesData.length);
