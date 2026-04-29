@@ -116,12 +116,6 @@ export function ItemModal({ isOpen, storages, homes, onClose, onItemAdded }: Ite
 
   if (!isOpen) return null;
 
-  // Group storages by home
-  const storagesByHome = homes.map(home => ({
-    home,
-    storages: storages.filter(s => s.dk_homelocation === home.id)
-  }));
-
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
       <div className="bg-white rounded-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
