@@ -1,4 +1,5 @@
 import { PageContainer } from '../components/PageContainer';
+import { ItemModal } from '../components/ItemModal';
 import { useDashboardData } from '../hooks/useDashboardData';
 import { 
   Search, 
@@ -13,10 +14,11 @@ import { cn } from '../lib/utils';
 import { Link } from 'react-router-dom';
 
 export default function Inventory() {
-  const { items, loading, homes, storages } = useDashboardData();
+  const { items, loading, homes, storages, refetch } = useDashboardData();
   const [searchTerm, setSearchTerm] = useState('');
   const [sortField, setSortField] = useState<'itemtype' | 'itemcost' | 'itemlikerating'>('itemtype');
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc');
+  const [isModalOpen, setIsModalOpen] = useState(false);
 
   const filteredItems = useMemo(() => {
     return items
@@ -44,16 +46,27 @@ export default function Inventory() {
   };
 
   return (
-    <PageContainer 
-      title="Global Inventory" 
-      subtitle="Comprehensive view of every item in your collection."
-      actions={
-        <button className="flex items-center gap-2 px-4 py-2 bg-zinc-900 text-white rounded-xl text-sm font-semibold hover:bg-zinc-800 transition-all shadow-md shadow-black/10">
-          <Plus size={18} />
-          New Item
-        </button>
-      }
-    >
+    <>
+      <ItemModal
+        isOpen={isModalOpen}
+        storages={storages}
+        homes={homes}
+        onClose={() => setIsModalOpen(false)}
+        onItemAdded={() => refetch()}
+      />
+      <PageContainer 
+        title="Global Inventory" 
+        subtitle="Comprehensive view of every item in your collection."
+        actions={
+          <button 
+            onClick={() => setIsModalOpen(true)}
+            className="flex items-center gap-2 px-4 py-2 bg-zinc-900 text-white rounded-xl text-sm font-semibold hover:bg-zinc-800 transition-all shadow-md shadow-black/10"
+          >
+            <Plus size={18} />
+            New Item
+          </button>
+        }
+      >
       {/* Controls */}
       <div className="flex flex-col md:flex-row gap-4 mb-6">
         <div className="relative flex-1">
@@ -138,6 +151,7 @@ export default function Inventory() {
         })}
       </div>
 
+      </PageContainer>
       {filteredItems.length === 0 && (
         <div className="py-24 flex flex-col items-center justify-center text-zinc-400 space-y-4">
           <Package size={48} className="opacity-20" />
@@ -150,6 +164,7 @@ export default function Inventory() {
           </button>
         </div>
       )}
-    </PageContainer>
+      </PageContainer>
+    </>
   );
 }
