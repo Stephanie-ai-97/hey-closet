@@ -33,23 +33,12 @@ export function useDashboardData() {
         homeaddress: home.homeaddress,
       })) : [];
       const storagesData = Array.isArray(storagesList) ? storagesList.map(storage => ({
-        id: storage.pk_closet || storage.id,
-        closet: storage.closet,
-        closetpartition: storage.closetpartition,
-        hasstoragecover: storage.hasstoragecover,
-        dk_homelocation: storage.dk_homelocation,
+        ...storage,
+        id: storage.pk_closet ?? storage.id,
       })) : [];
       const itemsData = Array.isArray(itemsList) ? itemsList.map(item => ({
-        id: item.pk_item || item.id,
-        dk_closet: item.dk_closet,
-        itemtype: item.itemtype,
-        itemsize: item.itemsize,
-        isoncamera: item.isoncamera,
-        itemlikerating: item.itemlikerating,
-        itemcost: item.itemcost,
-        itemcomment: item.itemcomment,
-        itemwashmethod: item.itemwashmethod,
-        created_at: item.created_at,
+        ...item,
+        id: item.pk_item ?? item.id,
       })) : [];
       
       console.debug('[useDashboardData] After processing - homes:', homesData, 'count:', homesData.length);
