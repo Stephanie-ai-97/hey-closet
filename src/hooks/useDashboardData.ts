@@ -14,7 +14,7 @@ export function useDashboardData() {
       setLoading(true);
       console.debug('[useDashboardData] Starting data fetch...');
       const [h, s, i] = await Promise.all([
-        api.list<Home>('home'),
+        api.list<any>('home'),
         api.list<Storage>('storage'),
         api.list<Item>('item'),
       ]);
@@ -22,7 +22,12 @@ export function useDashboardData() {
       console.debug('[useDashboardData] Raw API response - storages:', s);
       console.debug('[useDashboardData] Raw API response - items:', i);
       
-      const homesData = Array.isArray(h) ? h : [];
+      // Map API response to Home interface - API returns pk_homelocation but interface expects id
+      const homesData = Array.isArray(h) ? h.map(home => ({
+        id: home.pk_homelocation || home.id,
+        homename: home.homename,
+        homeaddress: home.homeaddress,
+      })) : [];
       const storagesData = Array.isArray(s) ? s : [];
       const itemsData = Array.isArray(i) ? i : [];
       
