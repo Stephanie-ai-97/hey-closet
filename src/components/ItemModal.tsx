@@ -12,7 +12,7 @@ interface ItemModalProps {
 }
 
 export function ItemModal({ isOpen, storages, homes, onClose, onItemAdded }: ItemModalProps) {
-  const [dk_closet, setDk_closet] = useState<number | ''>('');
+  const [dk_closet, setDk_closet] = useState<string>('');
   const [itemtype, setItemtype] = useState('');
   const [itemsize, setItemsize] = useState('');
   const [isoncamera, setIsoncamera] = useState(false);
@@ -20,14 +20,17 @@ export function ItemModal({ isOpen, storages, homes, onClose, onItemAdded }: Ite
   const [itemcost, setItemcost] = useState('');
   const [itemcomment, setItemcomment] = useState('');
   const [itemwashmethod, setItemwashmethod] = useState('hand wash');
+  const [colouroverall, setColouroverall] = useState('');
+  const [texture, setTexture] = useState('');
+  const [styletype, setStyletype] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (!dk_closet || !itemtype || !itemsize || !itemcost) {
-      setError('Please fill in all required fields');
+    if (!dk_closet || !itemtype || !itemsize) {
+      setError('Please fill in all required fields (Storage Location, Item Type, Size)');
       return;
     }
 
@@ -35,16 +38,52 @@ export function ItemModal({ isOpen, storages, homes, onClose, onItemAdded }: Ite
     setError(null);
 
     try {
-      await api.create<Item>('item', {
+      // Create item
+      const itemData: any = {
         dk_closet: Number(dk_closet),
         itemtype,
         itemsize,
         isoncamera,
         itemlikerating,
-        itemcost: parseFloat(itemcost),
         itemcomment,
         itemwashmethod,
-      });
+      };
+
+      // Only add cost if provided
+      if (itemcost) {
+        itemData.itemcost = parseFloat(itemcost);
+      } else {
+        itemData.itemcost = 0;
+      }
+
+      const createdItem = await api.create<Item>('item', itemData);
+
+      // Create colour info if provided
+      if (colouroverall) {
+        await api.create('colour', {
+          colouroverall,
+          colourinner: '',
+          colourouter: '',
+        });
+      }
+
+      // Create material info if provided
+      if (texture) {
+        await api.create('material', {
+          texture,
+          softness: '',
+          thickness: '',
+        });
+      }
+
+      // Create style info if provided
+      if (styletype) {
+        await api.create('style', {
+          styletype,
+          styleyear: new Date().getFullYear(),
+          stylefitsize: itemsize,
+        });
+      }
 
       // Reset form
       setDk_closet('');
@@ -55,6 +94,9 @@ export function ItemModal({ isOpen, storages, homes, onClose, onItemAdded }: Ite
       setItemcost('');
       setItemcomment('');
       setItemwashmethod('hand wash');
+      setColouroverall('');
+      setTexture('');
+      setStyletype('');
       
       onItemAdded();
       onClose();
@@ -66,7 +108,19 @@ export function ItemModal({ isOpen, storages, homes, onClose, onItemAdded }: Ite
     }
   };
 
+  // Group storages by home
+  const storagesByHome = homes.map(home => ({
+    home,
+    storages: storages.filter(s => s.dk_homelocation === home.id)
+  }));
+
   if (!isOpen) return null;
+
+  // Group storages by home
+  const storagesByHome = homes.map(home => ({
+    home,
+    storages: storages.filter(s => s.dk_homelocation === home.id)
+  }));
 
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
@@ -100,19 +154,20 @@ export function ItemModal({ isOpen, storages, homes, onClose, onItemAdded }: Ite
             </label>
             <select
               value={dk_closet}
-              onChange={(e) => setDk_closet(e.target.value ? Number(e.target.value) : '')}
+              onChange={(e) => setDk_closet(e.target.value)}
               className="w-full px-3 py-2 border border-zinc-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-zinc-900/5 focus:border-zinc-500 transition-all"
               required
             >
               <option value="">Select a storage location</option>
-              {storages.map((storage) => {
-                const home = homes.find(h => h.id === storage.dk_homelocation);
-                return (
-                  <option key={storage.id} value={storage.id}>
-                    {home?.homename} - {storage.closet} ({storage.closetpartition})
-                  </option>
-                );
-              })}
+              {storagesByHome.map(({ home, storages: homeStorages }) => (
+                <optgroup key={home.id} label={home.homename}>
+                  {homeStorages.map((storage) => (
+                    <option key={storage.id} value={storage.id}>
+                      {storage.closet} ({storage.closetpartition})
+                    </option>
+                  ))}
+                </optgroup>
+              ))}
             </select>
           </div>
 
@@ -148,11 +203,57 @@ export function ItemModal({ isOpen, storages, homes, onClose, onItemAdded }: Ite
             </div>
           </div>
 
+          {/* Colour and Material Details */}
           <div className="grid grid-cols-2 gap-4">
-            {/* Item Cost - Required */}
+            {/* Colour */}
             <div>
               <label className="block text-sm font-semibold text-zinc-900 mb-2">
-                Cost ($) <span className="text-red-500">*</span>
+                Colour
+              </label>
+              <input
+                type="text"
+                value={colouroverall}
+                onChange={(e) => setColouroverall(e.target.value)}
+                placeholder="e.g., Black, Navy Blue"
+                className="w-full px-3 py-2 border border-zinc-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-zinc-900/5 focus:border-zinc-500 transition-all"
+              />
+            </div>
+
+            {/* Material/Texture */}
+            <div>
+              <label className="block text-sm font-semibold text-zinc-900 mb-2">
+                Material
+              </label>
+              <input
+                type="text"
+                value={texture}
+                onChange={(e) => setTexture(e.target.value)}
+                placeholder="e.g., Cotton, Polyester"
+                className="w-full px-3 py-2 border border-zinc-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-zinc-900/5 focus:border-zinc-500 transition-all"
+              />
+            </div>
+          </div>
+
+          {/* Style and Cost */}
+          <div className="grid grid-cols-2 gap-4">
+            {/* Style */}
+            <div>
+              <label className="block text-sm font-semibold text-zinc-900 mb-2">
+                Style
+              </label>
+              <input
+                type="text"
+                value={styletype}
+                onChange={(e) => setStyletype(e.target.value)}
+                placeholder="e.g., Casual, Formal"
+                className="w-full px-3 py-2 border border-zinc-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-zinc-900/5 focus:border-zinc-500 transition-all"
+              />
+            </div>
+
+            {/* Item Cost - Optional */}
+            <div>
+              <label className="block text-sm font-semibold text-zinc-900 mb-2">
+                Cost ($) <span className="text-zinc-400 text-xs">(optional)</span>
               </label>
               <input
                 type="number"
@@ -162,10 +263,12 @@ export function ItemModal({ isOpen, storages, homes, onClose, onItemAdded }: Ite
                 step="0.01"
                 min="0"
                 className="w-full px-3 py-2 border border-zinc-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-zinc-900/5 focus:border-zinc-500 transition-all"
-                required
               />
             </div>
+          </div>
 
+          {/* Like Rating and Wash Method */}
+          <div className="grid grid-cols-2 gap-4">
             {/* Like Rating */}
             <div>
               <label className="block text-sm font-semibold text-zinc-900 mb-2">
@@ -180,25 +283,25 @@ export function ItemModal({ isOpen, storages, homes, onClose, onItemAdded }: Ite
                 className="w-full px-3 py-2 border border-zinc-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-zinc-900/5 focus:border-zinc-500 transition-all"
               />
             </div>
-          </div>
 
-          {/* Wash Method */}
-          <div>
-            <label className="block text-sm font-semibold text-zinc-900 mb-2">
-              Wash Method
-            </label>
-            <select
-              value={itemwashmethod}
-              onChange={(e) => setItemwashmethod(e.target.value)}
-              className="w-full px-3 py-2 border border-zinc-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-zinc-900/5 focus:border-zinc-500 transition-all"
-            >
-              <option value="hand wash">Hand Wash</option>
-              <option value="machine wash cold">Machine Wash - Cold</option>
-              <option value="machine wash warm">Machine Wash - Warm</option>
-              <option value="machine wash hot">Machine Wash - Hot</option>
-              <option value="dry clean">Dry Clean</option>
-              <option value="delicate">Delicate</option>
-            </select>
+            {/* Wash Method */}
+            <div>
+              <label className="block text-sm font-semibold text-zinc-900 mb-2">
+                Wash Method
+              </label>
+              <select
+                value={itemwashmethod}
+                onChange={(e) => setItemwashmethod(e.target.value)}
+                className="w-full px-3 py-2 border border-zinc-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-zinc-900/5 focus:border-zinc-500 transition-all"
+              >
+                <option value="hand wash">Hand Wash</option>
+                <option value="machine wash cold">Machine Wash - Cold</option>
+                <option value="machine wash warm">Machine Wash - Warm</option>
+                <option value="machine wash hot">Machine Wash - Hot</option>
+                <option value="dry clean">Dry Clean</option>
+                <option value="delicate">Delicate</option>
+              </select>
+            </div>
           </div>
 
           {/* Comment */}
