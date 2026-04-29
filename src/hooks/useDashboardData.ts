@@ -39,7 +39,18 @@ export function useDashboardData() {
         hasstoragecover: storage.hasstoragecover,
         dk_homelocation: storage.dk_homelocation,
       })) : [];
-      const itemsData = Array.isArray(itemsList) ? itemsList : [];
+      const itemsData = Array.isArray(itemsList) ? itemsList.map(item => ({
+        id: item.pk_item || item.id,
+        dk_closet: item.dk_closet,
+        itemtype: item.itemtype,
+        itemsize: item.itemsize,
+        isoncamera: item.isoncamera,
+        itemlikerating: item.itemlikerating,
+        itemcost: item.itemcost,
+        itemcomment: item.itemcomment,
+        itemwashmethod: item.itemwashmethod,
+        created_at: item.created_at,
+      })) : [];
       
       console.debug('[useDashboardData] After processing - homes:', homesData, 'count:', homesData.length);
       console.debug('[useDashboardData] After processing - storages:', storagesData, 'count:', storagesData.length);
