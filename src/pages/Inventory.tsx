@@ -151,7 +151,6 @@ export default function Inventory() {
         })}
       </div>
 
-      </PageContainer>
       {filteredItems.length === 0 && (
         <div className="py-24 flex flex-col items-center justify-center text-zinc-400 space-y-4">
           <Package size={48} className="opacity-20" />
