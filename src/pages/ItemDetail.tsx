@@ -57,7 +57,8 @@ export default function ItemDetail() {
       try {
         if (!id) return;
         const itemId = parseInt(id);
-        const item = await api.get<Item>('item', itemId);
+        const rawItem = await api.get<any>('item', itemId);
+        const item: Item = { ...rawItem, id: rawItem.pk_itemid ?? rawItem.id };
         
         // Fetch relations
         const [infos, washes, wearLogs, photos, storage] = await Promise.all([
@@ -97,7 +98,8 @@ export default function ItemDetail() {
     setLoading(true);
     try {
       const itemId = parseInt(id);
-      const item = await api.get<Item>('item', itemId);
+      const rawItem = await api.get<any>('item', itemId);
+      const item: Item = { ...rawItem, id: rawItem.pk_itemid ?? rawItem.id };
       const [infos, washes, wearLogs, photos, storage] = await Promise.all([
         api.list<Info>('info', { dk_itemid: id }),
         api.list<Wash>('wash', { dk_itemid: id }),

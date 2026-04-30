@@ -93,7 +93,7 @@ export function ItemModal({ isOpen, storages, homes, onClose, onItemAdded }: Ite
       // Create Info junction record if any metadata was provided
       if (colourId || materialId || styleId) {
         await api.create<Info>('info', {
-          dk_itemid: (createdItem as any).id ?? (createdItem as any).pk_item,
+          dk_itemid: (createdItem as any).pk_itemid ?? (createdItem as any).id,
           dk_styleid: styleId ?? 0,
           dk_colourid: colourId ?? 0,
           dk_material: materialId ?? 0,

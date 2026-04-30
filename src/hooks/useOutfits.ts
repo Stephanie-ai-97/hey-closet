@@ -26,7 +26,7 @@ export function useOutfits() {
       const outfitItemsList: OutfitItem[] = (outfitItemsRaw as any)?.data ?? outfitItemsRaw ?? [];
       const itemsList: Item[] = (itemsRaw as any)?.data ?? itemsRaw ?? [];
 
-      const normalizedItems = itemsList.map(i => ({ ...i, id: (i as any).pk_item ?? i.id }));
+      const normalizedItems = itemsList.map(i => ({ ...i, id: (i as any).pk_itemid ?? i.id }));
       const normalizedOutfits = outfitsList.map(o => ({ ...o, id: (o as any).pk_outfit ?? o.id }));
 
       const result: OutfitWithItems[] = normalizedOutfits.map(outfit => {

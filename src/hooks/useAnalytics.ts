@@ -55,8 +55,8 @@ export function useAnalytics() {
         // CPW per item
         const cpwItems: ItemCPW[] = itemsList
           .map(item => {
-            const wearCount = wearList.filter(w => w.dk_itemid === item.id).length;
-            const normalizedItem = { ...item, id: (item as any).pk_item ?? item.id };
+            const normalizedItem = { ...item, id: (item as any).pk_itemid ?? item.id };
+            const wearCount = wearList.filter(w => w.dk_itemid === normalizedItem.id).length;
             const cpw = wearCount > 0 ? normalizedItem.itemcost / wearCount : Infinity;
             return { item: normalizedItem, wearCount, cpw };
           })
@@ -101,7 +101,7 @@ export function useAnalytics() {
         // Dormant items: no wear log in last 6 months
         const now = new Date();
         const dormantItems = itemsList
-          .map(i => ({ ...i, id: (i as any).pk_item ?? i.id }))
+          .map(i => ({ ...i, id: (i as any).pk_itemid ?? i.id }))
           .filter(item => {
             const lastWear = wearList
               .filter(w => w.dk_itemid === item.id)

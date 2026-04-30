@@ -38,7 +38,7 @@ export function useDashboardData() {
       })) : [];
       const itemsData = Array.isArray(itemsList) ? itemsList.map(item => ({
         ...item,
-        id: item.pk_item ?? item.id,
+        id: (item as any).pk_itemid ?? item.id,
       })) : [];
       
       console.debug('[useDashboardData] After processing - homes:', homesData, 'count:', homesData.length);
