@@ -27,15 +27,15 @@ export function DeleteConfirmModal({ isOpen, itemName, onClose, onConfirm }: Del
 
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-2xl max-w-md w-full p-8 shadow-xl">
+      <div className="bg-white dark:bg-zinc-900 rounded-2xl max-w-md w-full p-8 shadow-xl">
         <div className="flex flex-col items-center text-center gap-4 mb-6">
-          <div className="p-4 bg-red-50 rounded-full">
+          <div className="p-4 bg-red-50 dark:bg-red-950 rounded-full">
             <AlertTriangle size={32} className="text-red-500" />
           </div>
           <div>
-            <h2 className="text-xl font-bold text-zinc-900">Delete Item</h2>
-            <p className="text-sm text-zinc-500 mt-2">
-              Are you sure you want to permanently delete <span className="font-semibold text-zinc-900">{itemName}</span>?
+            <h2 className="text-xl font-bold text-zinc-900 dark:text-zinc-50">Delete Item</h2>
+            <p className="text-sm text-zinc-500 dark:text-zinc-400 mt-2">
+              Are you sure you want to permanently delete <span className="font-semibold text-zinc-900 dark:text-zinc-50">{itemName}</span>?
               This action cannot be undone.
             </p>
           </div>
@@ -49,7 +49,7 @@ export function DeleteConfirmModal({ isOpen, itemName, onClose, onConfirm }: Del
           <button
             type="button"
             onClick={onClose}
-            className="flex-1 px-4 py-2 bg-zinc-100 text-zinc-900 rounded-lg font-medium hover:bg-zinc-200 transition-colors"
+            className="flex-1 px-4 py-2 bg-zinc-100 dark:bg-zinc-800 text-zinc-900 dark:text-zinc-50 rounded-lg font-medium hover:bg-zinc-200 dark:hover:bg-zinc-700 transition-colors"
             disabled={isLoading}
           >
             Cancel

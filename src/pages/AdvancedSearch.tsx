@@ -54,7 +54,7 @@ export default function AdvancedSearch() {
     setSelectedMaterials([]);
   };
 
-  if (itemsLoading || metaLoading) return <div className="p-8 animate-pulse">Initializing neural search...</div>;
+  if (itemsLoading || metaLoading) return <div className="p-8 animate-pulse dark:text-zinc-400">Initializing neural search...</div>;
 
   const getLocationPath = (dk_closet: number) => {
     const storage = storages.find(s => s.id === dk_closet);
@@ -70,7 +70,7 @@ export default function AdvancedSearch() {
       actions={
         <button 
           onClick={resetFilters}
-          className="flex items-center gap-2 px-3 py-1.5 text-zinc-500 hover:text-zinc-900 transition-colors text-sm font-bold"
+            className="flex items-center gap-2 px-3 py-1.5 text-zinc-500 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-50 transition-colors text-sm font-bold"
         >
           <RotateCcw size={16} />
           Reset
@@ -82,7 +82,7 @@ export default function AdvancedSearch() {
         <aside className="lg:col-span-1 space-y-8">
           {/* Colours */}
           <section>
-            <div className="flex items-center gap-2 mb-4 text-zinc-900">
+            <div className="flex items-center gap-2 mb-4 text-zinc-900 dark:text-zinc-50">
               <Palette size={18} />
               <h3 className="text-sm font-bold uppercase tracking-wider">Colour Space</h3>
             </div>
@@ -94,8 +94,8 @@ export default function AdvancedSearch() {
                   className={cn(
                     "px-3 py-1.5 rounded-full text-xs font-medium border transition-all",
                     selectedColours.includes(c.id)
-                      ? "bg-zinc-900 text-white border-zinc-900"
-                      : "bg-white text-zinc-600 border-zinc-200 hover:border-zinc-400"
+                      ? "bg-zinc-900 dark:bg-zinc-100 text-white dark:text-zinc-900 border-zinc-900 dark:border-zinc-100"
+                      : "bg-white dark:bg-zinc-900 text-zinc-600 dark:text-zinc-400 border-zinc-200 dark:border-zinc-700 hover:border-zinc-400 dark:hover:border-zinc-500"
                   )}
                 >
                   {c.colouroverall}
@@ -106,7 +106,7 @@ export default function AdvancedSearch() {
 
           {/* Styles */}
           <section>
-            <div className="flex items-center gap-2 mb-4 text-zinc-900">
+            <div className="flex items-center gap-2 mb-4 text-zinc-900 dark:text-zinc-50">
               <Zap size={18} />
               <h3 className="text-sm font-bold uppercase tracking-wider">Aesthetic Style</h3>
             </div>
@@ -118,8 +118,8 @@ export default function AdvancedSearch() {
                   className={cn(
                     "px-3 py-1.5 rounded-full text-xs font-medium border transition-all",
                     selectedStyles.includes(s.id)
-                      ? "bg-zinc-900 text-white border-zinc-900"
-                      : "bg-white text-zinc-600 border-zinc-200 hover:border-zinc-400"
+                      ? "bg-zinc-900 dark:bg-zinc-100 text-white dark:text-zinc-900 border-zinc-900 dark:border-zinc-100"
+                      : "bg-white dark:bg-zinc-900 text-zinc-600 dark:text-zinc-400 border-zinc-200 dark:border-zinc-700 hover:border-zinc-400 dark:hover:border-zinc-500"
                   )}
                 >
                   {s.styletype} ({s.styleyear})
@@ -130,7 +130,7 @@ export default function AdvancedSearch() {
 
           {/* Materials */}
           <section>
-            <div className="flex items-center gap-2 mb-4 text-zinc-900">
+            <div className="flex items-center gap-2 mb-4 text-zinc-900 dark:text-zinc-50">
               <Layers size={18} />
               <h3 className="text-sm font-bold uppercase tracking-wider">Material Texture</h3>
             </div>
@@ -142,8 +142,8 @@ export default function AdvancedSearch() {
                   className={cn(
                     "px-3 py-1.5 rounded-full text-xs font-medium border transition-all",
                     selectedMaterials.includes(m.id)
-                      ? "bg-zinc-900 text-white border-zinc-900"
-                      : "bg-white text-zinc-600 border-zinc-200 hover:border-zinc-400"
+                      ? "bg-zinc-900 dark:bg-zinc-100 text-white dark:text-zinc-900 border-zinc-900 dark:border-zinc-100"
+                      : "bg-white dark:bg-zinc-900 text-zinc-600 dark:text-zinc-400 border-zinc-200 dark:border-zinc-700 hover:border-zinc-400 dark:hover:border-zinc-500"
                   )}
                 >
                   {m.texture}
@@ -155,22 +155,22 @@ export default function AdvancedSearch() {
 
         {/* Results Area */}
         <main className="lg:col-span-3">
-          <div className="bg-zinc-100 rounded-2xl p-8 min-h-[500px]">
+          <div className="bg-zinc-100 dark:bg-zinc-800 rounded-2xl p-8 min-h-[500px]">
             {filteredItems.length > 0 ? (
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {filteredItems.map(item => (
                   <Link
                     to={`/item/${item.id}`}
                     key={item.id}
-                    className="bg-white p-4 rounded-xl border border-zinc-200 shadow-sm flex items-center gap-4 hover:border-zinc-400 transition-all"
+                    className="bg-white dark:bg-zinc-900 p-4 rounded-xl border border-zinc-200 dark:border-zinc-800 shadow-sm flex items-center gap-4 hover:border-zinc-400 dark:hover:border-zinc-600 transition-all"
                   >
-                    <div className="w-16 h-16 bg-zinc-50 rounded-lg shrink-0 flex items-center justify-center text-zinc-400">
+                    <div className="w-16 h-16 bg-zinc-50 dark:bg-zinc-800 rounded-lg shrink-0 flex items-center justify-center text-zinc-400 dark:text-zinc-500">
                       <ItemSVGIcon itemtype={item.itemtype} size={32} />
                     </div>
                     <div className="flex-1 min-w-0">
-                      <h4 className="font-bold text-zinc-900">{item.itemtype}</h4>
-                      <p className="text-xs text-zinc-500">Size: {item.itemsize}</p>
-                      <div className="flex items-center gap-1 mt-1 text-zinc-400">
+                      <h4 className="font-bold text-zinc-900 dark:text-zinc-50">{item.itemtype}</h4>
+                      <p className="text-xs text-zinc-500 dark:text-zinc-400">Size: {item.itemsize}</p>
+                      <div className="flex items-center gap-1 mt-1 text-zinc-400 dark:text-zinc-500">
                         <MapPin size={10} />
                         <span className="text-[10px] truncate">{getLocationPath(item.dk_closet)}</span>
                       </div>
@@ -187,11 +187,11 @@ export default function AdvancedSearch() {
                 ))}
               </div>
             ) : (
-              <div className="h-full flex flex-col items-center justify-center text-zinc-400 text-center">
-                <div className="p-6 bg-white rounded-full mb-6 shadow-xl shadow-zinc-200/50">
+              <div className="h-full flex flex-col items-center justify-center text-zinc-400 dark:text-zinc-500 text-center">
+                <div className="p-6 bg-white dark:bg-zinc-900 rounded-full mb-6 shadow-xl shadow-zinc-200/50 dark:shadow-zinc-900/50">
                   <SearchIcon size={48} className="opacity-20" />
                 </div>
-                <h3 className="text-zinc-900 font-bold text-lg mb-2">Refine your search</h3>
+                <h3 className="text-zinc-900 dark:text-zinc-50 font-bold text-lg mb-2">Refine your search</h3>
                 <p className="max-w-xs text-sm">
                   Select tags from the sidebar to visualize item intersections across your wardrobe.
                 </p>

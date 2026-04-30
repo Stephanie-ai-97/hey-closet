@@ -157,18 +157,18 @@ export function StorageModal({ isOpen, homes, storages, onClose, onStorageAdded 
       />
 
       {/* Modal */}
-      <div className="fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 bg-white rounded-2xl shadow-xl border border-zinc-200 w-full max-w-md mx-4 z-50 overflow-hidden max-h-[90vh] overflow-y-auto">
+      <div className="fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 bg-white dark:bg-zinc-900 rounded-2xl shadow-xl border border-zinc-200 dark:border-zinc-800 w-full max-w-md mx-4 z-50 overflow-hidden max-h-[90vh] overflow-y-auto">
         {/* Header */}
-        <div className="bg-gradient-to-r from-indigo-50 to-zinc-50 px-6 py-4 flex items-center justify-between border-b border-zinc-200 sticky top-0">
+        <div className="bg-gradient-to-r from-indigo-50 dark:from-indigo-950 to-zinc-50 dark:to-zinc-900 px-6 py-4 flex items-center justify-between border-b border-zinc-200 dark:border-zinc-800 sticky top-0">
           <div>
-            <h2 className="text-lg font-bold text-zinc-900">Add Storage</h2>
-            <p className="text-sm text-zinc-500">Create a new storage unit</p>
+            <h2 className="text-lg font-bold text-zinc-900 dark:text-zinc-50">Add Storage</h2>
+            <p className="text-sm text-zinc-500 dark:text-zinc-400">Create a new storage unit</p>
           </div>
           <button
             onClick={onClose}
-            className="p-1 hover:bg-zinc-200 rounded-lg transition-colors"
+            className="p-1 hover:bg-zinc-200 dark:hover:bg-zinc-700 rounded-lg transition-colors"
           >
-            <X size={20} className="text-zinc-500" />
+            <X size={20} className="text-zinc-500 dark:text-zinc-400" />
           </button>
         </div>
 
@@ -182,16 +182,16 @@ export function StorageModal({ isOpen, homes, storages, onClose, onStorageAdded 
 
           {/* Home Selection */}
           <div>
-            <label className="block text-sm font-bold text-zinc-700 mb-2 uppercase tracking-widest text-xs">
+            <label className="block text-sm font-bold text-zinc-700 dark:text-zinc-300 mb-2 uppercase tracking-widest text-xs">
               Home Location
-              <span className="text-xs text-gray-500 ml-2">(Found: {homes.length})</span>
+              <span className="text-xs text-zinc-500 dark:text-zinc-400 ml-2">(Found: {homes.length})</span>
             </label>
             {!isCreatingNewHome ? (
               <div className="space-y-2">
                 <select
                   value={selectedHomeId || ''}
                   onChange={(e) => setSelectedHomeId(e.target.value ? Number(e.target.value) : null)}
-                  className="w-full px-3 py-2 border border-zinc-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                  className="w-full px-3 py-2 border border-zinc-300 dark:border-zinc-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent bg-white dark:bg-zinc-800 text-zinc-900 dark:text-zinc-50"
                 >
                   <option value="">Select a home...</option>
                   {homes.length === 0 ? (
@@ -207,7 +207,7 @@ export function StorageModal({ isOpen, homes, storages, onClose, onStorageAdded 
                 <button
                   type="button"
                   onClick={() => setIsCreatingNewHome(true)}
-                  className="w-full px-3 py-2 text-sm text-indigo-600 hover:bg-indigo-50 rounded-lg transition-colors font-medium"
+                  className="w-full px-3 py-2 text-sm text-indigo-600 dark:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-950 rounded-lg transition-colors font-medium"
                 >
                   + Create New Home
                 </button>
@@ -219,7 +219,7 @@ export function StorageModal({ isOpen, homes, storages, onClose, onStorageAdded 
                   value={newHomeName}
                   onChange={(e) => setNewHomeName(e.target.value)}
                   placeholder="Home name"
-                  className="w-full px-3 py-2 border border-zinc-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                  className="w-full px-3 py-2 border border-zinc-300 dark:border-zinc-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent bg-white dark:bg-zinc-800 text-zinc-900 dark:text-zinc-50"
                   required
                 />
                 <input
@@ -227,13 +227,13 @@ export function StorageModal({ isOpen, homes, storages, onClose, onStorageAdded 
                   value={newHomeAddress}
                   onChange={(e) => setNewHomeAddress(e.target.value)}
                   placeholder="Address"
-                  className="w-full px-3 py-2 border border-zinc-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                  className="w-full px-3 py-2 border border-zinc-300 dark:border-zinc-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent bg-white dark:bg-zinc-800 text-zinc-900 dark:text-zinc-50"
                   required
                 />
                 <button
                   type="button"
                   onClick={() => setIsCreatingNewHome(false)}
-                  className="w-full px-3 py-2 text-sm text-zinc-600 hover:bg-zinc-50 rounded-lg transition-colors font-medium"
+                  className="w-full px-3 py-2 text-sm text-zinc-600 dark:text-zinc-400 hover:bg-zinc-50 dark:hover:bg-zinc-800 rounded-lg transition-colors font-medium"
                 >
                   ← Back to home list
                 </button>
@@ -243,7 +243,7 @@ export function StorageModal({ isOpen, homes, storages, onClose, onStorageAdded 
 
           {/* Storage Name */}
           <div>
-            <label className="block text-sm font-bold text-zinc-700 mb-2 uppercase tracking-widest text-xs">
+            <label className="block text-sm font-bold text-zinc-700 dark:text-zinc-300 mb-2 uppercase tracking-widest text-xs">
               Storage Name
             </label>
             {existingStorageNames.length > 0 && !isCustomClosetName ? (
@@ -264,7 +264,7 @@ export function StorageModal({ isOpen, homes, storages, onClose, onStorageAdded 
                     setIsCustomClosetName(true);
                     setClosetName('');
                   }}
-                  className="w-full px-3 py-2 text-sm text-indigo-600 hover:bg-indigo-50 rounded-lg transition-colors font-medium"
+                  className="w-full px-3 py-2 text-sm text-indigo-600 dark:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-950 rounded-lg transition-colors font-medium"
                 >
                   + Create New Name
                 </button>
@@ -276,7 +276,7 @@ export function StorageModal({ isOpen, homes, storages, onClose, onStorageAdded 
                   value={closetName}
                   onChange={(e) => setClosetName(e.target.value)}
                   placeholder="e.g., Front Closet, Bedroom Shelves"
-                  className="w-full px-3 py-2 border border-zinc-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                  className="w-full px-3 py-2 border border-zinc-300 dark:border-zinc-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent bg-white dark:bg-zinc-800 text-zinc-900 dark:text-zinc-50"
                   required
                 />
                 {existingStorageNames.length > 0 && (
@@ -286,7 +286,7 @@ export function StorageModal({ isOpen, homes, storages, onClose, onStorageAdded 
                       setIsCustomClosetName(false);
                       setClosetName('');
                     }}
-                    className="w-full px-3 py-2 text-sm text-zinc-600 hover:bg-zinc-50 rounded-lg transition-colors font-medium"
+                    className="w-full px-3 py-2 text-sm text-zinc-600 dark:text-zinc-400 hover:bg-zinc-50 dark:hover:bg-zinc-800 rounded-lg transition-colors font-medium"
                   >
                     ← Back to existing
                   </button>
@@ -297,7 +297,7 @@ export function StorageModal({ isOpen, homes, storages, onClose, onStorageAdded 
 
           {/* Partition */}
           <div>
-            <label className="block text-sm font-bold text-zinc-700 mb-2 uppercase tracking-widest text-xs">
+            <label className="block text-sm font-bold text-zinc-700 dark:text-zinc-300 mb-2 uppercase tracking-widest text-xs">
               Partition
             </label>
             {existingPartitions.length > 0 && !isCustomPartition ? (
@@ -318,7 +318,7 @@ export function StorageModal({ isOpen, homes, storages, onClose, onStorageAdded 
                     setIsCustomPartition(true);
                     setPartition('');
                   }}
-                  className="w-full px-3 py-2 text-sm text-indigo-600 hover:bg-indigo-50 rounded-lg transition-colors font-medium"
+                  className="w-full px-3 py-2 text-sm text-indigo-600 dark:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-950 rounded-lg transition-colors font-medium"
                 >
                   + Create New Partition
                 </button>
@@ -330,7 +330,7 @@ export function StorageModal({ isOpen, homes, storages, onClose, onStorageAdded 
                   value={partition}
                   onChange={(e) => setPartition(e.target.value)}
                   placeholder="e.g., Top Shelf, Left Side"
-                  className="w-full px-3 py-2 border border-zinc-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                  className="w-full px-3 py-2 border border-zinc-300 dark:border-zinc-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent bg-white dark:bg-zinc-800 text-zinc-900 dark:text-zinc-50"
                   required
                 />
                 {existingPartitions.length > 0 && (
@@ -340,7 +340,7 @@ export function StorageModal({ isOpen, homes, storages, onClose, onStorageAdded 
                       setIsCustomPartition(false);
                       setPartition('');
                     }}
-                    className="w-full px-3 py-2 text-sm text-zinc-600 hover:bg-zinc-50 rounded-lg transition-colors font-medium"
+                    className="w-full px-3 py-2 text-sm text-zinc-600 dark:text-zinc-400 hover:bg-zinc-50 dark:hover:bg-zinc-800 rounded-lg transition-colors font-medium"
                   >
                     ← Back to existing
                   </button>
@@ -358,7 +358,7 @@ export function StorageModal({ isOpen, homes, storages, onClose, onStorageAdded 
               onChange={(e) => setHasStorageCover(e.target.checked)}
               className="w-4 h-4 rounded border-zinc-300 focus:outline-none focus:ring-2 focus:ring-indigo-500"
             />
-            <label htmlFor="hasCover" className="text-sm font-medium text-zinc-700">
+            <label htmlFor="hasCover" className="text-sm font-medium text-zinc-700 dark:text-zinc-300">
               Has Storage Cover/Door
             </label>
           </div>
@@ -368,7 +368,7 @@ export function StorageModal({ isOpen, homes, storages, onClose, onStorageAdded 
             <button
               type="button"
               onClick={onClose}
-              className="flex-1 px-4 py-2 text-zinc-700 hover:bg-zinc-50 rounded-lg transition-colors font-medium"
+              className="flex-1 px-4 py-2 text-zinc-700 dark:text-zinc-300 hover:bg-zinc-50 dark:hover:bg-zinc-800 rounded-lg transition-colors font-medium"
             >
               Cancel
             </button>

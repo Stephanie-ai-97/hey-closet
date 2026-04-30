@@ -75,14 +75,14 @@ export function EditItemModal({ isOpen, item, storages, homes, onClose, onItemUp
 
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
-        <div className="flex items-center justify-between p-6 border-b border-zinc-200">
+      <div className="bg-white dark:bg-zinc-900 rounded-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+        <div className="flex items-center justify-between p-6 border-b border-zinc-200 dark:border-zinc-800">
           <div>
-            <h2 className="text-2xl font-bold text-zinc-900">Edit Item</h2>
-            <p className="text-sm text-zinc-500 mt-1">Update the details of this wardrobe item</p>
+            <h2 className="text-2xl font-bold text-zinc-900 dark:text-zinc-50">Edit Item</h2>
+            <p className="text-sm text-zinc-500 dark:text-zinc-400 mt-1">Update the details of this wardrobe item</p>
           </div>
-          <button onClick={onClose} className="p-2 hover:bg-zinc-100 rounded-lg transition-colors">
-            <X size={20} className="text-zinc-500" />
+          <button onClick={onClose} className="p-2 hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded-lg transition-colors">
+            <X size={20} className="text-zinc-500 dark:text-zinc-400" />
           </button>
         </div>
 
@@ -92,13 +92,13 @@ export function EditItemModal({ isOpen, item, storages, homes, onClose, onItemUp
           )}
 
           <div>
-            <label className="block text-sm font-semibold text-zinc-900 mb-2">
+            <label className="block text-sm font-semibold text-zinc-900 dark:text-zinc-50 mb-2">
               Storage Location <span className="text-red-500">*</span>
             </label>
             <select
               value={dk_closet}
               onChange={(e) => setDk_closet(e.target.value)}
-              className="w-full px-3 py-2 border border-zinc-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-zinc-900/5 focus:border-zinc-500 transition-all"
+              className="w-full px-3 py-2 border border-zinc-200 dark:border-zinc-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-zinc-900/5 focus:border-zinc-500 transition-all bg-white dark:bg-zinc-800 text-zinc-900 dark:text-zinc-50"
               required
             >
               <option value="">Select a storage location</option>
@@ -116,26 +116,26 @@ export function EditItemModal({ isOpen, item, storages, homes, onClose, onItemUp
 
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-semibold text-zinc-900 mb-2">
+              <label className="block text-sm font-semibold text-zinc-900 dark:text-zinc-50 mb-2">
                 Item Type <span className="text-red-500">*</span>
               </label>
               <input
                 type="text"
                 value={itemtype}
                 onChange={(e) => setItemtype(e.target.value)}
-                className="w-full px-3 py-2 border border-zinc-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-zinc-900/5 focus:border-zinc-500 transition-all"
+                className="w-full px-3 py-2 border border-zinc-200 dark:border-zinc-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-zinc-900/5 focus:border-zinc-500 transition-all bg-white dark:bg-zinc-800 text-zinc-900 dark:text-zinc-50"
                 required
               />
             </div>
             <div>
-              <label className="block text-sm font-semibold text-zinc-900 mb-2">
+              <label className="block text-sm font-semibold text-zinc-900 dark:text-zinc-50 mb-2">
                 Size <span className="text-red-500">*</span>
               </label>
               <input
                 type="text"
                 value={itemsize}
                 onChange={(e) => setItemsize(e.target.value)}
-                className="w-full px-3 py-2 border border-zinc-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-zinc-900/5 focus:border-zinc-500 transition-all"
+                className="w-full px-3 py-2 border border-zinc-200 dark:border-zinc-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-zinc-900/5 focus:border-zinc-500 transition-all bg-white dark:bg-zinc-800 text-zinc-900 dark:text-zinc-50"
                 required
               />
             </div>
@@ -143,7 +143,7 @@ export function EditItemModal({ isOpen, item, storages, homes, onClose, onItemUp
 
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-semibold text-zinc-900 mb-2">Cost ($)</label>
+              <label className="block text-sm font-semibold text-zinc-900 dark:text-zinc-50 mb-2">Cost ($)</label>
               <input
                 type="number"
                 value={itemcost}
@@ -151,28 +151,28 @@ export function EditItemModal({ isOpen, item, storages, homes, onClose, onItemUp
                 placeholder="0.00"
                 step="0.01"
                 min="0"
-                className="w-full px-3 py-2 border border-zinc-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-zinc-900/5 focus:border-zinc-500 transition-all"
+                className="w-full px-3 py-2 border border-zinc-200 dark:border-zinc-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-zinc-900/5 focus:border-zinc-500 transition-all bg-white dark:bg-zinc-800 text-zinc-900 dark:text-zinc-50"
               />
             </div>
             <div>
-              <label className="block text-sm font-semibold text-zinc-900 mb-2">Rating (1-10)</label>
+              <label className="block text-sm font-semibold text-zinc-900 dark:text-zinc-50 mb-2">Rating (1-10)</label>
               <input
                 type="number"
                 value={itemlikerating}
                 onChange={(e) => setItemlikerating(Number(e.target.value))}
                 min="1"
                 max="10"
-                className="w-full px-3 py-2 border border-zinc-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-zinc-900/5 focus:border-zinc-500 transition-all"
+                className="w-full px-3 py-2 border border-zinc-200 dark:border-zinc-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-zinc-900/5 focus:border-zinc-500 transition-all bg-white dark:bg-zinc-800 text-zinc-900 dark:text-zinc-50"
               />
             </div>
           </div>
 
           <div>
-            <label className="block text-sm font-semibold text-zinc-900 mb-2">Wash Method</label>
+            <label className="block text-sm font-semibold text-zinc-900 dark:text-zinc-50 mb-2">Wash Method</label>
             <select
               value={itemwashmethod}
               onChange={(e) => setItemwashmethod(e.target.value)}
-              className="w-full px-3 py-2 border border-zinc-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-zinc-900/5 focus:border-zinc-500 transition-all"
+              className="w-full px-3 py-2 border border-zinc-200 dark:border-zinc-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-zinc-900/5 focus:border-zinc-500 transition-all bg-white dark:bg-zinc-800 text-zinc-900 dark:text-zinc-50"
             >
               <option value="hand wash">Hand Wash</option>
               <option value="machine wash cold">Machine Wash - Cold</option>
@@ -184,12 +184,12 @@ export function EditItemModal({ isOpen, item, storages, homes, onClose, onItemUp
           </div>
 
           <div>
-            <label className="block text-sm font-semibold text-zinc-900 mb-2">Description</label>
+            <label className="block text-sm font-semibold text-zinc-900 dark:text-zinc-50 mb-2">Description</label>
             <textarea
               value={itemcomment}
               onChange={(e) => setItemcomment(e.target.value)}
               rows={3}
-              className="w-full px-3 py-2 border border-zinc-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-zinc-900/5 focus:border-zinc-500 transition-all resize-none"
+              className="w-full px-3 py-2 border border-zinc-200 dark:border-zinc-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-zinc-900/5 focus:border-zinc-500 transition-all resize-none bg-white dark:bg-zinc-800 text-zinc-900 dark:text-zinc-50"
             />
           </div>
 
@@ -201,23 +201,23 @@ export function EditItemModal({ isOpen, item, storages, homes, onClose, onItemUp
               onChange={(e) => setIsoncamera(e.target.checked)}
               className="w-4 h-4 rounded border-zinc-300 cursor-pointer"
             />
-            <label htmlFor="edit-isoncamera" className="text-sm font-medium text-zinc-900 cursor-pointer">
+            <label htmlFor="edit-isoncamera" className="text-sm font-medium text-zinc-900 dark:text-zinc-50 cursor-pointer">
               Item is on camera
             </label>
           </div>
 
-          <div className="flex gap-3 pt-4 border-t border-zinc-200">
+          <div className="flex gap-3 pt-4 border-t border-zinc-200 dark:border-zinc-800">
             <button
               type="button"
               onClick={onClose}
-              className="flex-1 px-4 py-2 bg-zinc-100 text-zinc-900 rounded-lg font-medium hover:bg-zinc-200 transition-colors"
+              className="flex-1 px-4 py-2 bg-zinc-100 dark:bg-zinc-800 text-zinc-900 dark:text-zinc-50 rounded-lg font-medium hover:bg-zinc-200 dark:hover:bg-zinc-700 transition-colors"
               disabled={isLoading}
             >
               Cancel
             </button>
             <button
               type="submit"
-              className="flex-1 px-4 py-2 bg-zinc-900 text-white rounded-lg font-medium hover:bg-zinc-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              className="flex-1 px-4 py-2 bg-zinc-900 dark:bg-zinc-100 text-white dark:text-zinc-900 rounded-lg font-medium hover:bg-zinc-800 dark:hover:bg-zinc-200 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               disabled={isLoading}
             >
               {isLoading ? 'Saving...' : 'Save Changes'}

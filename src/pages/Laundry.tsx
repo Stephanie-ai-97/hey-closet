@@ -17,7 +17,7 @@ const COLUMNS: { status: WashStatus; label: string; description: string; icon: R
     description: 'Ready to wear',
     icon: <CheckCircle2 size={16} />,
     color: 'text-emerald-600',
-    bg: 'bg-emerald-50 border-emerald-200',
+    bg: 'bg-emerald-50 dark:bg-emerald-950 border-emerald-200 dark:border-emerald-800',
   },
   {
     status: 'dirty',
@@ -25,7 +25,7 @@ const COLUMNS: { status: WashStatus; label: string; description: string; icon: R
     description: 'Needs washing',
     icon: <AlertCircle size={16} />,
     color: 'text-red-600',
-    bg: 'bg-red-50 border-red-200',
+    bg: 'bg-red-50 dark:bg-red-950 border-red-200 dark:border-red-800',
   },
   {
     status: 'washing',
@@ -39,7 +39,7 @@ const COLUMNS: { status: WashStatus; label: string; description: string; icon: R
       </svg>
     ),
     color: 'text-blue-600',
-    bg: 'bg-blue-50 border-blue-200',
+    bg: 'bg-blue-50 dark:bg-blue-950 border-blue-200 dark:border-blue-800',
   },
   {
     status: 'drying',
@@ -47,7 +47,7 @@ const COLUMNS: { status: WashStatus; label: string; description: string; icon: R
     description: 'Air drying',
     icon: <Wind size={16} />,
     color: 'text-amber-600',
-    bg: 'bg-amber-50 border-amber-200',
+    bg: 'bg-amber-50 dark:bg-amber-950 border-amber-200 dark:border-amber-800',
   },
 ];
 
@@ -97,7 +97,7 @@ export default function Laundry() {
     }
   };
 
-  if (loading) return <div className="p-8 animate-pulse text-center">Loading laundry status...</div>;
+  if (loading) return <div className="p-8 animate-pulse text-center dark:text-zinc-400">Loading laundry status...</div>;
 
   const inProgressCount = (itemsByStatus.washing?.length ?? 0) + (itemsByStatus.drying?.length ?? 0);
 
@@ -127,27 +127,27 @@ export default function Laundry() {
                 {colItems.map(item => (
                   <div
                     key={item.id}
-                    className="bg-white rounded-xl border border-zinc-200 p-3 shadow-sm hover:shadow-md transition-shadow"
+                    className="bg-white dark:bg-zinc-900 rounded-xl border border-zinc-200 dark:border-zinc-800 p-3 shadow-sm hover:shadow-md transition-shadow"
                   >
                     <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 bg-zinc-100 rounded-lg flex items-center justify-center shrink-0 text-zinc-500">
+                      <div className="w-10 h-10 bg-zinc-100 dark:bg-zinc-800 rounded-lg flex items-center justify-center shrink-0 text-zinc-500 dark:text-zinc-400">
                         <ItemSVGIcon itemtype={item.itemtype} size={24} />
                       </div>
                       <div className="flex-1 min-w-0">
                         <Link
                           to={`/item/${item.id}`}
-                          className="text-sm font-semibold text-zinc-900 hover:text-zinc-600 truncate block"
+                          className="text-sm font-semibold text-zinc-900 dark:text-zinc-50 hover:text-zinc-600 dark:hover:text-zinc-400 truncate block"
                         >
                           {item.itemtype}
                         </Link>
-                        <p className="text-xs text-zinc-400 truncate">{getLocation(item)}</p>
-                        <p className="text-xs text-zinc-400">Size: {item.itemsize}</p>
+                        <p className="text-xs text-zinc-400 dark:text-zinc-500 truncate">{getLocation(item)}</p>
+                        <p className="text-xs text-zinc-400 dark:text-zinc-500">Size: {item.itemsize}</p>
                       </div>
                     </div>
                     <button
                       onClick={() => moveItem(item, NEXT_STATUS[col.status])}
                       disabled={updatingId === item.id}
-                      className="mt-2 w-full flex items-center justify-center gap-1.5 px-2 py-1.5 rounded-lg text-xs font-medium bg-zinc-100 hover:bg-zinc-200 text-zinc-700 transition-colors disabled:opacity-50"
+                      className="mt-2 w-full flex items-center justify-center gap-1.5 px-2 py-1.5 rounded-lg text-xs font-medium bg-zinc-100 dark:bg-zinc-800 hover:bg-zinc-200 dark:hover:bg-zinc-700 text-zinc-700 dark:text-zinc-300 transition-colors disabled:opacity-50"
                     >
                       {updatingId === item.id ? 'Moving...' : NEXT_LABEL[col.status]}
                       <ChevronRight size={12} />
@@ -156,7 +156,7 @@ export default function Laundry() {
                 ))}
 
                 {colItems.length === 0 && (
-                  <div className="flex items-center justify-center h-24 rounded-xl border-2 border-dashed border-zinc-200 text-zinc-300 text-xs">
+                  <div className="flex items-center justify-center h-24 rounded-xl border-2 border-dashed border-zinc-200 dark:border-zinc-700 text-zinc-300 dark:text-zinc-600 text-xs">
                     No items
                   </div>
                 )}

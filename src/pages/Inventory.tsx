@@ -50,7 +50,7 @@ export default function Inventory() {
       });
   }, [items, searchTerm, sortField, sortOrder, filterHome, filterStatus, filterType, storages]);
 
-  if (loading) return <div className="p-8 animate-pulse">Accessing inventory database...</div>;
+  if (loading) return <div className="p-8 animate-pulse dark:text-zinc-400">Accessing inventory database...</div>;
 
   const activeFilterCount = [filterHome, filterStatus, filterType || null].filter(Boolean).length;
 
@@ -84,7 +84,7 @@ export default function Inventory() {
         actions={
           <button 
             onClick={() => setIsModalOpen(true)}
-            className="flex items-center gap-2 px-4 py-2 bg-zinc-900 text-white rounded-xl text-sm font-semibold hover:bg-zinc-800 transition-all shadow-md shadow-black/10"
+            className="flex items-center gap-2 px-4 py-2 bg-zinc-900 dark:bg-zinc-100 text-white dark:text-zinc-900 rounded-xl text-sm font-semibold hover:bg-zinc-800 dark:hover:bg-zinc-200 transition-all shadow-md shadow-black/10"
           >
             <Plus size={18} />
             New Item
@@ -94,11 +94,11 @@ export default function Inventory() {
       {/* Controls */}
       <div className="flex flex-col md:flex-row gap-4 mb-4">
         <div className="relative flex-1">
-          <Search size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-400" />
+          <Search size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-400 dark:text-zinc-500" />
           <input 
             type="text" 
             placeholder="Search by type or description..."
-            className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-zinc-200 bg-white focus:outline-none focus:ring-2 focus:ring-zinc-900/5 focus:border-zinc-500 transition-all"
+            className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 dark:text-zinc-50 dark:placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-zinc-900/5 focus:border-zinc-500 dark:focus:border-zinc-400 transition-all"
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
           />
@@ -109,8 +109,8 @@ export default function Inventory() {
             className={cn(
               'flex items-center gap-2 px-4 py-2.5 border rounded-xl text-sm font-medium transition-all',
               filterOpen || activeFilterCount > 0
-                ? 'bg-zinc-900 text-white border-zinc-900'
-                : 'bg-white border-zinc-200 hover:bg-zinc-50'
+                ? 'bg-zinc-900 dark:bg-zinc-100 text-white dark:text-zinc-900 border-zinc-900 dark:border-zinc-100'
+                : 'bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-700 hover:bg-zinc-50 dark:hover:bg-zinc-800'
             )}
           >
             <Filter size={18} />
@@ -121,14 +121,14 @@ export default function Inventory() {
               </span>
             )}
           </button>
-          <div className="flex bg-white border border-zinc-200 rounded-xl p-1">
+          <div className="flex bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-700 rounded-xl p-1">
             {(['itemtype', 'itemcost', 'itemlikerating'] as const).map((field) => (
               <button
                 key={field}
                 onClick={() => toggleSort(field)}
                 className={cn(
                   "px-3 py-1.5 rounded-lg text-xs font-bold transition-all",
-                  sortField === field ? "bg-zinc-900 text-white" : "text-zinc-500 hover:text-zinc-900"
+                  sortField === field ? "bg-zinc-900 dark:bg-zinc-100 text-white dark:text-zinc-900" : "text-zinc-500 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-50"
                 )}
               >
                 {field === 'itemtype' ? 'Type' : field === 'itemcost' ? 'Cost' : 'Rating'}
@@ -143,11 +143,11 @@ export default function Inventory() {
 
       {/* Filter Panel */}
       {filterOpen && (
-        <div className="mb-6 p-4 bg-white border border-zinc-200 rounded-2xl space-y-4">
+        <div className="mb-6 p-4 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-700 rounded-2xl space-y-4">
           <div className="flex items-center justify-between">
-            <h3 className="text-sm font-bold text-zinc-900">Filter Options</h3>
+            <h3 className="text-sm font-bold text-zinc-900 dark:text-zinc-50">Filter Options</h3>
             {activeFilterCount > 0 && (
-              <button onClick={clearFilters} className="text-xs text-zinc-500 hover:text-zinc-900 flex items-center gap-1">
+              <button onClick={clearFilters} className="text-xs text-zinc-500 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-50 flex items-center gap-1">
                 <X size={12} /> Clear all
               </button>
             )}
@@ -155,11 +155,11 @@ export default function Inventory() {
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             {/* Home filter */}
             <div>
-              <label className="block text-xs font-semibold text-zinc-500 uppercase tracking-wide mb-2">Location</label>
+              <label className="block text-xs font-semibold text-zinc-500 dark:text-zinc-400 uppercase tracking-wide mb-2">Location</label>
               <select
                 value={filterHome ?? ''}
                 onChange={(e) => setFilterHome(e.target.value ? Number(e.target.value) : null)}
-                className="w-full px-3 py-2 text-sm border border-zinc-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-zinc-900/5"
+                className="w-full px-3 py-2 text-sm border border-zinc-200 dark:border-zinc-700 rounded-lg bg-white dark:bg-zinc-800 dark:text-zinc-50 focus:outline-none focus:ring-2 focus:ring-zinc-900/5"
               >
                 <option value="">All locations</option>
                 {homes.map(h => <option key={h.id} value={h.id}>{h.homename}</option>)}
@@ -167,11 +167,11 @@ export default function Inventory() {
             </div>
             {/* Wash status filter */}
             <div>
-              <label className="block text-xs font-semibold text-zinc-500 uppercase tracking-wide mb-2">Laundry Status</label>
+              <label className="block text-xs font-semibold text-zinc-500 dark:text-zinc-400 uppercase tracking-wide mb-2">Laundry Status</label>
               <select
                 value={filterStatus ?? ''}
                 onChange={(e) => setFilterStatus(e.target.value ? e.target.value as WashStatus : null)}
-                className="w-full px-3 py-2 text-sm border border-zinc-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-zinc-900/5"
+                className="w-full px-3 py-2 text-sm border border-zinc-200 dark:border-zinc-700 rounded-lg bg-white dark:bg-zinc-800 dark:text-zinc-50 focus:outline-none focus:ring-2 focus:ring-zinc-900/5"
               >
                 <option value="">Any status</option>
                 <option value="clean">Clean</option>
@@ -182,11 +182,11 @@ export default function Inventory() {
             </div>
             {/* Type filter */}
             <div>
-              <label className="block text-xs font-semibold text-zinc-500 uppercase tracking-wide mb-2">Item Type</label>
+              <label className="block text-xs font-semibold text-zinc-500 dark:text-zinc-400 uppercase tracking-wide mb-2">Item Type</label>
               <select
                 value={filterType}
                 onChange={(e) => setFilterType(e.target.value)}
-                className="w-full px-3 py-2 text-sm border border-zinc-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-zinc-900/5"
+                className="w-full px-3 py-2 text-sm border border-zinc-200 dark:border-zinc-700 rounded-lg bg-white dark:bg-zinc-800 dark:text-zinc-50 focus:outline-none focus:ring-2 focus:ring-zinc-900/5"
               >
                 <option value="">All types</option>
                 {itemTypes.map(t => <option key={t} value={t}>{t}</option>)}
@@ -209,40 +209,40 @@ export default function Inventory() {
             <Link 
               to={`/item/${item.id}`}
               key={item.id} 
-              className="group bg-white rounded-2xl border border-zinc-200 p-4 hover:border-zinc-400 hover:shadow-lg transition-all flex flex-col"
+              className="group bg-white dark:bg-zinc-900 rounded-2xl border border-zinc-200 dark:border-zinc-800 p-4 hover:border-zinc-400 dark:hover:border-zinc-600 hover:shadow-lg transition-all flex flex-col"
             >
-              <div className="relative aspect-square bg-zinc-100 rounded-xl mb-4 overflow-hidden flex items-center justify-center text-zinc-400 group-hover:bg-zinc-200 transition-colors">
+              <div className="relative aspect-square bg-zinc-100 dark:bg-zinc-800 rounded-xl mb-4 overflow-hidden flex items-center justify-center text-zinc-400 group-hover:bg-zinc-200 dark:group-hover:bg-zinc-700 transition-colors">
                 <ItemSVGIcon itemtype={item.itemtype} size={48} />
-                <div className="absolute top-2 right-2 px-2 py-1 bg-white/80 backdrop-blur rounded-lg text-[10px] font-bold uppercase tracking-tight">
+                <div className="absolute top-2 right-2 px-2 py-1 bg-white/80 dark:bg-zinc-900/80 backdrop-blur rounded-lg text-[10px] font-bold uppercase tracking-tight dark:text-zinc-50">
                   {item.itemsize}
                 </div>
               </div>
               
               <div className="flex-1">
                 <div className="flex items-start justify-between mb-1">
-                  <h3 className="font-bold text-zinc-900">{item.itemtype}</h3>
-                  <span className="text-zinc-400 text-[10px] font-mono">#{item.id}</span>
+                  <h3 className="font-bold text-zinc-900 dark:text-zinc-50">{item.itemtype}</h3>
+                  <span className="text-zinc-400 dark:text-zinc-500 text-[10px] font-mono">#{item.id}</span>
                 </div>
                 
-                <p className="text-xs text-zinc-500 line-clamp-2 min-h-[32px] mb-2">
+                <p className="text-xs text-zinc-500 dark:text-zinc-400 line-clamp-2 min-h-[32px] mb-2">
                   {item.itemcomment || "No description provided."}
                 </p>
 
-                <div className="flex items-center gap-1 mb-4 text-zinc-400">
+                <div className="flex items-center gap-1 mb-4 text-zinc-400 dark:text-zinc-500">
                   <MapPin size={10} />
                   <span className="text-[10px] truncate">{locationPath}</span>
                 </div>
 
-                <div className="flex items-center justify-between mt-auto pt-4 border-t border-zinc-50">
+                <div className="flex items-center justify-between mt-auto pt-4 border-t border-zinc-50 dark:border-zinc-800">
                    <div className="flex flex-col">
-                    <span className="text-[10px] text-zinc-400 uppercase font-bold">Status</span>
-                    <span className="text-xs font-semibold capitalize text-zinc-700">
+                    <span className="text-[10px] text-zinc-400 dark:text-zinc-500 uppercase font-bold">Status</span>
+                    <span className="text-xs font-semibold capitalize text-zinc-700 dark:text-zinc-300">
                       {item.wash_status ?? 'clean'}
                     </span>
                    </div>
                    <div className="text-right">
-                    <span className="text-[10px] text-zinc-400 uppercase font-bold">Cost</span>
-                    <p className="text-sm font-bold text-zinc-900">${item.itemcost.toFixed(2)}</p>
+                    <span className="text-[10px] text-zinc-400 dark:text-zinc-500 uppercase font-bold">Cost</span>
+                    <p className="text-sm font-bold text-zinc-900 dark:text-zinc-50">${item.itemcost.toFixed(2)}</p>
                    </div>
                 </div>
               </div>
@@ -257,7 +257,7 @@ export default function Inventory() {
           <p>No items found matching your criteria.</p>
           <button 
             onClick={() => { setSearchTerm(''); clearFilters(); }}
-            className="text-zinc-900 font-bold hover:underline"
+            className="text-zinc-900 dark:text-zinc-50 font-bold hover:underline"
           >
             Clear all filters
           </button>

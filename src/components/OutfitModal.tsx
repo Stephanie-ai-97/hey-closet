@@ -90,14 +90,14 @@ export function OutfitModal({ isOpen, allItems, onClose, onOutfitCreated }: Outf
 
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-2xl max-w-3xl w-full max-h-[90vh] overflow-y-auto">
-        <div className="flex items-center justify-between p-6 border-b border-zinc-200 sticky top-0 bg-white z-10">
+      <div className="bg-white dark:bg-zinc-900 rounded-2xl max-w-3xl w-full max-h-[90vh] overflow-y-auto">
+        <div className="flex items-center justify-between p-6 border-b border-zinc-200 dark:border-zinc-800 sticky top-0 bg-white dark:bg-zinc-900 z-10">
           <div>
-            <h2 className="text-2xl font-bold text-zinc-900">Create Outfit</h2>
-            <p className="text-sm text-zinc-500 mt-1">Name your outfit and pick items from your inventory</p>
+            <h2 className="text-2xl font-bold text-zinc-900 dark:text-zinc-50">Create Outfit</h2>
+            <p className="text-sm text-zinc-500 dark:text-zinc-400 mt-1">Name your outfit and pick items from your inventory</p>
           </div>
-          <button onClick={handleClose} className="p-2 hover:bg-zinc-100 rounded-lg transition-colors">
-            <X size={20} className="text-zinc-500" />
+          <button onClick={handleClose} className="p-2 hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded-lg transition-colors">
+            <X size={20} className="text-zinc-500 dark:text-zinc-400" />
           </button>
         </div>
 
@@ -107,7 +107,7 @@ export function OutfitModal({ isOpen, allItems, onClose, onOutfitCreated }: Outf
           )}
 
           <div>
-            <label className="block text-sm font-semibold text-zinc-900 mb-2">
+            <label className="block text-sm font-semibold text-zinc-900 dark:text-zinc-50 mb-2">
               Outfit Name <span className="text-red-500">*</span>
             </label>
             <input
@@ -115,28 +115,28 @@ export function OutfitModal({ isOpen, allItems, onClose, onOutfitCreated }: Outf
               value={outfitname}
               onChange={(e) => setOutfitname(e.target.value)}
               placeholder="e.g., Weekend Brunch Look"
-              className="w-full px-3 py-2 border border-zinc-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-zinc-900/5 focus:border-zinc-500 transition-all"
+              className="w-full px-3 py-2 border border-zinc-200 dark:border-zinc-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-zinc-900/5 focus:border-zinc-500 transition-all bg-white dark:bg-zinc-800 text-zinc-900 dark:text-zinc-50"
               required
             />
           </div>
 
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-semibold text-zinc-900 mb-2">Occasion</label>
+              <label className="block text-sm font-semibold text-zinc-900 dark:text-zinc-50 mb-2">Occasion</label>
               <select
                 value={occasion}
                 onChange={(e) => setOccasion(e.target.value)}
-                className="w-full px-3 py-2 border border-zinc-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-zinc-900/5 focus:border-zinc-500 transition-all"
+                className="w-full px-3 py-2 border border-zinc-200 dark:border-zinc-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-zinc-900/5 focus:border-zinc-500 transition-all bg-white dark:bg-zinc-800 text-zinc-900 dark:text-zinc-50"
               >
                 {OCCASIONS.map(o => <option key={o} value={o}>{o}</option>)}
               </select>
             </div>
             <div>
-              <label className="block text-sm font-semibold text-zinc-900 mb-2">Season</label>
+              <label className="block text-sm font-semibold text-zinc-900 dark:text-zinc-50 mb-2">Season</label>
               <select
                 value={season}
                 onChange={(e) => setSeason(e.target.value)}
-                className="w-full px-3 py-2 border border-zinc-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-zinc-900/5 focus:border-zinc-500 transition-all"
+                className="w-full px-3 py-2 border border-zinc-200 dark:border-zinc-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-zinc-900/5 focus:border-zinc-500 transition-all bg-white dark:bg-zinc-800 text-zinc-900 dark:text-zinc-50"
               >
                 {SEASONS.map(s => <option key={s} value={s}>{s}</option>)}
               </select>
@@ -144,13 +144,13 @@ export function OutfitModal({ isOpen, allItems, onClose, onOutfitCreated }: Outf
           </div>
 
           <div>
-            <label className="block text-sm font-semibold text-zinc-900 mb-2">Notes</label>
+            <label className="block text-sm font-semibold text-zinc-900 dark:text-zinc-50 mb-2">Notes</label>
             <textarea
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
               placeholder="Any styling notes..."
               rows={2}
-              className="w-full px-3 py-2 border border-zinc-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-zinc-900/5 focus:border-zinc-500 transition-all resize-none"
+              className="w-full px-3 py-2 border border-zinc-200 dark:border-zinc-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-zinc-900/5 focus:border-zinc-500 transition-all resize-none bg-white dark:bg-zinc-800 text-zinc-900 dark:text-zinc-50"
             />
           </div>
 
@@ -161,7 +161,7 @@ export function OutfitModal({ isOpen, allItems, onClose, onOutfitCreated }: Outf
                 Select Items <span className="text-red-500">*</span>
               </label>
               {selectedItemIds.length > 0 && (
-                <span className="text-xs text-zinc-500">{selectedItemIds.length} selected</span>
+                <span className="text-xs text-zinc-500 dark:text-zinc-400">{selectedItemIds.length} selected</span>
               )}
             </div>
             <div className="relative mb-3">
@@ -171,10 +171,10 @@ export function OutfitModal({ isOpen, allItems, onClose, onOutfitCreated }: Outf
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 placeholder="Search items..."
-                className="w-full pl-9 pr-3 py-2 text-sm border border-zinc-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-zinc-900/5 focus:border-zinc-500 transition-all"
+                className="w-full pl-9 pr-3 py-2 text-sm border border-zinc-200 dark:border-zinc-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-zinc-900/5 focus:border-zinc-500 transition-all bg-white dark:bg-zinc-800 text-zinc-900 dark:text-zinc-50"
               />
             </div>
-            <div className="grid grid-cols-3 sm:grid-cols-4 gap-2 max-h-[240px] overflow-y-auto border border-zinc-100 rounded-xl p-2">
+            <div className="grid grid-cols-3 sm:grid-cols-4 gap-2 max-h-[240px] overflow-y-auto border border-zinc-100 dark:border-zinc-800 rounded-xl p-2 bg-white dark:bg-zinc-900">
               {filteredItems.map(item => {
                 const selected = selectedItemIds.includes(item.id);
                 return (
@@ -185,11 +185,11 @@ export function OutfitModal({ isOpen, allItems, onClose, onOutfitCreated }: Outf
                     className={cn(
                       'flex flex-col items-center gap-1 p-2 rounded-xl border-2 transition-all text-center',
                       selected
-                        ? 'border-zinc-900 bg-zinc-900 text-white'
-                        : 'border-zinc-200 bg-white text-zinc-700 hover:border-zinc-400'
+                        ? 'border-zinc-900 dark:border-zinc-100 bg-zinc-900 dark:bg-zinc-100 text-white dark:text-zinc-900'
+                        : 'border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300 hover:border-zinc-400 dark:hover:border-zinc-500'
                     )}
                   >
-                    <div className={cn('w-10 h-10 rounded-lg flex items-center justify-center', selected ? 'text-white' : 'text-zinc-500 bg-zinc-100')}>
+                    <div className={cn('w-10 h-10 rounded-lg flex items-center justify-center', selected ? 'text-white dark:text-zinc-900' : 'text-zinc-500 bg-zinc-100 dark:bg-zinc-700')}>
                       <ItemSVGIcon itemtype={item.itemtype} size={24} color={selected ? 'white' : undefined} />
                     </div>
                     <span className="text-[10px] font-medium leading-tight truncate w-full">{item.itemtype}</span>
@@ -200,18 +200,18 @@ export function OutfitModal({ isOpen, allItems, onClose, onOutfitCreated }: Outf
             </div>
           </div>
 
-          <div className="flex gap-3 pt-4 border-t border-zinc-200">
+          <div className="flex gap-3 pt-4 border-t border-zinc-200 dark:border-zinc-800">
             <button
               type="button"
               onClick={handleClose}
-              className="flex-1 px-4 py-2 bg-zinc-100 text-zinc-900 rounded-lg font-medium hover:bg-zinc-200 transition-colors"
+              className="flex-1 px-4 py-2 bg-zinc-100 dark:bg-zinc-800 text-zinc-900 dark:text-zinc-50 rounded-lg font-medium hover:bg-zinc-200 dark:hover:bg-zinc-700 transition-colors"
               disabled={isLoading}
             >
               Cancel
             </button>
             <button
               type="submit"
-              className="flex-1 px-4 py-2 bg-zinc-900 text-white rounded-lg font-medium hover:bg-zinc-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              className="flex-1 px-4 py-2 bg-zinc-900 dark:bg-zinc-100 text-white dark:text-zinc-900 rounded-lg font-medium hover:bg-zinc-800 dark:hover:bg-zinc-200 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               disabled={isLoading}
             >
               {isLoading ? 'Creating...' : 'Create Outfit'}

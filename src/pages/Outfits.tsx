@@ -19,7 +19,7 @@ export default function Outfits() {
     await refetch();
   };
 
-  if (loading) return <div className="p-8 animate-pulse text-center">Loading outfit archive...</div>;
+  if (loading) return <div className="p-8 animate-pulse text-center dark:text-zinc-400">Loading outfit archive...</div>;
   if (error) return <div className="p-8 text-red-500">{error}</div>;
 
   return (
@@ -42,7 +42,7 @@ export default function Outfits() {
         actions={
           <button
             onClick={() => setModalOpen(true)}
-            className="flex items-center gap-2 px-4 py-2 bg-zinc-900 text-white rounded-xl text-sm font-semibold hover:bg-zinc-800 transition-all shadow-md shadow-black/10"
+            className="flex items-center gap-2 px-4 py-2 bg-zinc-900 dark:bg-zinc-100 text-white dark:text-zinc-900 rounded-xl text-sm font-semibold hover:bg-zinc-800 dark:hover:bg-zinc-200 transition-all shadow-md shadow-black/10"
           >
             <Plus size={18} />
             New Outfit
@@ -50,12 +50,12 @@ export default function Outfits() {
         }
       >
         {outfits.length === 0 ? (
-          <div className="py-24 flex flex-col items-center justify-center text-zinc-400 space-y-4">
+          <div className="py-24 flex flex-col items-center justify-center text-zinc-400 dark:text-zinc-500 space-y-4">
             <Layers size={48} className="opacity-20" />
             <p className="text-lg font-medium">No outfits archived yet</p>
             <button
               onClick={() => setModalOpen(true)}
-              className="px-5 py-2 bg-zinc-900 text-white rounded-xl text-sm font-semibold hover:bg-zinc-800 transition-colors"
+              className="px-5 py-2 bg-zinc-900 dark:bg-zinc-100 text-white dark:text-zinc-900 rounded-xl text-sm font-semibold hover:bg-zinc-800 dark:hover:bg-zinc-200 transition-colors"
             >
               Create your first outfit
             </button>
@@ -65,7 +65,7 @@ export default function Outfits() {
             {outfits.map(({ outfit, items }) => (
               <div
                 key={outfit.id}
-                className="bg-white rounded-2xl border border-zinc-200 p-5 shadow-sm hover:shadow-md transition-all flex flex-col"
+                className="bg-white dark:bg-zinc-900 rounded-2xl border border-zinc-200 dark:border-zinc-800 p-5 shadow-sm hover:shadow-md transition-all flex flex-col"
               >
                 {/* Item icons strip */}
                 <div className="flex gap-2 mb-4 overflow-x-auto pb-1 min-h-[56px] items-center">
@@ -75,7 +75,7 @@ export default function Outfits() {
                     items.slice(0, 6).map(item => (
                       <div
                         key={item.id}
-                        className="w-12 h-12 bg-zinc-100 rounded-xl flex items-center justify-center text-zinc-500 shrink-0"
+                        className="w-12 h-12 bg-zinc-100 dark:bg-zinc-800 rounded-xl flex items-center justify-center text-zinc-500 dark:text-zinc-400 shrink-0"
                         title={`${item.itemtype} · ${item.itemsize}`}
                       >
                         <ItemSVGIcon itemtype={item.itemtype} size={26} />
@@ -83,34 +83,34 @@ export default function Outfits() {
                     ))
                   )}
                   {items.length > 6 && (
-                    <div className="w-12 h-12 bg-zinc-100 rounded-xl flex items-center justify-center text-zinc-500 text-xs font-bold shrink-0">
+                    <div className="w-12 h-12 bg-zinc-100 dark:bg-zinc-800 rounded-xl flex items-center justify-center text-zinc-500 dark:text-zinc-400 text-xs font-bold shrink-0">
                       +{items.length - 6}
                     </div>
                   )}
                 </div>
 
                 <div className="flex-1">
-                  <h3 className="font-bold text-zinc-900 text-base mb-1">{outfit.outfitname}</h3>
+                  <h3 className="font-bold text-zinc-900 dark:text-zinc-50 text-base mb-1">{outfit.outfitname}</h3>
                   <div className="flex flex-wrap gap-2 mb-3">
-                    <span className="flex items-center gap-1 text-[10px] font-medium text-zinc-500 bg-zinc-100 px-2 py-1 rounded-full">
+                    <span className="flex items-center gap-1 text-[10px] font-medium text-zinc-500 dark:text-zinc-400 bg-zinc-100 dark:bg-zinc-800 px-2 py-1 rounded-full">
                       <Tag size={9} />
                       {outfit.occasion}
                     </span>
-                    <span className="flex items-center gap-1 text-[10px] font-medium text-zinc-500 bg-zinc-100 px-2 py-1 rounded-full">
+                    <span className="flex items-center gap-1 text-[10px] font-medium text-zinc-500 dark:text-zinc-400 bg-zinc-100 dark:bg-zinc-800 px-2 py-1 rounded-full">
                       <Calendar size={9} />
                       {outfit.season}
                     </span>
                   </div>
                   {outfit.notes && (
-                    <p className="text-xs text-zinc-400 italic line-clamp-2">{outfit.notes}</p>
+                    <p className="text-xs text-zinc-400 dark:text-zinc-500 italic line-clamp-2">{outfit.notes}</p>
                   )}
                 </div>
 
-                <div className="flex items-center justify-between mt-4 pt-4 border-t border-zinc-50">
-                  <span className="text-xs text-zinc-400">{items.length} item{items.length !== 1 ? 's' : ''}</span>
+                <div className="flex items-center justify-between mt-4 pt-4 border-t border-zinc-50 dark:border-zinc-800">
+                  <span className="text-xs text-zinc-400 dark:text-zinc-500">{items.length} item{items.length !== 1 ? 's' : ''}</span>
                   <button
                     onClick={() => setDeleteTarget({ id: outfit.id, name: outfit.outfitname })}
-                    className="p-1.5 text-zinc-300 hover:text-red-500 transition-colors rounded-lg hover:bg-red-50"
+                    className="p-1.5 text-zinc-300 dark:text-zinc-600 hover:text-red-500 transition-colors rounded-lg hover:bg-red-50 dark:hover:bg-red-950"
                     title="Delete outfit"
                   >
                     <Trash2 size={14} />

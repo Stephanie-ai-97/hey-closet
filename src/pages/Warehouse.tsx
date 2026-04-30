@@ -80,7 +80,7 @@ export default function Warehouse() {
     };
   }, [itemsForPartition]);
 
-  if (loading) return <div className="p-8 animate-pulse">Scanning storage facilities...</div>;
+  if (loading) return <div className="p-8 animate-pulse dark:text-zinc-400">Scanning storage facilities...</div>;
 
   return (
     <PageContainer 
@@ -89,14 +89,14 @@ export default function Warehouse() {
       actions={
         <div className="flex gap-2">
           {selectedStorageName && (
-            <div className="flex gap-1 bg-zinc-100 p-1 rounded-lg">
+            <div className="flex gap-1 bg-zinc-100 dark:bg-zinc-800 p-1 rounded-lg">
               <button
                 onClick={() => setViewMode('grid')}
                 className={cn(
                   'p-2 rounded transition-colors',
                   viewMode === 'grid'
-                    ? 'bg-white text-zinc-900 shadow-sm'
-                    : 'text-zinc-600 hover:text-zinc-900'
+                    ? 'bg-white dark:bg-zinc-700 text-zinc-900 dark:text-zinc-50 shadow-sm'
+                    : 'text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-50'
                 )}
                 title="Grid View"
               >
@@ -107,8 +107,8 @@ export default function Warehouse() {
                 className={cn(
                   'p-2 rounded transition-colors',
                   viewMode === 'list'
-                    ? 'bg-white text-zinc-900 shadow-sm'
-                    : 'text-zinc-600 hover:text-zinc-900'
+                    ? 'bg-white dark:bg-zinc-700 text-zinc-900 dark:text-zinc-50 shadow-sm'
+                    : 'text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-50'
                 )}
                 title="Compact List"
               >
@@ -118,7 +118,7 @@ export default function Warehouse() {
           )}
           <button 
             onClick={() => setIsStorageModalOpen(true)}
-            className="flex items-center gap-2 px-3 py-1.5 bg-zinc-900 text-white rounded-lg text-sm font-medium hover:bg-zinc-800 transition-colors"
+            className="flex items-center gap-2 px-3 py-1.5 bg-zinc-900 dark:bg-zinc-100 text-white dark:text-zinc-900 rounded-lg text-sm font-medium hover:bg-zinc-800 dark:hover:bg-zinc-200 transition-colors"
           >
             <Plus size={16} />
             Add Storage
@@ -127,10 +127,10 @@ export default function Warehouse() {
       }
     >
       {/* Breadcrumbs */}
-      <div className="flex items-center gap-2 mb-8 text-sm text-zinc-500 overflow-x-auto whitespace-nowrap pb-2">
+      <div className="flex items-center gap-2 mb-8 text-sm text-zinc-500 dark:text-zinc-400 overflow-x-auto whitespace-nowrap pb-2">
         <button 
           onClick={() => { setSelectedHomeId(null); setSelectedStorageName(null); setSelectedPartition(null); }}
-          className={cn("hover:text-zinc-900", !selectedHomeId && "text-zinc-900 font-semibold")}
+          className={cn("hover:text-zinc-900 dark:hover:text-zinc-50", !selectedHomeId && "text-zinc-900 dark:text-zinc-50 font-semibold")}
         >
           All Locations
         </button>
@@ -139,7 +139,7 @@ export default function Warehouse() {
             <ChevronRight size={14} className="shrink-0" />
             <button 
               onClick={() => { setSelectedStorageName(null); setSelectedPartition(null); }}
-              className={cn("hover:text-zinc-900", !selectedStorageName && "text-zinc-900 font-semibold")}
+              className={cn("hover:text-zinc-900 dark:hover:text-zinc-50", !selectedStorageName && "text-zinc-900 dark:text-zinc-50 font-semibold")}
             >
               {currentHome?.homename}
             </button>
@@ -150,7 +150,7 @@ export default function Warehouse() {
             <ChevronRight size={14} className="shrink-0" />
             <button 
               onClick={() => setSelectedPartition(null)}
-              className={cn("hover:text-zinc-900", !selectedPartition && "text-zinc-900 font-semibold")}
+              className={cn("hover:text-zinc-900 dark:hover:text-zinc-50", !selectedPartition && "text-zinc-900 dark:text-zinc-50 font-semibold")}
             >
               {selectedStorageName}
             </button>
@@ -159,7 +159,7 @@ export default function Warehouse() {
         {selectedPartition && (
           <>
             <ChevronRight size={14} className="shrink-0" />
-            <span className="text-zinc-900 font-semibold">{selectedPartition}</span>
+            <span className="text-zinc-900 dark:text-zinc-50 font-semibold">{selectedPartition}</span>
           </>
         )}
       </div>
@@ -178,17 +178,17 @@ export default function Warehouse() {
               <button
                 key={home.id}
                 onClick={() => setSelectedHomeId(home.id)}
-                className="group bg-white p-6 rounded-2xl border border-zinc-200 shadow-sm text-left hover:border-zinc-400 transition-all"
+                className="group bg-white dark:bg-zinc-900 p-6 rounded-2xl border border-zinc-200 dark:border-zinc-800 shadow-sm text-left hover:border-zinc-400 dark:hover:border-zinc-600 transition-all"
               >
                 <div className="flex items-center justify-between mb-4">
-                  <div className="p-3 bg-zinc-100 rounded-xl group-hover:bg-zinc-900 group-hover:text-white transition-colors">
+                  <div className="p-3 bg-zinc-100 dark:bg-zinc-800 rounded-xl group-hover:bg-zinc-900 dark:group-hover:bg-zinc-100 group-hover:text-white dark:group-hover:text-zinc-900 transition-colors">
                     <HomeIcon size={24} />
                   </div>
-                  <ChevronRight size={20} className="text-zinc-300 group-hover:text-zinc-900" />
+                  <ChevronRight size={20} className="text-zinc-300 dark:text-zinc-600 group-hover:text-zinc-900 dark:group-hover:text-zinc-50" />
                 </div>
                 <h3 className="text-lg font-bold">{home.homename}</h3>
-                <p className="text-zinc-500 text-sm mt-1">{home.homeaddress}</p>
-                <div className="mt-4 pt-4 border-t border-zinc-50 flex gap-4 text-xs font-medium text-zinc-400">
+                <p className="text-zinc-500 dark:text-zinc-400 text-sm mt-1">{home.homeaddress}</p>
+                <div className="mt-4 pt-4 border-t border-zinc-50 dark:border-zinc-800 flex gap-4 text-xs font-medium text-zinc-400 dark:text-zinc-500">
                   <span>{storages.filter(s => s.dk_homelocation === home.id).length} Storage Units</span>
                 </div>
               </button>
@@ -215,17 +215,17 @@ export default function Warehouse() {
                 <button
                   key={storageName}
                   onClick={() => setSelectedStorageName(storageName)}
-                  className="group bg-white p-6 rounded-2xl border border-zinc-200 shadow-sm text-left hover:border-zinc-400 transition-all"
+                  className="group bg-white dark:bg-zinc-900 p-6 rounded-2xl border border-zinc-200 dark:border-zinc-800 shadow-sm text-left hover:border-zinc-400 dark:hover:border-zinc-600 transition-all"
                 >
                   <div className="flex items-center justify-between mb-4">
-                    <div className="p-3 bg-zinc-100 rounded-xl group-hover:bg-zinc-900 group-hover:text-white transition-colors">
+                    <div className="p-3 bg-zinc-100 dark:bg-zinc-800 rounded-xl group-hover:bg-zinc-900 dark:group-hover:bg-zinc-100 group-hover:text-white dark:group-hover:text-zinc-900 transition-colors">
                       <ClosetIcon size={24} />
                     </div>
-                    <ChevronRight size={20} className="text-zinc-300 group-hover:text-zinc-900" />
+                    <ChevronRight size={20} className="text-zinc-300 dark:text-zinc-600 group-hover:text-zinc-900 dark:group-hover:text-zinc-50" />
                   </div>
                   <h3 className="text-lg font-bold">{storageName}</h3>
-                  <p className="text-zinc-500 text-sm mt-1">{storageCount} Partition{storageCount !== 1 ? 's' : ''}</p>
-                  <div className="mt-4 pt-4 border-t border-zinc-50 flex gap-4 text-xs font-medium text-zinc-400">
+                  <p className="text-zinc-500 dark:text-zinc-400 text-sm mt-1">{storageCount} Partition{storageCount !== 1 ? 's' : ''}</p>
+                  <div className="mt-4 pt-4 border-t border-zinc-50 dark:border-zinc-800 flex gap-4 text-xs font-medium text-zinc-400 dark:text-zinc-500">
                     <span>{storageItems.length} Total Items</span>
                   </div>
                 </button>
@@ -258,22 +258,22 @@ export default function Warehouse() {
                   <button
                     key={partition}
                     onClick={() => setSelectedPartition(partition)}
-                    className="group bg-white p-6 rounded-2xl border border-zinc-200 shadow-sm text-left hover:border-zinc-400 transition-all"
+                    className="group bg-white dark:bg-zinc-900 p-6 rounded-2xl border border-zinc-200 dark:border-zinc-800 shadow-sm text-left hover:border-zinc-400 dark:hover:border-zinc-600 transition-all"
                   >
                     <div className="flex items-center justify-between mb-4">
-                      <div className="p-3 bg-zinc-100 rounded-xl group-hover:bg-zinc-900 group-hover:text-white transition-colors">
+                      <div className="p-3 bg-zinc-100 dark:bg-zinc-800 rounded-xl group-hover:bg-zinc-900 dark:group-hover:bg-zinc-100 group-hover:text-white dark:group-hover:text-zinc-900 transition-colors">
                         <Grid3X3 size={24} />
                       </div>
-                      <ChevronRight size={20} className="text-zinc-300 group-hover:text-zinc-900" />
+                      <ChevronRight size={20} className="text-zinc-300 dark:text-zinc-600 group-hover:text-zinc-900 dark:group-hover:text-zinc-50" />
                     </div>
                     <h3 className="text-lg font-bold">{partition}</h3>
-                    <p className="text-zinc-500 text-sm mt-1">{partitionItems.length} Items</p>
-                    <div className="mt-4 pt-4 border-t border-zinc-50 flex items-center justify-between">
-                      <span className="text-xs font-medium text-zinc-400">
+                    <p className="text-zinc-500 dark:text-zinc-400 text-sm mt-1">{partitionItems.length} Items</p>
+                    <div className="mt-4 pt-4 border-t border-zinc-50 dark:border-zinc-800 flex items-center justify-between">
+                      <span className="text-xs font-medium text-zinc-400 dark:text-zinc-500">
                         {partitionItems.length} Item{partitionItems.length !== 1 ? 's' : ''}
                       </span>
                       {storageUnit?.hasstoragecover && (
-                        <span className="px-2 py-0.5 bg-zinc-100 rounded text-[10px] font-bold uppercase tracking-wider text-zinc-500">
+                        <span className="px-2 py-0.5 bg-zinc-100 dark:bg-zinc-800 rounded text-[10px] font-bold uppercase tracking-wider text-zinc-500 dark:text-zinc-400">
                           Has Cover
                         </span>
                       )}
@@ -285,16 +285,16 @@ export default function Warehouse() {
                   <button
                     key={partition}
                     onClick={() => setSelectedPartition(partition)}
-                    className="group bg-white p-4 rounded-xl border border-zinc-200 shadow-sm text-left hover:border-zinc-400 hover:bg-zinc-50 transition-all"
+                    className="group bg-white dark:bg-zinc-900 p-4 rounded-xl border border-zinc-200 dark:border-zinc-800 shadow-sm text-left hover:border-zinc-400 dark:hover:border-zinc-600 hover:bg-zinc-50 dark:hover:bg-zinc-800 transition-all"
                   >
                     <div className="flex items-center justify-between">
                       <div className="flex-1">
-                        <h3 className="font-bold text-zinc-900">{partition}</h3>
-                        <p className="text-sm text-zinc-500 mt-1">{partitionItems.length} Items</p>
+                        <h3 className="font-bold text-zinc-900 dark:text-zinc-50">{partition}</h3>
+                        <p className="text-sm text-zinc-500 dark:text-zinc-400 mt-1">{partitionItems.length} Items</p>
                       </div>
                       <div className="flex items-center gap-2">
                         {storageUnit?.hasstoragecover && (
-                          <span className="px-2 py-1 bg-zinc-100 rounded text-[10px] font-bold uppercase tracking-wider text-zinc-500">
+                          <span className="px-2 py-1 bg-zinc-100 dark:bg-zinc-800 rounded text-[10px] font-bold uppercase tracking-wider text-zinc-500 dark:text-zinc-400">
                             Cover
                           </span>
                         )}
@@ -317,25 +317,25 @@ export default function Warehouse() {
           >
             {/* Statistics */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="bg-gradient-to-br from-indigo-50 to-indigo-100 p-6 rounded-2xl border border-indigo-200">
-                <p className="text-sm font-medium text-indigo-600 uppercase tracking-wider mb-2">Total Items</p>
-                <p className="text-4xl font-bold text-indigo-900">{itemStats.total}</p>
+              <div className="bg-gradient-to-br from-indigo-50 to-indigo-100 dark:from-indigo-950 dark:to-indigo-900 p-6 rounded-2xl border border-indigo-200 dark:border-indigo-800">
+                <p className="text-sm font-medium text-indigo-600 dark:text-indigo-400 uppercase tracking-wider mb-2">Total Items</p>
+                <p className="text-4xl font-bold text-indigo-900 dark:text-indigo-100">{itemStats.total}</p>
               </div>
-              <div className="bg-gradient-to-br from-emerald-50 to-emerald-100 p-6 rounded-2xl border border-emerald-200">
-                <p className="text-sm font-medium text-emerald-600 uppercase tracking-wider mb-2">Item Types</p>
-                <p className="text-4xl font-bold text-emerald-900">{Object.keys(itemStats.byType).length}</p>
+              <div className="bg-gradient-to-br from-emerald-50 to-emerald-100 dark:from-emerald-950 dark:to-emerald-900 p-6 rounded-2xl border border-emerald-200 dark:border-emerald-800">
+                <p className="text-sm font-medium text-emerald-600 dark:text-emerald-400 uppercase tracking-wider mb-2">Item Types</p>
+                <p className="text-4xl font-bold text-emerald-900 dark:text-emerald-100">{Object.keys(itemStats.byType).length}</p>
               </div>
             </div>
 
             {/* Items by Type Breakdown */}
             {Object.keys(itemStats.byType).length > 0 && (
-              <div className="bg-white rounded-2xl border border-zinc-200 shadow-sm p-6">
-                <h3 className="text-lg font-bold text-zinc-900 mb-4">Items by Type</h3>
+              <div className="bg-white dark:bg-zinc-900 rounded-2xl border border-zinc-200 dark:border-zinc-800 shadow-sm p-6">
+                <h3 className="text-lg font-bold text-zinc-900 dark:text-zinc-50 mb-4">Items by Type</h3>
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
                   {Object.entries(itemStats.byType).map(([type, count]) => (
-                    <div key={type} className="flex items-center justify-between bg-zinc-50 p-4 rounded-lg">
-                      <span className="font-medium text-zinc-900">{type}</span>
-                      <span className="px-3 py-1 bg-indigo-100 text-indigo-700 rounded-full text-sm font-bold">
+                    <div key={type} className="flex items-center justify-between bg-zinc-50 dark:bg-zinc-800 p-4 rounded-lg">
+                      <span className="font-medium text-zinc-900 dark:text-zinc-50">{type}</span>
+                      <span className="px-3 py-1 bg-indigo-100 dark:bg-indigo-900 text-indigo-700 dark:text-indigo-300 rounded-full text-sm font-bold">
                         {count}
                       </span>
                     </div>
@@ -345,29 +345,29 @@ export default function Warehouse() {
             )}
 
             {/* Items Table */}
-            <div className="bg-white rounded-2xl border border-zinc-200 shadow-sm overflow-hidden">
+            <div className="bg-white dark:bg-zinc-900 rounded-2xl border border-zinc-200 dark:border-zinc-800 shadow-sm overflow-hidden">
               <table className="w-full text-left">
-                <thead className="bg-zinc-50 border-b border-zinc-100">
+                <thead className="bg-zinc-50 dark:bg-zinc-800 border-b border-zinc-100 dark:border-zinc-700">
                   <tr>
-                    <th className="px-6 py-4 text-xs font-bold uppercase tracking-wider text-zinc-500">Item</th>
-                    <th className="px-6 py-4 text-xs font-bold uppercase tracking-wider text-zinc-500">Details</th>
-                    <th className="px-6 py-4 text-xs font-bold uppercase tracking-wider text-zinc-500">Cost</th>
-                    <th className="px-6 py-4 text-xs font-bold uppercase tracking-wider text-zinc-500">Rating</th>
-                    <th className="px-6 py-4 text-xs font-bold uppercase tracking-wider text-zinc-500">Actions</th>
+                    <th className="px-6 py-4 text-xs font-bold uppercase tracking-wider text-zinc-500 dark:text-zinc-400">Item</th>
+                    <th className="px-6 py-4 text-xs font-bold uppercase tracking-wider text-zinc-500 dark:text-zinc-400">Details</th>
+                    <th className="px-6 py-4 text-xs font-bold uppercase tracking-wider text-zinc-500 dark:text-zinc-400">Cost</th>
+                    <th className="px-6 py-4 text-xs font-bold uppercase tracking-wider text-zinc-500 dark:text-zinc-400">Rating</th>
+                    <th className="px-6 py-4 text-xs font-bold uppercase tracking-wider text-zinc-500 dark:text-zinc-400">Actions</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-zinc-50">
+                <tbody className="divide-y divide-zinc-50 dark:divide-zinc-800">
                   {itemsForPartition.map(item => (
-                    <tr key={item.id} className="hover:bg-zinc-50/50 transition-colors">
+                    <tr key={item.id} className="hover:bg-zinc-50/50 dark:hover:bg-zinc-800/50 transition-colors">
                       <td className="px-6 py-4">
                         <div className="flex items-center gap-3">
-                          <div className="w-10 h-10 bg-zinc-100 rounded flex items-center justify-center text-zinc-400">
+                          <div className="w-10 h-10 bg-zinc-100 dark:bg-zinc-800 rounded flex items-center justify-center text-zinc-400 dark:text-zinc-500">
                             <Package size={18} />
                           </div>
                           <span className="font-medium">{item.itemtype}</span>
                         </div>
                       </td>
-                      <td className="px-6 py-4 text-sm text-zinc-500">
+                      <td className="px-6 py-4 text-sm text-zinc-500 dark:text-zinc-400">
                         Size: {item.itemsize}
                       </td>
                       <td className="px-6 py-4 text-sm font-mono">
@@ -376,17 +376,17 @@ export default function Warehouse() {
                       <td className="px-6 py-4">
                         <div className="flex items-center gap-1">
                           <span className="text-sm font-medium">{item.itemlikerating}</span>
-                          <span className="text-zinc-300">/ 10</span>
+                          <span className="text-zinc-300 dark:text-zinc-600">/ 10</span>
                         </div>
                       </td>
                       <td className="px-6 py-4">
-                        <button className="text-xs font-bold text-zinc-900 hover:underline">View Details</button>
+                        <button className="text-xs font-bold text-zinc-900 dark:text-zinc-50 hover:underline">View Details</button>
                       </td>
                     </tr>
                   ))}
                   {itemsForPartition.length === 0 && (
                     <tr>
-                      <td colSpan={5} className="px-6 py-12 text-center text-zinc-400 text-sm italic">
+                      <td colSpan={5} className="px-6 py-12 text-center text-zinc-400 dark:text-zinc-500 text-sm italic">
                         This partition is currently empty.
                       </td>
                     </tr>

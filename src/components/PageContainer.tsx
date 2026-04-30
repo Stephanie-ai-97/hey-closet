@@ -19,9 +19,9 @@ export function PageContainer({ children, title, subtitle, actions }: PageContai
     >
       <header className="flex flex-col md:flex-row md:items-end justify-between gap-4 mb-8">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight text-zinc-900">{title}</h1>
+          <h1 className="text-3xl font-bold tracking-tight text-zinc-900 dark:text-zinc-50">{title}</h1>
           {subtitle && (
-            <p className="text-zinc-500 mt-1">{subtitle}</p>
+            <p className="text-zinc-500 dark:text-zinc-400 mt-1">{subtitle}</p>
           )}
         </div>
         {actions && (

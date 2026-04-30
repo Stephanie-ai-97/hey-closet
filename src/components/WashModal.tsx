@@ -56,18 +56,18 @@ export function WashModal({ isOpen, item, onClose, onWashLogged }: WashModalProp
       />
 
       {/* Modal */}
-      <div className="fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 bg-white rounded-2xl shadow-xl border border-zinc-200 w-full max-w-md mx-4 z-50 overflow-hidden">
+      <div className="fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 bg-white dark:bg-zinc-900 rounded-2xl shadow-xl border border-zinc-200 dark:border-zinc-800 w-full max-w-md mx-4 z-50 overflow-hidden">
         {/* Header */}
-        <div className="bg-gradient-to-r from-indigo-50 to-zinc-50 px-6 py-4 flex items-center justify-between border-b border-zinc-200">
+        <div className="bg-gradient-to-r from-indigo-50 dark:from-indigo-950 to-zinc-50 dark:to-zinc-900 px-6 py-4 flex items-center justify-between border-b border-zinc-200 dark:border-zinc-800">
           <div>
-            <h2 className="text-lg font-bold text-zinc-900">Log Wash</h2>
-            <p className="text-sm text-zinc-500">{item.itemtype}</p>
+            <h2 className="text-lg font-bold text-zinc-900 dark:text-zinc-50">Log Wash</h2>
+            <p className="text-sm text-zinc-500 dark:text-zinc-400">{item.itemtype}</p>
           </div>
           <button
             onClick={onClose}
-            className="p-1 hover:bg-zinc-200 rounded-lg transition-colors"
+            className="p-1 hover:bg-zinc-200 dark:hover:bg-zinc-700 rounded-lg transition-colors"
           >
-            <X size={20} className="text-zinc-500" />
+            <X size={20} className="text-zinc-500 dark:text-zinc-400" />
           </button>
         </div>
 
@@ -80,47 +80,47 @@ export function WashModal({ isOpen, item, onClose, onWashLogged }: WashModalProp
           )}
 
           <div>
-            <label className="block text-sm font-bold text-zinc-700 mb-2 uppercase tracking-widest text-xs">
+            <label className="block text-sm font-bold text-zinc-700 dark:text-zinc-300 mb-2 uppercase tracking-widest text-xs">
               Wash Date
             </label>
             <input
               type="date"
               value={washDate}
               onChange={(e) => setWashDate(e.target.value)}
-              className="w-full px-3 py-2 border border-zinc-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+              className="w-full px-3 py-2 border border-zinc-300 dark:border-zinc-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent bg-white dark:bg-zinc-800 text-zinc-900 dark:text-zinc-50"
               required
             />
           </div>
 
           <div>
-            <label className="block text-sm font-bold text-zinc-700 mb-2 uppercase tracking-widest text-xs">
+            <label className="block text-sm font-bold text-zinc-700 dark:text-zinc-300 mb-2 uppercase tracking-widest text-xs">
               Item Details
             </label>
-            <div className="bg-zinc-50 border border-zinc-200 rounded-lg p-3 space-y-2 text-sm">
+            <div className="bg-zinc-50 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-lg p-3 space-y-2 text-sm">
               <div className="flex justify-between">
-                <span className="text-zinc-600">Type:</span>
-                <span className="font-medium text-zinc-900">{item.itemtype}</span>
+                <span className="text-zinc-600 dark:text-zinc-400">Type:</span>
+                <span className="font-medium text-zinc-900 dark:text-zinc-50">{item.itemtype}</span>
               </div>
               <div className="flex justify-between">
-                <span className="text-zinc-600">Size:</span>
-                <span className="font-medium text-zinc-900">{item.itemsize}</span>
+                <span className="text-zinc-600 dark:text-zinc-400">Size:</span>
+                <span className="font-medium text-zinc-900 dark:text-zinc-50">{item.itemsize}</span>
               </div>
               <div className="flex justify-between">
-                <span className="text-zinc-600">Wash Method:</span>
-                <span className="font-medium text-zinc-900">{item.itemwashmethod || 'Not specified'}</span>
+                <span className="text-zinc-600 dark:text-zinc-400">Wash Method:</span>
+                <span className="font-medium text-zinc-900 dark:text-zinc-50">{item.itemwashmethod || 'Not specified'}</span>
               </div>
             </div>
           </div>
 
           <div>
-            <label className="block text-sm font-bold text-zinc-700 mb-2 uppercase tracking-widest text-xs">
+            <label className="block text-sm font-bold text-zinc-700 dark:text-zinc-300 mb-2 uppercase tracking-widest text-xs">
               Notes (Optional)
             </label>
             <textarea
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
               placeholder="Any additional notes about this wash..."
-              className="w-full px-3 py-2 border border-zinc-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent text-sm resize-none"
+              className="w-full px-3 py-2 border border-zinc-300 dark:border-zinc-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent text-sm resize-none bg-white dark:bg-zinc-800 text-zinc-900 dark:text-zinc-50 placeholder-zinc-400 dark:placeholder-zinc-500"
               rows={3}
             />
           </div>
@@ -130,7 +130,7 @@ export function WashModal({ isOpen, item, onClose, onWashLogged }: WashModalProp
             <button
               type="button"
               onClick={onClose}
-              className="flex-1 px-4 py-2 border border-zinc-300 text-zinc-700 font-medium rounded-lg hover:bg-zinc-50 transition-colors"
+              className="flex-1 px-4 py-2 border border-zinc-300 dark:border-zinc-700 text-zinc-700 dark:text-zinc-300 font-medium rounded-lg hover:bg-zinc-50 dark:hover:bg-zinc-800 transition-colors"
             >
               Cancel
             </button>
