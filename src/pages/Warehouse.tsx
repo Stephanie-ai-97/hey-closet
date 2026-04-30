@@ -20,7 +20,7 @@ import {
 } from 'lucide-react';
 import { cn } from '../lib/utils';
 import { motion, AnimatePresence } from 'motion/react';
-import { Home, Storage, Item } from '../types';
+import { Home, Storage, Item, Info } from '../types';
 import { api } from '../services/api';
 
 type ViewMode = 'grid' | 'list';
@@ -51,6 +51,7 @@ export default function Warehouse() {
   const [deletingStorage, setDeletingStorage] = useState<Storage | null>(null);
   const [editingItem, setEditingItem] = useState<Item | null>(null);
   const [deletingItem, setDeletingItem] = useState<Item | null>(null);
+  const [deletingStorageName, setDeletingStorageName] = useState<string | null>(null);
 
   const currentHome = homes.find(h => h.id === selectedHomeId);
 
@@ -191,7 +192,11 @@ export default function Warehouse() {
             exit={{ opacity: 0, x: -20 }}
             className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"
           >
-            {homes.map(home => (
+            {homes.map(home => {
+              const canDeleteHome = items.filter(i =>
+                storages.filter(s => s.dk_homelocation === home.id).map(s => s.id).includes(i.dk_closet)
+              ).length === 0;
+              return (
               <div
                 key={home.id}
                 className="group relative bg-white dark:bg-zinc-900 p-6 rounded-2xl border border-zinc-200 dark:border-zinc-800 shadow-sm hover:border-zinc-400 dark:hover:border-zinc-600 transition-all cursor-pointer"
@@ -206,11 +211,17 @@ export default function Warehouse() {
                     <Pencil size={13} className="text-zinc-500 dark:text-zinc-400" />
                   </button>
                   <button
-                    onClick={(e) => { e.stopPropagation(); setDeletingHome(home); }}
-                    className="p-1.5 rounded-lg bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 hover:bg-red-50 dark:hover:bg-red-950 hover:border-red-200 dark:hover:border-red-800 transition-colors"
-                    title="Delete home"
+                    onClick={(e) => { if (!canDeleteHome) return; e.stopPropagation(); setDeletingHome(home); }}
+                    disabled={!canDeleteHome}
+                    className={cn(
+                      "p-1.5 rounded-lg bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 transition-colors",
+                      canDeleteHome
+                        ? "hover:bg-red-50 dark:hover:bg-red-950 hover:border-red-200 dark:hover:border-red-800"
+                        : "opacity-30 cursor-not-allowed"
+                    )}
+                    title={canDeleteHome ? "Delete home" : "Remove all items before deleting"}
                   >
-                    <Trash2 size={13} className="text-zinc-500 dark:text-zinc-400 hover:text-red-500" />
+                    <Trash2 size={13} className="text-zinc-500 dark:text-zinc-400" />
                   </button>
                 </div>
                 {/* Clickable card body */}
@@ -228,7 +239,8 @@ export default function Warehouse() {
                   </div>
                 </div>
               </div>
-            ))}
+              );
+            })}
           </motion.div>
         ) : !selectedStorageName ? (
           // Show Storage Names (grouped)
@@ -247,24 +259,43 @@ export default function Warehouse() {
                   .map(s => s.id)
                   .includes(i.dk_closet)
               );
+              const canDeleteStorage = storageItems.length === 0;
               return (
-                <button
+                <div
                   key={storageName}
-                  onClick={() => setSelectedStorageName(storageName)}
-                  className="group bg-white dark:bg-zinc-900 p-6 rounded-2xl border border-zinc-200 dark:border-zinc-800 shadow-sm text-left hover:border-zinc-400 dark:hover:border-zinc-600 transition-all"
+                  className="group relative bg-white dark:bg-zinc-900 p-6 rounded-2xl border border-zinc-200 dark:border-zinc-800 shadow-sm hover:border-zinc-400 dark:hover:border-zinc-600 transition-all"
                 >
-                  <div className="flex items-center justify-between mb-4">
-                    <div className="p-3 bg-zinc-100 dark:bg-zinc-800 rounded-xl group-hover:bg-zinc-900 dark:group-hover:bg-zinc-100 group-hover:text-white dark:group-hover:text-zinc-900 transition-colors">
-                      <ClosetIcon size={24} />
+                  {/* Delete button */}
+                  <div className="absolute top-3 right-3 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity z-10">
+                    <button
+                      onClick={(e) => { if (!canDeleteStorage) return; e.stopPropagation(); setDeletingStorageName(storageName); }}
+                      disabled={!canDeleteStorage}
+                      className={cn(
+                        "p-1.5 rounded-lg bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 transition-colors",
+                        canDeleteStorage
+                          ? "hover:bg-red-50 dark:hover:bg-red-950 hover:border-red-200 dark:hover:border-red-800"
+                          : "opacity-30 cursor-not-allowed"
+                      )}
+                      title={canDeleteStorage ? "Delete storage" : "Remove all items before deleting"}
+                    >
+                      <Trash2 size={13} className="text-zinc-500 dark:text-zinc-400" />
+                    </button>
+                  </div>
+                  {/* Clickable card body */}
+                  <div onClick={() => setSelectedStorageName(storageName)} className="cursor-pointer">
+                    <div className="flex items-center justify-between mb-4">
+                      <div className="p-3 bg-zinc-100 dark:bg-zinc-800 rounded-xl group-hover:bg-zinc-900 dark:group-hover:bg-zinc-100 group-hover:text-white dark:group-hover:text-zinc-900 transition-colors">
+                        <ClosetIcon size={24} />
+                      </div>
+                      <ChevronRight size={20} className="text-zinc-300 dark:text-zinc-600 group-hover:text-zinc-900 dark:group-hover:text-zinc-50" />
                     </div>
-                    <ChevronRight size={20} className="text-zinc-300 dark:text-zinc-600 group-hover:text-zinc-900 dark:group-hover:text-zinc-50" />
+                    <h3 className="text-lg font-bold">{storageName}</h3>
+                    <p className="text-zinc-500 dark:text-zinc-400 text-sm mt-1">{storageCount} Partition{storageCount !== 1 ? 's' : ''}</p>
+                    <div className="mt-4 pt-4 border-t border-zinc-50 dark:border-zinc-800 flex gap-4 text-xs font-medium text-zinc-400 dark:text-zinc-500">
+                      <span>{storageItems.length} Total Items</span>
+                    </div>
                   </div>
-                  <h3 className="text-lg font-bold">{storageName}</h3>
-                  <p className="text-zinc-500 dark:text-zinc-400 text-sm mt-1">{storageCount} Partition{storageCount !== 1 ? 's' : ''}</p>
-                  <div className="mt-4 pt-4 border-t border-zinc-50 dark:border-zinc-800 flex gap-4 text-xs font-medium text-zinc-400 dark:text-zinc-500">
-                    <span>{storageItems.length} Total Items</span>
-                  </div>
-                </button>
+                </div>
               );
             })}
           </motion.div>
@@ -281,12 +312,11 @@ export default function Warehouse() {
             }
           >
             {partitionsForStorage.map(partition => {
-              const partitionItems = itemsForPartition.filter(i => 
-                storagesByHome
-                  .filter(s => s.closet === selectedStorageName && s.closetpartition === partition)
-                  .map(s => s.id)
-                  .includes(i.dk_closet)
-              );
+              const partitionStorageIds = storagesByHome
+                .filter(s => s.closet === selectedStorageName && s.closetpartition === partition)
+                .map(s => s.id);
+              const partitionItems = items.filter(i => partitionStorageIds.includes(i.dk_closet));
+              const canDeletePartition = partitionItems.length === 0;
               const storageUnit = storagesByHome.find(s => s.closet === selectedStorageName && s.closetpartition === partition);
               
               if (viewMode === 'grid') {
@@ -306,9 +336,15 @@ export default function Warehouse() {
                           <Pencil size={13} className="text-zinc-500 dark:text-zinc-400" />
                         </button>
                         <button
-                          onClick={(e) => { e.stopPropagation(); setDeletingStorage(storageUnit); }}
-                          className="p-1.5 rounded-lg bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 hover:bg-red-50 dark:hover:bg-red-950 hover:border-red-200 dark:hover:border-red-800 transition-colors"
-                          title="Delete storage"
+                          onClick={(e) => { if (!canDeletePartition) return; e.stopPropagation(); setDeletingStorage(storageUnit); }}
+                          disabled={!canDeletePartition}
+                          className={cn(
+                            "p-1.5 rounded-lg bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 transition-colors",
+                            canDeletePartition
+                              ? "hover:bg-red-50 dark:hover:bg-red-950 hover:border-red-200 dark:hover:border-red-800"
+                              : "opacity-30 cursor-not-allowed"
+                          )}
+                          title={canDeletePartition ? "Delete partition" : "Remove all items before deleting"}
                         >
                           <Trash2 size={13} className="text-zinc-500 dark:text-zinc-400" />
                         </button>
@@ -354,9 +390,15 @@ export default function Warehouse() {
                           <Pencil size={13} className="text-zinc-500 dark:text-zinc-400" />
                         </button>
                         <button
-                          onClick={(e) => { e.stopPropagation(); setDeletingStorage(storageUnit); }}
-                          className="p-1.5 rounded-lg bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 hover:bg-red-50 dark:hover:bg-red-950 hover:border-red-200 dark:hover:border-red-800 transition-colors"
-                          title="Delete storage"
+                          onClick={(e) => { if (!canDeletePartition) return; e.stopPropagation(); setDeletingStorage(storageUnit); }}
+                          disabled={!canDeletePartition}
+                          className={cn(
+                            "p-1.5 rounded-lg bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 transition-colors",
+                            canDeletePartition
+                              ? "hover:bg-red-50 dark:hover:bg-red-950 hover:border-red-200 dark:hover:border-red-800"
+                              : "opacity-30 cursor-not-allowed"
+                          )}
+                          title={canDeletePartition ? "Delete partition" : "Remove all items before deleting"}
                         >
                           <Trash2 size={13} className="text-zinc-500 dark:text-zinc-400" />
                         </button>
@@ -557,6 +599,24 @@ export default function Warehouse() {
         />
       )}
 
+      {/* Delete Storage Name Modal */}
+      {deletingStorageName && (
+        <DeleteConfirmModal
+          isOpen={!!deletingStorageName}
+          itemName={`${deletingStorageName} (and all its partitions)`}
+          onClose={() => setDeletingStorageName(null)}
+          onConfirm={async () => {
+            const toDelete = storagesByHome.filter(s => s.closet === deletingStorageName);
+            for (const s of toDelete) {
+              await api.delete('storage', s.id);
+            }
+            setDeletingStorageName(null);
+            setSelectedStorageName(null);
+            refetch();
+          }}
+        />
+      )}
+
       {/* Edit Item Modal */}
       {editingItem && (
         <EditItemModal
@@ -576,6 +636,10 @@ export default function Warehouse() {
           itemName={`${deletingItem.itemtype} (${deletingItem.itemsize})`}
           onClose={() => setDeletingItem(null)}
           onConfirm={async () => {
+            const infos = await api.list<Info>('info', { dk_itemid: String(deletingItem.id) });
+            for (const info of infos) {
+              await api.delete('info', info.id);
+            }
             await api.delete('item', deletingItem.id);
             setDeletingItem(null);
             refetch();
