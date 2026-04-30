@@ -213,11 +213,11 @@ export default function ItemDetail() {
             <div className="space-y-4">
               <div className="flex justify-between items-center">
                 <span className="text-sm text-zinc-500">Archive Rating</span>
-                <span className="text-xl font-bold">{item.itemlikerating}<span className="text-zinc-300 text-sm font-normal">/10</span></span>
+                <span className="text-xl font-bold">{item.itemlikerating ?? '—'}<span className="text-zinc-300 text-sm font-normal">/10</span></span>
               </div>
               <div className="flex justify-between items-center">
                 <span className="text-sm text-zinc-500">Archival Cost</span>
-                <span className="text-xl font-bold">${item.itemcost.toFixed(2)}</span>
+                <span className="text-xl font-bold">${(item.itemcost ?? 0).toFixed(2)}</span>
               </div>
             </div>
           </div>
