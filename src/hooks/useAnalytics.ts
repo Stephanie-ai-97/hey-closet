@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { api } from '../services/api';
-import { Item, WearLog, Info, Colour } from '../types';
+import { Item, Info, Colour } from '../types';
 import { differenceInMonths, parseISO } from 'date-fns';
 
 export interface ItemCPW {
@@ -40,15 +40,14 @@ export function useAnalytics() {
     async function load() {
       try {
         setLoading(true);
-        const [items, wearLogs, infos, colours] = await Promise.all([
+        const [items, infos, colours] = await Promise.all([
           api.list<Item>('item'),
-          api.list<WearLog>('wearlog'),
           api.list<Info>('info'),
           api.list<Colour>('colour'),
         ]);
 
         const itemsList: Item[] = (items as any)?.data ?? items ?? [];
-        const wearList: WearLog[] = (wearLogs as any)?.data ?? wearLogs ?? [];
+        const wearList: any[] = [];
         const infosList: Info[] = (infos as any)?.data ?? infos ?? [];
         const coloursList: Colour[] = (colours as any)?.data ?? colours ?? [];
 

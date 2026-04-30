@@ -2,7 +2,7 @@ import { PageContainer } from '../components/PageContainer';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { useState, useEffect, useCallback } from 'react';
 import { api } from '../services/api';
-import { Item, Info, Style, Colour, Material, Wash, Storage, Home, WearLog, ItemPhoto } from '../types';
+import { Item, Info, Style, Colour, Material, Wash, Storage, Home } from '../types';
 import { 
   ArrowLeft, 
   Tag, 
@@ -10,24 +10,18 @@ import {
   Droplets, 
   Edit, 
   Trash2,
-  Package,
   MapPin,
   Star,
   Info as InfoIcon,
-  ShoppingBag,
-  Camera,
   CheckCircle2,
   WashingMachine,
   Wind,
   AlertCircle,
 } from 'lucide-react';
-import { format, differenceInDays } from 'date-fns';
+import { format } from 'date-fns';
 import { cn } from '../lib/utils';
 import { EditItemModal } from '../components/EditItemModal';
 import { DeleteConfirmModal } from '../components/DeleteConfirmModal';
-import { WearLogModal } from '../components/WearLogModal';
-import { ImageUpload } from '../components/ImageUpload';
-import { CPWBadge } from '../components/CPWBadge';
 import { ItemSVGIcon } from '../components/ItemSVGIcon';
 import { useDashboardData } from '../hooks/useDashboardData';
 
@@ -42,15 +36,12 @@ export default function ItemDetail() {
     colour?: Colour;
     material?: Material;
     washes: Wash[];
-    wearLogs: WearLog[];
-    photos: ItemPhoto[];
     storage?: Storage;
     home?: Home;
   } | null>(null);
   const [loading, setLoading] = useState(true);
   const [editOpen, setEditOpen] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
-  const [wearLogOpen, setWearLogOpen] = useState(false);
 
   useEffect(() => {
     async function loadItemData() {
@@ -59,14 +50,14 @@ export default function ItemDetail() {
         const itemId = parseInt(id);
         const rawItem = await api.get<any>('item', itemId);
         const item: Item = { ...rawItem, id: rawItem.pk_itemid ?? rawItem.id };
-        
+        const storage: Storage | undefined = rawItem.storage
+          ? { ...rawItem.storage, id: rawItem.storage.pk_closet ?? rawItem.storage.id }
+          : undefined;
+
         // Fetch relations
-        const [infos, washes, wearLogs, photos, storage] = await Promise.all([
+        const [infos, washes] = await Promise.all([
           api.list<Info>('info', { dk_itemid: id }),
           api.list<Wash>('wash', { dk_itemid: id }),
-          api.list<WearLog>('wearlog', { dk_itemid: id }),
-          api.list<ItemPhoto>('itemphoto', { dk_itemid: id }),
-          api.get<Storage>('storage', item.dk_closet),
         ]);
 
         let info, style, colour, material, home;
@@ -83,7 +74,7 @@ export default function ItemDetail() {
           home = await api.get<Home>('home', storage.dk_homelocation);
         }
 
-        setData({ item, info, style, colour, material, washes, wearLogs, photos, storage, home });
+        setData({ item, info, style, colour, material, washes, storage, home });
       } catch (err) {
         console.error(err);
       } finally {
@@ -100,12 +91,12 @@ export default function ItemDetail() {
       const itemId = parseInt(id);
       const rawItem = await api.get<any>('item', itemId);
       const item: Item = { ...rawItem, id: rawItem.pk_itemid ?? rawItem.id };
-      const [infos, washes, wearLogs, photos, storage] = await Promise.all([
+      const storage: Storage | undefined = rawItem.storage
+        ? { ...rawItem.storage, id: rawItem.storage.pk_closet ?? rawItem.storage.id }
+        : undefined;
+      const [infos, washes] = await Promise.all([
         api.list<Info>('info', { dk_itemid: id }),
         api.list<Wash>('wash', { dk_itemid: id }),
-        api.list<WearLog>('wearlog', { dk_itemid: id }),
-        api.list<ItemPhoto>('itemphoto', { dk_itemid: id }),
-        api.get<Storage>('storage', item.dk_closet),
       ]);
       let info, style, colour, material, home;
       if (infos.length > 0) {
@@ -117,7 +108,7 @@ export default function ItemDetail() {
         ]);
       }
       if (storage) home = await api.get<Home>('home', storage.dk_homelocation);
-      setData({ item, info, style, colour, material, washes, wearLogs, photos, storage, home });
+      setData({ item, info, style, colour, material, washes, storage, home });
     } catch (err) {
       console.error(err);
     } finally {
@@ -140,8 +131,7 @@ export default function ItemDetail() {
   if (loading) return <div className="p-8 animate-pulse text-center">Decrypting item metadata...</div>;
   if (!data) return <div className="p-8 text-center">Item not found in archive.</div>;
 
-  const { item, style, colour, material, washes, wearLogs, photos, storage, home } = data;
-  const primaryPhoto = photos.find(p => p.is_primary) ?? photos[0];
+  const { item, style, colour, material, washes, storage, home } = data;
   const washStatusConfig: Record<Item['wash_status'], { label: string; color: string; icon: React.ReactNode }> = {
     clean: { label: 'Clean', color: 'text-emerald-600 bg-emerald-50 border-emerald-200', icon: <CheckCircle2 size={14} /> },
     dirty: { label: 'Dirty', color: 'text-red-600 bg-red-50 border-red-200', icon: <AlertCircle size={14} /> },
@@ -166,24 +156,11 @@ export default function ItemDetail() {
         onClose={() => setDeleteOpen(false)}
         onConfirm={handleDelete}
       />
-      <WearLogModal
-        isOpen={wearLogOpen}
-        item={item}
-        onClose={() => setWearLogOpen(false)}
-        onWearLogged={reload}
-      />
     <PageContainer 
       title={item.itemtype} 
       subtitle={`ID: #${item.id}`}
       actions={
         <div className="flex gap-2">
-          <button
-            onClick={() => setWearLogOpen(true)}
-            className="flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium bg-zinc-100 hover:bg-zinc-200 text-zinc-700 rounded-lg transition-colors"
-          >
-            <ShoppingBag size={16} />
-            Log Wear
-          </button>
           <button onClick={() => setEditOpen(true)} className="p-2 text-zinc-500 hover:text-zinc-900 transition-colors">
             <Edit size={20} />
           </button>
@@ -202,15 +179,7 @@ export default function ItemDetail() {
         {/* Visual & Core Stats */}
         <div className="lg:col-span-1 space-y-6">
           <div className="aspect-[4/5] bg-zinc-100 rounded-3xl flex items-center justify-center text-zinc-300 overflow-hidden shadow-inner border border-zinc-200">
-            {primaryPhoto ? (
-              <img
-                src={api.getPhotoUrl(primaryPhoto.storage_path)}
-                alt={item.itemtype}
-                className="w-full h-full object-cover"
-              />
-            ) : (
-              <ItemSVGIcon itemtype={item.itemtype} size={80} color="#d4d4d8" />
-            )}
+            <ItemSVGIcon itemtype={item.itemtype} size={80} color="#d4d4d8" />
           </div>
           
           {/* Wash Status */}
@@ -250,16 +219,6 @@ export default function ItemDetail() {
                 <span className="text-sm text-zinc-500">Archival Cost</span>
                 <span className="text-xl font-bold">${item.itemcost.toFixed(2)}</span>
               </div>
-              <div className="flex justify-between items-center">
-                <span className="text-sm text-zinc-500">Times Worn</span>
-                <span className="text-xl font-bold">{wearLogs.length}</span>
-              </div>
-              {wearLogs.length > 0 && (
-                <div className="flex justify-between items-center">
-                  <span className="text-sm text-zinc-500">Cost Per Wear</span>
-                  <CPWBadge cost={item.itemcost} wearCount={wearLogs.length} />
-                </div>
-              )}
             </div>
           </div>
         </div>
@@ -351,37 +310,6 @@ export default function ItemDetail() {
                 </div>
               </div>
             </div>
-          </div>
-
-          {/* Wear History */}
-          {wearLogs.length > 0 && (
-            <div className="bg-white rounded-3xl border border-zinc-200 p-8 shadow-sm">
-              <h3 className="font-bold flex items-center gap-2 mb-6">
-                <ShoppingBag size={18} className="text-zinc-400" />
-                Wear History
-              </h3>
-              <div className="space-y-2">
-                {wearLogs.slice(0, 6).map(log => (
-                  <div key={log.id} className="flex items-center gap-3 text-sm">
-                    <Calendar size={12} className="text-zinc-400 shrink-0" />
-                    <span className="text-zinc-600">{format(new Date(log.worn_date), 'MMMM dd, yyyy')}</span>
-                    {log.notes && <span className="text-zinc-400 truncate">— {log.notes}</span>}
-                  </div>
-                ))}
-                {wearLogs.length > 6 && (
-                  <p className="text-xs text-zinc-400 pt-1">+{wearLogs.length - 6} more entries</p>
-                )}
-              </div>
-            </div>
-          )}
-
-          {/* Reference Photos */}
-          <div className="bg-white rounded-3xl border border-zinc-200 p-8 shadow-sm">
-            <h3 className="font-bold flex items-center gap-2 mb-6">
-              <Camera size={18} className="text-zinc-400" />
-              Reference Photos
-            </h3>
-            <ImageUpload itemId={item.id} photos={photos} onPhotosChanged={reload} />
           </div>
 
           {/* Comments */}

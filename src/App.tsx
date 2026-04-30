@@ -89,11 +89,9 @@ export default function App() {
             <NavItem to="/" icon={LayoutDashboard} label="Dashboard" collapsed={isSidebarCollapsed} />
             <NavItem to="/warehouse" icon={Warehouse} label="Warehouse" collapsed={isSidebarCollapsed} />
             <NavItem to="/inventory" icon={Package} label="Inventory" collapsed={isSidebarCollapsed} />
-            <NavItem to="/outfits" icon={Layers} label="Outfits" collapsed={isSidebarCollapsed} />
             <NavItem to="/search" icon={Search} label="Search" collapsed={isSidebarCollapsed} />
             <NavItem to="/washes" icon={Droplets} label="Wash Tracker" collapsed={isSidebarCollapsed} />
             <NavItem to="/laundry" icon={WashingMachine} label="Laundry" collapsed={isSidebarCollapsed} />
-            <NavItem to="/analytics" icon={BarChart2} label="Analytics" collapsed={isSidebarCollapsed} />
           </nav>
 
           <div className="p-3 border-t border-zinc-100">
@@ -119,11 +117,9 @@ export default function App() {
           <Link to="/" className="p-2 text-zinc-500"><LayoutDashboard size={24} /></Link>
           <Link to="/warehouse" className="p-2 text-zinc-500"><Warehouse size={24} /></Link>
           <Link to="/inventory" className="p-2 text-zinc-500"><Package size={24} /></Link>
-          <Link to="/outfits" className="p-2 text-zinc-500"><Layers size={24} /></Link>
           <Link to="/search" className="p-2 text-zinc-500"><Search size={24} /></Link>
           <Link to="/washes" className="p-2 text-zinc-500"><Droplets size={24} /></Link>
           <Link to="/laundry" className="p-2 text-zinc-500"><WashingMachine size={24} /></Link>
-          <Link to="/analytics" className="p-2 text-zinc-500"><BarChart2 size={24} /></Link>
         </div>
 
         {/* Mobile Header */}
