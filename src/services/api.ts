@@ -1,6 +1,6 @@
 import { TableName } from '../types';
 
-const BASE_URL = 'https://nuqpcxgonlqlxtujxmhx.supabase.co/functions/v1';
+const BASE_URL = 'https://nuqpcxgonlqlxtujxmhx.supabase.co/functions/v1/storage';
 const API_KEY = (import.meta as any).env.VITE_SUPABASE_API_KEY || (process.env as any).VITE_SUPABASE_API_KEY;
 
 async function request<T>(path: string, options: RequestInit = {}): Promise<T> {

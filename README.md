@@ -47,7 +47,7 @@ HeyCloset solves the problem of wardrobe sprawl across multiple locations. Key c
                        │ HTTPS REST
           ┌────────────▼────────────┐
           │  Supabase Edge Function  │
-          │  /functions/v1/<table>   │
+          │  /functions/v1/storage/  │
           │  Auth: apikey header     │
           └────────────┬────────────┘
                        │
@@ -191,7 +191,7 @@ Also create a public Supabase Storage bucket named **`item-photos`**, and regist
 
 ## API Reference
 
-**Base URL:** `https://nuqpcxgonlqlxtujxmhx.supabase.co/functions/v1`
+**Base URL:** `https://nuqpcxgonlqlxtujxmhx.supabase.co/functions/v1/storage`
 
 **Authentication:** All requests require the header:
 ```
