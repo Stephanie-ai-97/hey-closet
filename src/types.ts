@@ -23,6 +23,7 @@ export interface Item {
   itemcost: number;
   itemcomment: string;
   itemwashmethod: string;
+  wash_status: 'clean' | 'washing' | 'drying' | 'dirty';
   created_at?: string;
 }
 
@@ -53,6 +54,7 @@ export interface Info {
   dk_styleid: number;
   dk_colourid: number;
   dk_material: number;
+  tag_source: 'system' | 'user';
 }
 
 export interface Wash {
@@ -69,4 +71,36 @@ export interface ForLocation {
   isforlocationindoor: boolean;
 }
 
-export type TableName = 'home' | 'storage' | 'item' | 'colour' | 'material' | 'style' | 'info' | 'wash' | 'for_location';
+export interface WearLog {
+  id: number;
+  dk_itemid: number;
+  worn_date: string;
+  outfit_id?: number;
+  notes?: string;
+}
+
+export interface Outfit {
+  id: number;
+  outfitname: string;
+  occasion: string;
+  season: string;
+  notes?: string;
+  created_at?: string;
+}
+
+export interface OutfitItem {
+  id: number;
+  dk_outfitid: number;
+  dk_itemid: number;
+}
+
+export interface ItemPhoto {
+  id: number;
+  dk_itemid: number;
+  storage_path: string;
+  is_primary: boolean;
+  caption?: string;
+  created_at?: string;
+}
+
+export type TableName = 'home' | 'storage' | 'item' | 'colour' | 'material' | 'style' | 'info' | 'wash' | 'for_location' | 'wearlog' | 'outfit' | 'outfititem' | 'itemphoto';

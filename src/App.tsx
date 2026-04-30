@@ -11,7 +11,10 @@ import {
   Search, 
   Droplets, 
   Menu,
-  User
+  User,
+  BarChart2,
+  Layers,
+  WashingMachine,
 } from 'lucide-react';
 import { useState } from 'react';
 import { AnimatePresence } from 'motion/react';
@@ -24,6 +27,9 @@ import Inventory from './pages/Inventory';
 import AdvancedSearch from './pages/AdvancedSearch';
 import WashTracker from './pages/WashTracker';
 import ItemDetail from './pages/ItemDetail';
+import Analytics from './pages/Analytics';
+import Outfits from './pages/Outfits';
+import Laundry from './pages/Laundry';
 
 const NavItem = ({ to, icon: Icon, label, collapsed }: { to: string, icon: any, label: string, collapsed: boolean }) => {
   const location = useLocation();
@@ -83,8 +89,11 @@ export default function App() {
             <NavItem to="/" icon={LayoutDashboard} label="Dashboard" collapsed={isSidebarCollapsed} />
             <NavItem to="/warehouse" icon={Warehouse} label="Warehouse" collapsed={isSidebarCollapsed} />
             <NavItem to="/inventory" icon={Package} label="Inventory" collapsed={isSidebarCollapsed} />
+            <NavItem to="/outfits" icon={Layers} label="Outfits" collapsed={isSidebarCollapsed} />
             <NavItem to="/search" icon={Search} label="Search" collapsed={isSidebarCollapsed} />
             <NavItem to="/washes" icon={Droplets} label="Wash Tracker" collapsed={isSidebarCollapsed} />
+            <NavItem to="/laundry" icon={WashingMachine} label="Laundry" collapsed={isSidebarCollapsed} />
+            <NavItem to="/analytics" icon={BarChart2} label="Analytics" collapsed={isSidebarCollapsed} />
           </nav>
 
           <div className="p-3 border-t border-zinc-100">
@@ -110,8 +119,11 @@ export default function App() {
           <Link to="/" className="p-2 text-zinc-500"><LayoutDashboard size={24} /></Link>
           <Link to="/warehouse" className="p-2 text-zinc-500"><Warehouse size={24} /></Link>
           <Link to="/inventory" className="p-2 text-zinc-500"><Package size={24} /></Link>
+          <Link to="/outfits" className="p-2 text-zinc-500"><Layers size={24} /></Link>
           <Link to="/search" className="p-2 text-zinc-500"><Search size={24} /></Link>
           <Link to="/washes" className="p-2 text-zinc-500"><Droplets size={24} /></Link>
+          <Link to="/laundry" className="p-2 text-zinc-500"><WashingMachine size={24} /></Link>
+          <Link to="/analytics" className="p-2 text-zinc-500"><BarChart2 size={24} /></Link>
         </div>
 
         {/* Mobile Header */}
@@ -128,8 +140,11 @@ export default function App() {
               <Route path="/" element={<Dashboard />} />
               <Route path="/warehouse" element={<WarehouseView />} />
               <Route path="/inventory" element={<Inventory />} />
+              <Route path="/outfits" element={<Outfits />} />
               <Route path="/search" element={<AdvancedSearch />} />
               <Route path="/washes" element={<WashTracker />} />
+              <Route path="/laundry" element={<Laundry />} />
+              <Route path="/analytics" element={<Analytics />} />
               <Route path="/item/:id" element={<ItemDetail />} />
             </Routes>
           </AnimatePresence>

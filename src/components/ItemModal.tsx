@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { X } from 'lucide-react';
-import { Item, Storage, Home } from '../types';
+import { Item, Storage, Home, Colour, Material, Style, Info } from '../types';
 import { api } from '../services/api';
 
 interface ItemModalProps {
@@ -58,30 +58,46 @@ export function ItemModal({ isOpen, storages, homes, onClose, onItemAdded }: Ite
 
       const createdItem = await api.create<Item>('item', itemData);
 
-      // Create colour info if provided
+      // Create metadata records and link them via Info junction table
+      let colourId: number | null = null;
+      let materialId: number | null = null;
+      let styleId: number | null = null;
+
       if (colouroverall) {
-        await api.create('colour', {
+        const createdColour = await api.create<Colour>('colour', {
           colouroverall,
           colourinner: '',
           colourouter: '',
         });
+        colourId = createdColour.id;
       }
 
-      // Create material info if provided
       if (texture) {
-        await api.create('material', {
+        const createdMaterial = await api.create<Material>('material', {
           texture,
           softness: '',
           thickness: '',
         });
+        materialId = createdMaterial.id;
       }
 
-      // Create style info if provided
       if (styletype) {
-        await api.create('style', {
+        const createdStyle = await api.create<Style>('style', {
           styletype,
           styleyear: new Date().getFullYear(),
           stylefitsize: itemsize,
+        });
+        styleId = createdStyle.id;
+      }
+
+      // Create Info junction record if any metadata was provided
+      if (colourId || materialId || styleId) {
+        await api.create<Info>('info', {
+          dk_itemid: (createdItem as any).id ?? (createdItem as any).pk_item,
+          dk_styleid: styleId ?? 0,
+          dk_colourid: colourId ?? 0,
+          dk_material: materialId ?? 0,
+          tag_source: 'user',
         });
       }
 

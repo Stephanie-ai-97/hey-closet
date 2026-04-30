@@ -1,6 +1,6 @@
 import { TableName } from '../types';
 
-const BASE_URL = 'https://nuqpcxgonlqlxtujxmhx.supabase.co/functions/v1/storage';
+const BASE_URL = 'https://nuqpcxgonlqlxtujxmhx.supabase.co/functions/v1';
 const API_KEY = (import.meta as any).env.VITE_SUPABASE_API_KEY || (process.env as any).VITE_SUPABASE_API_KEY;
 
 async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
@@ -89,5 +89,33 @@ export const api = {
     return request(`/${table}/${id}`, {
       method: 'DELETE',
     });
-  }
+  },
+
+  uploadPhoto: async (itemId: number, file: File): Promise<string> => {
+    const SUPABASE_URL = 'https://nuqpcxgonlqlxtujxmhx.supabase.co';
+    const path = `${itemId}/${Date.now()}-${file.name.replace(/[^a-zA-Z0-9.\-_]/g, '_')}`;
+    const uploadUrl = `${SUPABASE_URL}/storage/v1/object/item-photos/${path}`;
+
+    const response = await fetch(uploadUrl, {
+      method: 'POST',
+      headers: {
+        'apikey': API_KEY,
+        'Authorization': `Bearer ${API_KEY}`,
+        'Content-Type': file.type,
+      },
+      body: file,
+    });
+
+    if (!response.ok) {
+      const errorBody = await response.text();
+      throw new Error(`Upload failed: ${errorBody}`);
+    }
+
+    return path;
+  },
+
+  getPhotoUrl: (path: string): string => {
+    const SUPABASE_URL = 'https://nuqpcxgonlqlxtujxmhx.supabase.co';
+    return `${SUPABASE_URL}/storage/v1/object/public/item-photos/${path}`;
+  },
 };

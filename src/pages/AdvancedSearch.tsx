@@ -9,13 +9,14 @@ import {
   Layers, 
   Zap,
   RotateCcw,
-  Package
+  MapPin,
 } from 'lucide-react';
 import { cn } from '../lib/utils';
 import { Link } from 'react-router-dom';
+import { ItemSVGIcon } from '../components/ItemSVGIcon';
 
 export default function AdvancedSearch() {
-  const { items, loading: itemsLoading } = useDashboardData();
+  const { items, storages, homes, loading: itemsLoading } = useDashboardData();
   const { colours, materials, styles, infos, loading: metaLoading } = useMetadata();
   
   const [selectedColours, setSelectedColours] = useState<number[]>([]);
@@ -54,6 +55,13 @@ export default function AdvancedSearch() {
   };
 
   if (itemsLoading || metaLoading) return <div className="p-8 animate-pulse">Initializing neural search...</div>;
+
+  const getLocationPath = (dk_closet: number) => {
+    const storage = storages.find(s => s.id === dk_closet);
+    const home = homes.find(h => h.id === storage?.dk_homelocation);
+    if (!storage) return 'Unknown';
+    return `${home?.homename ?? '?'} → ${storage.closet} → ${storage.closetpartition}`;
+  };
 
   return (
     <PageContainer 
@@ -156,12 +164,16 @@ export default function AdvancedSearch() {
                     key={item.id}
                     className="bg-white p-4 rounded-xl border border-zinc-200 shadow-sm flex items-center gap-4 hover:border-zinc-400 transition-all"
                   >
-                    <div className="w-16 h-16 bg-zinc-50 rounded-lg shrink-0 flex items-center justify-center text-zinc-300">
-                      <Package size={24} />
+                    <div className="w-16 h-16 bg-zinc-50 rounded-lg shrink-0 flex items-center justify-center text-zinc-400">
+                      <ItemSVGIcon itemtype={item.itemtype} size={32} />
                     </div>
-                    <div>
+                    <div className="flex-1 min-w-0">
                       <h4 className="font-bold text-zinc-900">{item.itemtype}</h4>
                       <p className="text-xs text-zinc-500">Size: {item.itemsize}</p>
+                      <div className="flex items-center gap-1 mt-1 text-zinc-400">
+                        <MapPin size={10} />
+                        <span className="text-[10px] truncate">{getLocationPath(item.dk_closet)}</span>
+                      </div>
                       <div className="flex gap-1 mt-2">
                         {infos.filter(info => info.dk_itemid === item.id).map(info => {
                           const c = colours.find(col => col.id === info.dk_colourid);
