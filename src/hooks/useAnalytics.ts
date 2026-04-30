@@ -46,10 +46,11 @@ export function useAnalytics() {
           api.list<Colour>('colour'),
         ]);
 
-        const itemsList: Item[] = (items as any)?.data ?? items ?? [];
+        // api.list already unwraps the {data:[]} envelope
+        const itemsList: Item[] = items;
         const wearList: any[] = [];
-        const infosList: Info[] = (infos as any)?.data ?? infos ?? [];
-        const coloursList: Colour[] = (colours as any)?.data ?? colours ?? [];
+        const infosList: Info[] = infos;
+        const coloursList: Colour[] = colours;
 
         // CPW per item
         const cpwItems: ItemCPW[] = itemsList

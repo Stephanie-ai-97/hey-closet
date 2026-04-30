@@ -22,10 +22,10 @@ export function useDashboardData() {
       console.debug('[useDashboardData] Raw API response - storages:', s);
       console.debug('[useDashboardData] Raw API response - items:', i);
       
-      // Extract data from response wrapper if it exists, then map API response to Home interface
-      const homesList = h?.data || h || [];
-      const storagesList = s?.data || s || [];
-      const itemsList = i?.data || i || [];
+      // api.list already unwraps the {data: [...]} envelope
+      const homesList = Array.isArray(h) ? h : [];
+      const storagesList = Array.isArray(s) ? s : [];
+      const itemsList = Array.isArray(i) ? i : [];
       
       const homesData = Array.isArray(homesList) ? homesList.map(home => ({
         id: home.pk_homelocation || home.id,

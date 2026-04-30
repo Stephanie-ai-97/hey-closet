@@ -62,13 +62,20 @@ async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
 }
 
 export const api = {
-  list: <T>(table: TableName, query?: Record<string, string>) => {
+  list: async <T>(table: TableName, query?: Record<string, string>): Promise<T[]> => {
     const queryString = query ? '?' + new URLSearchParams(query).toString() : '';
-    return request<T[]>(`/${table}${queryString}`);
+    const result = await request<any>(`/${table}${queryString}`);
+    const unwrapped = result?.data ?? result;
+    return Array.isArray(unwrapped) ? unwrapped : [];
   },
   
-  get: <T>(table: TableName, id: number) => {
-    return request<T>(`/${table}/${id}`);
+  get: async <T>(table: TableName, id: number): Promise<T> => {
+    const result = await request<any>(`/${table}/${id}`);
+    // Response may be {data: [item]} or {data: item} or item directly
+    if (result?.data !== undefined) {
+      return Array.isArray(result.data) ? result.data[0] : result.data;
+    }
+    return result as T;
   },
 
   create: <T>(table: TableName, data: Partial<T>) => {

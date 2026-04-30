@@ -22,9 +22,10 @@ export function useOutfits() {
         api.list<Item>('item'),
       ]);
 
-      const outfitsList: Outfit[] = (outfitsRaw as any)?.data ?? outfitsRaw ?? [];
-      const outfitItemsList: OutfitItem[] = (outfitItemsRaw as any)?.data ?? outfitItemsRaw ?? [];
-      const itemsList: Item[] = (itemsRaw as any)?.data ?? itemsRaw ?? [];
+      // api.list already unwraps the {data:[]} envelope
+      const outfitsList: Outfit[] = outfitsRaw;
+      const outfitItemsList: OutfitItem[] = outfitItemsRaw;
+      const itemsList: Item[] = itemsRaw;
 
       const normalizedItems = itemsList.map(i => ({ ...i, id: (i as any).pk_itemid ?? i.id }));
       const normalizedOutfits = outfitsList.map(o => ({ ...o, id: (o as any).pk_outfit ?? o.id }));
