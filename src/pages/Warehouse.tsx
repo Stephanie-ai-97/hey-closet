@@ -1,7 +1,12 @@
 import { PageContainer } from '../components/PageContainer';
 import { StorageModal } from '../components/StorageModal';
+import { EditHomeModal } from '../components/EditHomeModal';
+import { EditStorageModal } from '../components/EditStorageModal';
+import { EditItemModal } from '../components/EditItemModal';
+import { DeleteConfirmModal } from '../components/DeleteConfirmModal';
 import { useDashboardData } from '../hooks/useDashboardData';
 import { useState, useMemo } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { 
   Home as HomeIcon, 
   ChevronRight, 
@@ -9,16 +14,20 @@ import {
   Grid3X3,
   List,
   Plus,
-  Package
+  Package,
+  Pencil,
+  Trash2,
 } from 'lucide-react';
 import { cn } from '../lib/utils';
 import { motion, AnimatePresence } from 'motion/react';
 import { Home, Storage, Item } from '../types';
+import { api } from '../services/api';
 
 type ViewMode = 'grid' | 'list';
 
 export default function Warehouse() {
   const { homes, storages, items, loading, error, refetch } = useDashboardData();
+  const navigate = useNavigate();
   
   console.debug('[Warehouse] Data from useDashboardData:', { 
     homesCount: homes.length, 
@@ -34,6 +43,14 @@ export default function Warehouse() {
   const [selectedPartition, setSelectedPartition] = useState<string | null>(null);
   const [isStorageModalOpen, setIsStorageModalOpen] = useState(false);
   const [viewMode, setViewMode] = useState<ViewMode>('grid');
+
+  // Edit/Delete state
+  const [editingHome, setEditingHome] = useState<Home | null>(null);
+  const [deletingHome, setDeletingHome] = useState<Home | null>(null);
+  const [editingStorage, setEditingStorage] = useState<Storage | null>(null);
+  const [deletingStorage, setDeletingStorage] = useState<Storage | null>(null);
+  const [editingItem, setEditingItem] = useState<Item | null>(null);
+  const [deletingItem, setDeletingItem] = useState<Item | null>(null);
 
   const currentHome = homes.find(h => h.id === selectedHomeId);
 
@@ -175,23 +192,42 @@ export default function Warehouse() {
             className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"
           >
             {homes.map(home => (
-              <button
+              <div
                 key={home.id}
-                onClick={() => setSelectedHomeId(home.id)}
-                className="group bg-white dark:bg-zinc-900 p-6 rounded-2xl border border-zinc-200 dark:border-zinc-800 shadow-sm text-left hover:border-zinc-400 dark:hover:border-zinc-600 transition-all"
+                className="group relative bg-white dark:bg-zinc-900 p-6 rounded-2xl border border-zinc-200 dark:border-zinc-800 shadow-sm hover:border-zinc-400 dark:hover:border-zinc-600 transition-all cursor-pointer"
               >
-                <div className="flex items-center justify-between mb-4">
-                  <div className="p-3 bg-zinc-100 dark:bg-zinc-800 rounded-xl group-hover:bg-zinc-900 dark:group-hover:bg-zinc-100 group-hover:text-white dark:group-hover:text-zinc-900 transition-colors">
-                    <HomeIcon size={24} />
+                {/* Edit/Delete buttons */}
+                <div className="absolute top-3 right-3 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity z-10">
+                  <button
+                    onClick={(e) => { e.stopPropagation(); setEditingHome(home); }}
+                    className="p-1.5 rounded-lg bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 hover:bg-zinc-100 dark:hover:bg-zinc-700 transition-colors"
+                    title="Edit home"
+                  >
+                    <Pencil size={13} className="text-zinc-500 dark:text-zinc-400" />
+                  </button>
+                  <button
+                    onClick={(e) => { e.stopPropagation(); setDeletingHome(home); }}
+                    className="p-1.5 rounded-lg bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 hover:bg-red-50 dark:hover:bg-red-950 hover:border-red-200 dark:hover:border-red-800 transition-colors"
+                    title="Delete home"
+                  >
+                    <Trash2 size={13} className="text-zinc-500 dark:text-zinc-400 hover:text-red-500" />
+                  </button>
+                </div>
+                {/* Clickable card body */}
+                <div onClick={() => setSelectedHomeId(home.id)}>
+                  <div className="flex items-center justify-between mb-4">
+                    <div className="p-3 bg-zinc-100 dark:bg-zinc-800 rounded-xl group-hover:bg-zinc-900 dark:group-hover:bg-zinc-100 group-hover:text-white dark:group-hover:text-zinc-900 transition-colors">
+                      <HomeIcon size={24} />
+                    </div>
+                    <ChevronRight size={20} className="text-zinc-300 dark:text-zinc-600 group-hover:text-zinc-900 dark:group-hover:text-zinc-50" />
                   </div>
-                  <ChevronRight size={20} className="text-zinc-300 dark:text-zinc-600 group-hover:text-zinc-900 dark:group-hover:text-zinc-50" />
+                  <h3 className="text-lg font-bold">{home.homename}</h3>
+                  <p className="text-zinc-500 dark:text-zinc-400 text-sm mt-1">{home.homeaddress}</p>
+                  <div className="mt-4 pt-4 border-t border-zinc-50 dark:border-zinc-800 flex gap-4 text-xs font-medium text-zinc-400 dark:text-zinc-500">
+                    <span>{storages.filter(s => s.dk_homelocation === home.id).length} Storage Units</span>
+                  </div>
                 </div>
-                <h3 className="text-lg font-bold">{home.homename}</h3>
-                <p className="text-zinc-500 dark:text-zinc-400 text-sm mt-1">{home.homeaddress}</p>
-                <div className="mt-4 pt-4 border-t border-zinc-50 dark:border-zinc-800 flex gap-4 text-xs font-medium text-zinc-400 dark:text-zinc-500">
-                  <span>{storages.filter(s => s.dk_homelocation === home.id).length} Storage Units</span>
-                </div>
-              </button>
+              </div>
             ))}
           </motion.div>
         ) : !selectedStorageName ? (
@@ -255,39 +291,78 @@ export default function Warehouse() {
               
               if (viewMode === 'grid') {
                 return (
-                  <button
+                  <div
                     key={partition}
-                    onClick={() => setSelectedPartition(partition)}
-                    className="group bg-white dark:bg-zinc-900 p-6 rounded-2xl border border-zinc-200 dark:border-zinc-800 shadow-sm text-left hover:border-zinc-400 dark:hover:border-zinc-600 transition-all"
+                    className="group relative bg-white dark:bg-zinc-900 p-6 rounded-2xl border border-zinc-200 dark:border-zinc-800 shadow-sm hover:border-zinc-400 dark:hover:border-zinc-600 transition-all cursor-pointer"
                   >
-                    <div className="flex items-center justify-between mb-4">
-                      <div className="p-3 bg-zinc-100 dark:bg-zinc-800 rounded-xl group-hover:bg-zinc-900 dark:group-hover:bg-zinc-100 group-hover:text-white dark:group-hover:text-zinc-900 transition-colors">
-                        <Grid3X3 size={24} />
+                    {/* Edit/Delete buttons */}
+                    {storageUnit && (
+                      <div className="absolute top-3 right-3 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity z-10">
+                        <button
+                          onClick={(e) => { e.stopPropagation(); setEditingStorage(storageUnit); }}
+                          className="p-1.5 rounded-lg bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 hover:bg-zinc-100 dark:hover:bg-zinc-700 transition-colors"
+                          title="Edit storage"
+                        >
+                          <Pencil size={13} className="text-zinc-500 dark:text-zinc-400" />
+                        </button>
+                        <button
+                          onClick={(e) => { e.stopPropagation(); setDeletingStorage(storageUnit); }}
+                          className="p-1.5 rounded-lg bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 hover:bg-red-50 dark:hover:bg-red-950 hover:border-red-200 dark:hover:border-red-800 transition-colors"
+                          title="Delete storage"
+                        >
+                          <Trash2 size={13} className="text-zinc-500 dark:text-zinc-400" />
+                        </button>
                       </div>
-                      <ChevronRight size={20} className="text-zinc-300 dark:text-zinc-600 group-hover:text-zinc-900 dark:group-hover:text-zinc-50" />
-                    </div>
-                    <h3 className="text-lg font-bold">{partition}</h3>
-                    <p className="text-zinc-500 dark:text-zinc-400 text-sm mt-1">{partitionItems.length} Items</p>
-                    <div className="mt-4 pt-4 border-t border-zinc-50 dark:border-zinc-800 flex items-center justify-between">
-                      <span className="text-xs font-medium text-zinc-400 dark:text-zinc-500">
-                        {partitionItems.length} Item{partitionItems.length !== 1 ? 's' : ''}
-                      </span>
-                      {storageUnit?.hasstoragecover && (
-                        <span className="px-2 py-0.5 bg-zinc-100 dark:bg-zinc-800 rounded text-[10px] font-bold uppercase tracking-wider text-zinc-500 dark:text-zinc-400">
-                          Has Cover
+                    )}
+                    {/* Clickable card body */}
+                    <div onClick={() => setSelectedPartition(partition)}>
+                      <div className="flex items-center justify-between mb-4">
+                        <div className="p-3 bg-zinc-100 dark:bg-zinc-800 rounded-xl group-hover:bg-zinc-900 dark:group-hover:bg-zinc-100 group-hover:text-white dark:group-hover:text-zinc-900 transition-colors">
+                          <Grid3X3 size={24} />
+                        </div>
+                        <ChevronRight size={20} className="text-zinc-300 dark:text-zinc-600 group-hover:text-zinc-900 dark:group-hover:text-zinc-50" />
+                      </div>
+                      <h3 className="text-lg font-bold">{partition}</h3>
+                      <p className="text-zinc-500 dark:text-zinc-400 text-sm mt-1">{partitionItems.length} Items</p>
+                      <div className="mt-4 pt-4 border-t border-zinc-50 dark:border-zinc-800 flex items-center justify-between">
+                        <span className="text-xs font-medium text-zinc-400 dark:text-zinc-500">
+                          {partitionItems.length} Item{partitionItems.length !== 1 ? 's' : ''}
                         </span>
-                      )}
+                        {storageUnit?.hasstoragecover && (
+                          <span className="px-2 py-0.5 bg-zinc-100 dark:bg-zinc-800 rounded text-[10px] font-bold uppercase tracking-wider text-zinc-500 dark:text-zinc-400">
+                            Has Cover
+                          </span>
+                        )}
+                      </div>
                     </div>
-                  </button>
+                  </div>
                 );
               } else {
                 return (
-                  <button
+                  <div
                     key={partition}
-                    onClick={() => setSelectedPartition(partition)}
-                    className="group bg-white dark:bg-zinc-900 p-4 rounded-xl border border-zinc-200 dark:border-zinc-800 shadow-sm text-left hover:border-zinc-400 dark:hover:border-zinc-600 hover:bg-zinc-50 dark:hover:bg-zinc-800 transition-all"
+                    className="group relative bg-white dark:bg-zinc-900 p-4 rounded-xl border border-zinc-200 dark:border-zinc-800 shadow-sm hover:border-zinc-400 dark:hover:border-zinc-600 hover:bg-zinc-50 dark:hover:bg-zinc-800 transition-all cursor-pointer"
                   >
-                    <div className="flex items-center justify-between">
+                    {/* Edit/Delete buttons */}
+                    {storageUnit && (
+                      <div className="absolute top-3 right-3 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity z-10">
+                        <button
+                          onClick={(e) => { e.stopPropagation(); setEditingStorage(storageUnit); }}
+                          className="p-1.5 rounded-lg bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 hover:bg-zinc-100 dark:hover:bg-zinc-700 transition-colors"
+                          title="Edit storage"
+                        >
+                          <Pencil size={13} className="text-zinc-500 dark:text-zinc-400" />
+                        </button>
+                        <button
+                          onClick={(e) => { e.stopPropagation(); setDeletingStorage(storageUnit); }}
+                          className="p-1.5 rounded-lg bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 hover:bg-red-50 dark:hover:bg-red-950 hover:border-red-200 dark:hover:border-red-800 transition-colors"
+                          title="Delete storage"
+                        >
+                          <Trash2 size={13} className="text-zinc-500 dark:text-zinc-400" />
+                        </button>
+                      </div>
+                    )}
+                    <div onClick={() => setSelectedPartition(partition)} className="flex items-center justify-between">
                       <div className="flex-1">
                         <h3 className="font-bold text-zinc-900 dark:text-zinc-50">{partition}</h3>
                         <p className="text-sm text-zinc-500 dark:text-zinc-400 mt-1">{partitionItems.length} Items</p>
@@ -301,7 +376,7 @@ export default function Warehouse() {
                         <ChevronRight size={20} className="text-zinc-300 group-hover:text-zinc-900" />
                       </div>
                     </div>
-                  </button>
+                  </div>
                 );
               }
             })}
@@ -380,7 +455,28 @@ export default function Warehouse() {
                         </div>
                       </td>
                       <td className="px-6 py-4">
-                        <button className="text-xs font-bold text-zinc-900 dark:text-zinc-50 hover:underline">View Details</button>
+                        <div className="flex items-center gap-2">
+                          <button
+                            onClick={() => navigate(`/item/${item.id}`)}
+                            className="text-xs font-bold text-zinc-900 dark:text-zinc-50 hover:underline"
+                          >
+                            View
+                          </button>
+                          <button
+                            onClick={() => setEditingItem(item)}
+                            className="p-1.5 rounded-lg hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors"
+                            title="Edit item"
+                          >
+                            <Pencil size={13} className="text-zinc-400 dark:text-zinc-500" />
+                          </button>
+                          <button
+                            onClick={() => setDeletingItem(item)}
+                            className="p-1.5 rounded-lg hover:bg-red-50 dark:hover:bg-red-950 transition-colors"
+                            title="Delete item"
+                          >
+                            <Trash2 size={13} className="text-zinc-400 dark:text-zinc-500 hover:text-red-500" />
+                          </button>
+                        </div>
                       </td>
                     </tr>
                   ))}
@@ -408,6 +504,84 @@ export default function Warehouse() {
           setIsStorageModalOpen(false);
         }}
       />
+
+      {/* Edit Home Modal */}
+      {editingHome && (
+        <EditHomeModal
+          isOpen={!!editingHome}
+          home={editingHome}
+          onClose={() => setEditingHome(null)}
+          onHomeUpdated={() => { refetch(); setEditingHome(null); }}
+        />
+      )}
+
+      {/* Delete Home Modal */}
+      {deletingHome && (
+        <DeleteConfirmModal
+          isOpen={!!deletingHome}
+          itemName={`${deletingHome.homename} (and all its storage units)`}
+          onClose={() => setDeletingHome(null)}
+          onConfirm={async () => {
+            await api.delete('home', deletingHome.id);
+            setDeletingHome(null);
+            setSelectedHomeId(null);
+            setSelectedStorageName(null);
+            setSelectedPartition(null);
+            refetch();
+          }}
+        />
+      )}
+
+      {/* Edit Storage Modal */}
+      {editingStorage && (
+        <EditStorageModal
+          isOpen={!!editingStorage}
+          storage={editingStorage}
+          onClose={() => setEditingStorage(null)}
+          onStorageUpdated={() => { refetch(); setEditingStorage(null); }}
+        />
+      )}
+
+      {/* Delete Storage Modal */}
+      {deletingStorage && (
+        <DeleteConfirmModal
+          isOpen={!!deletingStorage}
+          itemName={`${deletingStorage.closet} — ${deletingStorage.closetpartition}`}
+          onClose={() => setDeletingStorage(null)}
+          onConfirm={async () => {
+            await api.delete('storage', deletingStorage.id);
+            setDeletingStorage(null);
+            setSelectedPartition(null);
+            refetch();
+          }}
+        />
+      )}
+
+      {/* Edit Item Modal */}
+      {editingItem && (
+        <EditItemModal
+          isOpen={!!editingItem}
+          item={editingItem}
+          storages={storages}
+          homes={homes}
+          onClose={() => setEditingItem(null)}
+          onItemUpdated={() => { refetch(); setEditingItem(null); }}
+        />
+      )}
+
+      {/* Delete Item Modal */}
+      {deletingItem && (
+        <DeleteConfirmModal
+          isOpen={!!deletingItem}
+          itemName={`${deletingItem.itemtype} (${deletingItem.itemsize})`}
+          onClose={() => setDeletingItem(null)}
+          onConfirm={async () => {
+            await api.delete('item', deletingItem.id);
+            setDeletingItem(null);
+            refetch();
+          }}
+        />
+      )}
     </PageContainer>
   );
 }

@@ -1,5 +1,7 @@
 import { PageContainer } from '../components/PageContainer';
 import { ItemModal } from '../components/ItemModal';
+import { EditItemModal } from '../components/EditItemModal';
+import { DeleteConfirmModal } from '../components/DeleteConfirmModal';
 import { useDashboardData } from '../hooks/useDashboardData';
 import { 
   Search, 
@@ -8,12 +10,15 @@ import {
   ExternalLink,
   Plus,
   MapPin,
+  Pencil,
+  Trash2,
 } from 'lucide-react';
 import { useState, useMemo } from 'react';
 import { cn } from '../lib/utils';
 import { Link } from 'react-router-dom';
 import { ItemSVGIcon } from '../components/ItemSVGIcon';
 import { Item } from '../types';
+import { api } from '../services/api';
 
 type WashStatus = Item['wash_status'];
 
@@ -27,6 +32,8 @@ export default function Inventory() {
   const [filterHome, setFilterHome] = useState<number | null>(null);
   const [filterStatus, setFilterStatus] = useState<WashStatus | null>(null);
   const [filterType, setFilterType] = useState('');
+  const [editingItem, setEditingItem] = useState<Item | null>(null);
+  const [deletingItem, setDeletingItem] = useState<Item | null>(null);
 
   const itemTypes = useMemo(() => Array.from(new Set(items.map(i => i.itemtype))).sort(), [items]);
 
@@ -78,6 +85,28 @@ export default function Inventory() {
         onClose={() => setIsModalOpen(false)}
         onItemAdded={() => refetch()}
       />
+      {editingItem && (
+        <EditItemModal
+          isOpen={!!editingItem}
+          item={editingItem}
+          storages={storages}
+          homes={homes}
+          onClose={() => setEditingItem(null)}
+          onItemUpdated={() => { refetch(); setEditingItem(null); }}
+        />
+      )}
+      {deletingItem && (
+        <DeleteConfirmModal
+          isOpen={!!deletingItem}
+          itemName={`${deletingItem.itemtype} (${deletingItem.itemsize})`}
+          onClose={() => setDeletingItem(null)}
+          onConfirm={async () => {
+            await api.delete('item', deletingItem.id);
+            setDeletingItem(null);
+            refetch();
+          }}
+        />
+      )}
       <PageContainer 
         title="Global Inventory" 
         subtitle="Comprehensive view of every item in your collection."
@@ -206,11 +235,28 @@ export default function Inventory() {
             : 'Unknown';
 
           return (
-            <Link 
-              to={`/item/${item.id}`}
-              key={item.id} 
-              className="group bg-white dark:bg-zinc-900 rounded-2xl border border-zinc-200 dark:border-zinc-800 p-4 hover:border-zinc-400 dark:hover:border-zinc-600 hover:shadow-lg transition-all flex flex-col"
+            <div
+              key={item.id}
+              className="group relative bg-white dark:bg-zinc-900 rounded-2xl border border-zinc-200 dark:border-zinc-800 p-4 hover:border-zinc-400 dark:hover:border-zinc-600 hover:shadow-lg transition-all flex flex-col"
             >
+              {/* Edit/Delete action buttons */}
+              <div className="absolute top-3 right-3 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity z-10">
+                <button
+                  onClick={() => setEditingItem(item)}
+                  className="p-1.5 rounded-lg bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 hover:bg-zinc-100 dark:hover:bg-zinc-700 transition-colors"
+                  title="Edit item"
+                >
+                  <Pencil size={13} className="text-zinc-500 dark:text-zinc-400" />
+                </button>
+                <button
+                  onClick={() => setDeletingItem(item)}
+                  className="p-1.5 rounded-lg bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 hover:bg-red-50 dark:hover:bg-red-950 hover:border-red-200 dark:hover:border-red-800 transition-colors"
+                  title="Delete item"
+                >
+                  <Trash2 size={13} className="text-zinc-500 dark:text-zinc-400" />
+                </button>
+              </div>
+              <Link to={`/item/${item.id}`} className="flex flex-col flex-1">
               <div className="relative aspect-square bg-zinc-100 dark:bg-zinc-800 rounded-xl mb-4 overflow-hidden flex items-center justify-center text-zinc-400 group-hover:bg-zinc-200 dark:group-hover:bg-zinc-700 transition-colors">
                 <ItemSVGIcon itemtype={item.itemtype} size={48} />
                 <div className="absolute top-2 right-2 px-2 py-1 bg-white/80 dark:bg-zinc-900/80 backdrop-blur rounded-lg text-[10px] font-bold uppercase tracking-tight dark:text-zinc-50">
@@ -246,7 +292,8 @@ export default function Inventory() {
                    </div>
                 </div>
               </div>
-            </Link>
+              </Link>
+            </div>
           );
         })}
       </div>
