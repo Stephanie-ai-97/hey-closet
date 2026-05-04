@@ -43,6 +43,17 @@ export function useDashboardData() {
       
       console.debug('[useDashboardData] Item IDs:', itemsData.map(i => i.id));
       
+      // Debug: try to fetch info for first item to see if endpoint works
+      if (itemsData.length > 0) {
+        try {
+          const firstItemId = itemsData[0].id;
+          const itemInfoTest = await api.list<any>('info', { dk_itemid: String(firstItemId) });
+          console.debug('[useDashboardData] Test: Fetched info for item', firstItemId, ':', itemInfoTest);
+        } catch (err) {
+          console.debug('[useDashboardData] Test: Failed to fetch info with query filter:', err);
+        }
+      }
+      
       console.debug('[useDashboardData] After processing - homes:', homesData, 'count:', homesData.length);
       console.debug('[useDashboardData] After processing - storages:', storagesData, 'count:', storagesData.length);
       console.debug('[useDashboardData] After processing - items:', itemsData, 'count:', itemsData.length);
