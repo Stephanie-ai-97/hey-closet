@@ -30,7 +30,7 @@ HeyCloset solves the problem of wardrobe sprawl across multiple locations. Key c
 - **Outfit archive** — Curate and save named outfit combinations with occasion/season tags
 - **Reference photos** — Upload and manage item photos via Supabase Storage
 - **Dimensional tag search** — Filter inventory by colour, style, and material metadata
-- **Wash health protocol** — Alert on items unwashed for 30+ days
+- **Wash health protocol** — Alert on items unwashed for 30+ days.
 
 ---
 
