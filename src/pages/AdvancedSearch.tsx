@@ -25,27 +25,48 @@ export default function AdvancedSearch() {
 
   const toggleFilter = (list: number[], setList: (l: number[]) => void, id: number) => {
     if (list.includes(id)) {
+      console.debug('[AdvancedSearch] Removing filter ID:', id);
       setList(list.filter(i => i !== id));
     } else {
+      console.debug('[AdvancedSearch] Adding filter ID:', id);
       setList([...list, id]);
     }
   };
 
   const filteredItems = useMemo(() => {
+    console.debug('[AdvancedSearch] Filtering with:', {
+      selectedColours,
+      selectedStyles,
+      selectedMaterials,
+      totalItems: items.length,
+      totalInfos: infos.length,
+    });
+
     if (selectedColours.length === 0 && selectedStyles.length === 0 && selectedMaterials.length === 0) {
+      console.debug('[AdvancedSearch] No filters selected, returning empty array');
       return [];
     }
 
-    return items.filter(item => {
+    const result = items.filter(item => {
       const itemInfo = infos.filter(info => info.dk_itemid === item.id);
-      if (itemInfo.length === 0) return false;
+      if (itemInfo.length === 0) {
+        console.debug('[AdvancedSearch] Item', item.id, 'has no info records');
+        return false;
+      }
 
       const matchesColour = selectedColours.length === 0 || itemInfo.some(info => selectedColours.includes(info.dk_colourid));
       const matchesStyle = selectedStyles.length === 0 || itemInfo.some(info => selectedStyles.includes(info.dk_styleid));
       const matchesMaterial = selectedMaterials.length === 0 || itemInfo.some(info => selectedMaterials.includes(info.dk_material));
 
-      return matchesColour && matchesStyle && matchesMaterial;
+      const matches = matchesColour && matchesStyle && matchesMaterial;
+      if (matches) {
+        console.debug('[AdvancedSearch] Item', item.id, 'matches filters');
+      }
+      return matches;
     });
+    
+    console.debug('[AdvancedSearch] Filtered result count:', result.length);
+    return result;
   }, [items, infos, selectedColours, selectedStyles, selectedMaterials]);
 
   const resetFilters = () => {

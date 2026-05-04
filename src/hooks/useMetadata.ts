@@ -17,12 +17,26 @@ export function useMetadata() {
           api.list<Colour>('colour'),
           api.list<Material>('material'),
           api.list<Style>('style'),
-          api.list<Info>('info'),
+          api.list<any>('info'),
         ]);
+        console.debug('[useMetadata] Raw API response - infos:', i);
+        
+        // Remap pk_* fields to expected field names
+        const infosData = Array.isArray(i) ? i.map((info: any) => ({
+          id: info.pk_info || info.id,
+          dk_itemid: info.pk_item || info.dk_itemid,
+          dk_styleid: info.pk_style || info.dk_styleid,
+          dk_colourid: info.pk_colour || info.dk_colourid,
+          dk_material: info.pk_material || info.dk_material,
+          tag_source: info.tag_source || 'system',
+        })) : [];
+        
+        console.debug('[useMetadata] After remapping - infos:', infosData);
+        
         setColours(Array.isArray(c) ? c : []);
         setMaterials(Array.isArray(m) ? m : []);
         setStyles(Array.isArray(s) ? s : []);
-        setInfos(Array.isArray(i) ? i : []);
+        setInfos(infosData);
       } catch (err) {
         console.error('Failed to fetch metadata', err);
         setColours([]);
