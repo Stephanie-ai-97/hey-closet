@@ -30,7 +30,15 @@ export default function AdvancedSearch() {
     stylesCount: styles.length,
     materialsCount: materials.length,
     sampleInfos: infos.slice(0, 3),
-    sampleItems: items.slice(0, 3),
+    sampleItems: items.slice(0, 3).map(i => ({
+      id: i.id,
+      itemtype: i.itemtype,
+      // Check if metadata might be stored differently on item
+      ...Object.keys(i).filter(k => k.includes('colour') || k.includes('material') || k.includes('style')).reduce((acc, key) => {
+        acc[key] = (i as any)[key];
+        return acc;
+      }, {} as any),
+    })),
   });
 
   const toggleFilter = (list: number[], setList: (l: number[]) => void, id: number) => {
