@@ -23,6 +23,16 @@ export default function AdvancedSearch() {
   const [selectedStyles, setSelectedStyles] = useState<number[]>([]);
   const [selectedMaterials, setSelectedMaterials] = useState<number[]>([]);
 
+  console.debug('[AdvancedSearch] Component rendered with:', {
+    itemsCount: items.length,
+    infosCount: infos.length,
+    coloursCount: colours.length,
+    stylesCount: styles.length,
+    materialsCount: materials.length,
+    sampleInfos: infos.slice(0, 3),
+    sampleItems: items.slice(0, 3),
+  });
+
   const toggleFilter = (list: number[], setList: (l: number[]) => void, id: number) => {
     if (list.includes(id)) {
       console.debug('[AdvancedSearch] Removing filter ID:', id);
@@ -40,6 +50,8 @@ export default function AdvancedSearch() {
       selectedMaterials,
       totalItems: items.length,
       totalInfos: infos.length,
+      itemIds: items.map(i => i.id),
+      infoRecords: infos.slice(0, 3), // Log first 3 info records
     });
 
     if (selectedColours.length === 0 && selectedStyles.length === 0 && selectedMaterials.length === 0) {
@@ -48,9 +60,17 @@ export default function AdvancedSearch() {
     }
 
     const result = items.filter(item => {
-      const itemInfo = infos.filter(info => info.dk_itemid === item.id);
+      const itemInfo = infos.filter(info => {
+        const matches = info.dk_itemid === item.id;
+        if (!matches) {
+          console.debug(`[AdvancedSearch] Info dk_itemid=${info.dk_itemid} doesn't match item.id=${item.id}`);
+        }
+        return matches;
+      });
+      
+      console.debug('[AdvancedSearch] Item', item.id, '- found', itemInfo.length, 'info records');
+      
       if (itemInfo.length === 0) {
-        console.debug('[AdvancedSearch] Item', item.id, 'has no info records');
         return false;
       }
 

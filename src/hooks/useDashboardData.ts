@@ -41,6 +41,8 @@ export function useDashboardData() {
         id: (item as any).pk_itemid ?? item.id,
       })) : [];
       
+      console.debug('[useDashboardData] Item IDs:', itemsData.map(i => i.id));
+      
       console.debug('[useDashboardData] After processing - homes:', homesData, 'count:', homesData.length);
       console.debug('[useDashboardData] After processing - storages:', storagesData, 'count:', storagesData.length);
       console.debug('[useDashboardData] After processing - items:', itemsData, 'count:', itemsData.length);
