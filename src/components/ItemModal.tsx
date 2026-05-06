@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { X } from 'lucide-react';
-import { Item, Storage, Home, Colour, Material, Style, Info } from '../types';
+import { Storage, Home, Info } from '../types';
 import { api } from '../services/api';
 
 interface ItemModalProps {
@@ -52,8 +52,8 @@ export function ItemModal({ isOpen, storages, homes, onClose, onItemAdded }: Ite
     setError(null);
 
     try {
-      // Create item
-      const itemData: any = {
+      // Step 1: Create item
+      const itemResponse = await api.create<any>('item', {
         dk_closet: Number(dk_closet),
         itemtype,
         itemsize,
@@ -61,48 +61,36 @@ export function ItemModal({ isOpen, storages, homes, onClose, onItemAdded }: Ite
         itemlikerating,
         itemcomment,
         itemwashmethod,
-      };
+        itemcost: itemcost ? parseFloat(itemcost) : 0,
+      });
 
-      // Only add cost if provided
-      if (itemcost) {
-        itemData.itemcost = parseFloat(itemcost);
-      } else {
-        itemData.itemcost = 0;
-      }
-
-      const createdItem = await api.create<Item>('item', itemData);
-
-      // Create metadata records - these are now REQUIRED
-      // So all of these will have valid values
-      const createdColour = await api.create<Colour>('colour', {
+      // Step 2: Create colour
+      const colourResponse = await api.create<any>('colour', {
         colouroverall,
         colourinner: '',
         colourouter: '',
       });
-      const colourId = createdColour.id;
 
-      const createdMaterial = await api.create<Material>('material', {
+      // Step 3: Create material
+      const materialResponse = await api.create<any>('material', {
         texture,
         softness: '',
         thickness: '',
       });
-      const materialId = createdMaterial.id;
 
-      const createdStyle = await api.create<Style>('style', {
+      // Step 4: Create style
+      const styleResponse = await api.create<any>('style', {
         styletype,
         styleyear: new Date().getFullYear(),
         stylefitsize: itemsize,
       });
-      const styleId = createdStyle.id;
 
-      // Create Info junction record with all required IDs
-      // All fields are guaranteed to be valid now
+      // Step 5: Create info junction using pk_* fields from each response
       await api.create<Info>('info', {
-        dk_itemid: (createdItem as any).pk_itemid ?? (createdItem as any).id,
-        dk_styleid: styleId,
-        dk_colourid: colourId,
-        dk_material: materialId,
-        tag_source: 'user',
+        dk_itemid: itemResponse.data?.pk_itemid ?? itemResponse.pk_itemid,
+        dk_styleid: styleResponse.data?.pk_styleid ?? styleResponse.pk_styleid,
+        dk_colourid: colourResponse.data?.pk_colourid ?? colourResponse.pk_colourid,
+        dk_material: materialResponse.data?.pk_material ?? materialResponse.pk_material,
       });
 
       // Reset form
