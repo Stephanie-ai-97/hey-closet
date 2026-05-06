@@ -24,18 +24,114 @@ Base URL: `https://nuqpcxgonlqlxtujxmhx.supabase.co/functions/v1/storage`
 Auth header: `VITE_SUPABASE_API_KEY` (env var, never hardcode).
 
 ### Data Models (`src/types.ts`)
-| Table | Key Fields |
-|-------|-----------|
-| Home | `id` (mapped from `pk_homelocation`), `homename`, `homeaddress` |
-| Storage | `id` (mapped from `pk_closet`), `closet`, `closetpartition`, `hasstoragecover`, `dk_homelocation` |
-| Item | `id` (mapped from `pk_item`), `dk_closet`, `itemtype`, `itemsize`, `itemcost`, `itemlikerating` (1–5), `itemwashmethod`, `isoncamera` |
-| Wash | `id`, `dk_itemid`, `lastwashdate` |
-| Colour | `id`, `colouroverall`, `colourinner`, `colourouter` |
-| Material | `id`, `texture`, `softness`, `thickness` |
-| Style | `id`, `styletype`, `styleyear`, `stylefitsize` |
-| Info | Junction table linking Item → Colour/Material/Style via `dk_itemid`, `dk_styleid`, `dk_colourid`, `dk_material` |
 
 **Important**: API responses use `pk_*` field names; hooks remap them to `id`. Always use the remapped shape downstream.
+
+#### Database Schema
+
+**home** — Storage locations (user homes/buildings)
+| Field | Type | Constraints | Notes |
+|-------|------|-----------|-------|
+| `pk_homelocation` | INT (identity) | Primary Key | Remapped to `id` |
+| `homename` | VARCHAR(100) | – | Home/location name |
+| `homeaddress` | VARCHAR(200) | – | Physical address |
+| `created_at` | TIMESTAMP | Default: CURRENT_TIMESTAMP | – |
+| `updated_at` | TIMESTAMP | Default: CURRENT_TIMESTAMP | Auto-updated on write |
+
+**storage** — Closets/wardrobes within homes (contains partitions and items)
+| Field | Type | Constraints | Notes |
+|-------|------|-----------|-------|
+| `pk_closet` | INT (identity) | Primary Key | Remapped to `id` |
+| `dk_homelocation` | INT | Foreign Key → home | Which home this closet belongs to |
+| `closet` | VARCHAR(100) | – | Closet name |
+| `closetpartition` | VARCHAR(100) | – | Partition/section within closet |
+| `hasstoragecover` | BOOLEAN | – | Whether it has a cover |
+| `created_at` | TIMESTAMP | Default: CURRENT_TIMESTAMP | – |
+| `updated_at` | TIMESTAMP | Default: CURRENT_TIMESTAMP | Auto-updated on write |
+
+**item** — Individual clothing pieces
+| Field | Type | Constraints | Notes |
+|-------|------|-----------|-------|
+| `pk_itemid` | INT (identity) | Primary Key | Remapped to `id` |
+| `dk_closet` | INT | Foreign Key → storage (CASCADE delete) | Which closet item is in |
+| `itemtype` | VARCHAR(100) | NOT NULL | Type of garment (e.g., "shirt", "pants") |
+| `itemsize` | VARCHAR(50) | – | Size (S, M, L, etc.) |
+| `itemcost` | NUMERIC(10, 2) | CHECK ≥ 0 | Purchase price |
+| `itemlikerating` | SMALLINT | CHECK 1–10 | User preference rating |
+| `itemwashmethod` | VARCHAR(100) | – | Wash instructions |
+| `itemcomment` | VARCHAR(500) | – | Additional notes |
+| `isoncamera` | BOOLEAN | – | If item has photo documentation |
+| `created_at` | TIMESTAMP | Default: CURRENT_TIMESTAMP | – |
+| `updated_at` | TIMESTAMP | Default: CURRENT_TIMESTAMP | Auto-updated on write |
+
+**colour** — Colour metadata for items
+| Field | Type | Constraints | Notes |
+|-------|------|-----------|-------|
+| `pk_colourid` | INT (identity) | Primary Key | Remapped to `id` |
+| `colouroverall` | VARCHAR(100) | – | Primary colour |
+| `colourinner` | VARCHAR(100) | – | Inner colour (for layered items) |
+| `colourouter` | VARCHAR(100) | – | Outer colour (for layered items) |
+| `created_at` | TIMESTAMP | Default: CURRENT_TIMESTAMP | – |
+| `updated_at` | TIMESTAMP | Default: CURRENT_TIMESTAMP | Auto-updated on write |
+
+**material** — Material metadata for items
+| Field | Type | Constraints | Notes |
+|-------|------|-----------|-------|
+| `pk_material` | INT (identity) | Primary Key | Remapped to `id` |
+| `texture` | VARCHAR(100) | – | Surface texture (e.g., "smooth", "knit") |
+| `softness` | VARCHAR(100) | – | Softness level |
+| `thickness` | VARCHAR(100) | – | Fabric thickness |
+| `created_at` | TIMESTAMP | Default: CURRENT_TIMESTAMP | – |
+| `updated_at` | TIMESTAMP | Default: CURRENT_TIMESTAMP | Auto-updated on write |
+
+**style** — Style metadata for items
+| Field | Type | Constraints | Notes |
+|-------|------|-----------|-------|
+| `pk_styleid` | INT (identity) | Primary Key | Remapped to `id` |
+| `styletype` | VARCHAR(100) | – | Style category (e.g., "casual", "formal") |
+| `styleyear` | SMALLINT | – | Era/year the style is from |
+| `stylefitsize` | VARCHAR(50) | – | Fit descriptor (e.g., "slim", "relaxed") |
+| `created_at` | TIMESTAMP | Default: CURRENT_TIMESTAMP | – |
+| `updated_at` | TIMESTAMP | Default: CURRENT_TIMESTAMP | Auto-updated on write |
+
+**info** — Junction table linking items to dimensional metadata
+| Field | Type | Constraints | Notes |
+|-------|------|-----------|-------|
+| `pk_infoid` | INT (identity) | Primary Key | – |
+| `dk_itemid` | INT | Foreign Key → item (CASCADE delete) | Item reference |
+| `dk_styleid` | INT | Foreign Key → style | Style reference |
+| `dk_colourid` | INT | Foreign Key → colour | Colour reference |
+| `dk_material` | INT | Foreign Key → material | Material reference |
+| `created_at` | TIMESTAMP | Default: CURRENT_TIMESTAMP | – |
+| `updated_at` | TIMESTAMP | Default: CURRENT_TIMESTAMP | Auto-updated on write |
+| Unique Constraint | UNIQUE(dk_itemid, dk_styleid, dk_colourid, dk_material) | – | Prevents duplicate metadata combinations |
+
+**wash** — Wash health tracking for items
+| Field | Type | Constraints | Notes |
+|-------|------|-----------|-------|
+| `pk_wash` | INT (identity) | Primary Key | Remapped to `id` |
+| `dk_itemid` | INT | Foreign Key → item (CASCADE delete) | Item being tracked |
+| `lastwashdate` | DATE | – | Last wash date; critical threshold is 30+ days |
+| `created_at` | TIMESTAMP | Default: CURRENT_TIMESTAMP | – |
+| `updated_at` | TIMESTAMP | Default: CURRENT_TIMESTAMP | Auto-updated on write |
+
+**for_location** — Location-based styling information
+| Field | Type | Constraints | Notes |
+|-------|------|-----------|-------|
+| `pk_forlocationid` | INT (identity) | Primary Key | – |
+| `dk_styleid` | INT | Foreign Key → style | Associated style |
+| `forlocationtype` | VARCHAR(100) | – | Location type (e.g., "office", "beach") |
+| `forlocationaddress` | VARCHAR(200) | – | Specific address/description |
+| `isforlocationindoor` | BOOLEAN | – | Whether it's an indoor location |
+| `created_at` | TIMESTAMP | Default: CURRENT_TIMESTAMP | – |
+| `updated_at` | TIMESTAMP | Default: CURRENT_TIMESTAMP | Auto-updated on write |
+
+#### Hierarchy & Relationships
+- **Home** → many **Storage** (closets/wardrobes)
+- **Storage** → many **Item** (individual pieces)
+- **Item** ← one **Wash** (health tracking, 1:1 relationship)
+- **Item** ← many **Info** entries (can have multiple metadata combinations)
+- **Info** → **Colour**, **Material**, **Style** (dimensional metadata)
 
 ### Hooks (`src/hooks/`)
 - `useDashboardData()` — homes, storages, items; exposes `loading`, `error`, `refetch`
