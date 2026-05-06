@@ -17,11 +17,12 @@ import { ItemSVGIcon } from '../components/ItemSVGIcon';
 
 export default function AdvancedSearch() {
   const { items, storages, homes, loading: itemsLoading } = useDashboardData();
-  const { colours, materials, styles, infos, loading: metaLoading } = useMetadata();
+  const { colours, materials, styles, infos, forLocations, loading: metaLoading } = useMetadata();
   
   const [selectedColours, setSelectedColours] = useState<number[]>([]);
   const [selectedStyles, setSelectedStyles] = useState<number[]>([]);
   const [selectedMaterials, setSelectedMaterials] = useState<number[]>([]);
+  const [selectedLocations, setSelectedLocations] = useState<number[]>([]);
 
   console.debug('[AdvancedSearch] Component rendered with:', {
     itemsCount: items.length,
@@ -29,6 +30,7 @@ export default function AdvancedSearch() {
     coloursCount: colours.length,
     stylesCount: styles.length,
     materialsCount: materials.length,
+    forLocationsCount: forLocations.length,
     sampleInfos: infos.slice(0, 3),
     sampleItems: items.slice(0, 3).map(i => ({
       id: i.id,
@@ -56,13 +58,14 @@ export default function AdvancedSearch() {
       selectedColours,
       selectedStyles,
       selectedMaterials,
+      selectedLocations,
       totalItems: items.length,
       totalInfos: infos.length,
       itemIds: items.map(i => i.id),
       infoRecords: infos.slice(0, 3), // Log first 3 info records
     });
 
-    if (selectedColours.length === 0 && selectedStyles.length === 0 && selectedMaterials.length === 0) {
+    if (selectedColours.length === 0 && selectedStyles.length === 0 && selectedMaterials.length === 0 && selectedLocations.length === 0) {
       console.debug('[AdvancedSearch] No filters selected, returning empty array');
       return [];
     }
@@ -85,8 +88,13 @@ export default function AdvancedSearch() {
       const matchesColour = selectedColours.length === 0 || itemInfo.some(info => selectedColours.includes(info.dk_colourid));
       const matchesStyle = selectedStyles.length === 0 || itemInfo.some(info => selectedStyles.includes(info.dk_styleid));
       const matchesMaterial = selectedMaterials.length === 0 || itemInfo.some(info => selectedMaterials.includes(info.dk_material));
+      
+      // For locations: check if any of the item's styles are linked to selected locations
+      const matchesLocation = selectedLocations.length === 0 || itemInfo.some(info => {
+        return forLocations.some(loc => loc.dk_styleid === info.dk_styleid && selectedLocations.includes(loc.id));
+      });
 
-      const matches = matchesColour && matchesStyle && matchesMaterial;
+      const matches = matchesColour && matchesStyle && matchesMaterial && matchesLocation;
       if (matches) {
         console.debug('[AdvancedSearch] Item', item.id, 'matches filters');
       }
@@ -95,12 +103,13 @@ export default function AdvancedSearch() {
     
     console.debug('[AdvancedSearch] Filtered result count:', result.length);
     return result;
-  }, [items, infos, selectedColours, selectedStyles, selectedMaterials]);
+  }, [items, infos, selectedColours, selectedStyles, selectedMaterials, selectedLocations, forLocations]);
 
   const resetFilters = () => {
     setSelectedColours([]);
     setSelectedStyles([]);
     setSelectedMaterials([]);
+    setSelectedLocations([]);
   };
 
   if (itemsLoading || metaLoading) return <div className="p-8 animate-pulse dark:text-zinc-400">Initializing neural search...</div>;
@@ -196,6 +205,30 @@ export default function AdvancedSearch() {
                   )}
                 >
                   {m.texture}
+                </button>
+              ))}
+            </div>
+          </section>
+
+          {/* For Locations */}
+          <section>
+            <div className="flex items-center gap-2 mb-4 text-zinc-900 dark:text-zinc-50">
+              <MapPin size={18} />
+              <h3 className="text-sm font-bold uppercase tracking-wider">Location Type</h3>
+            </div>
+            <div className="flex flex-wrap gap-2">
+              {forLocations.map(loc => (
+                <button
+                  key={loc.id}
+                  onClick={() => toggleFilter(selectedLocations, setSelectedLocations, loc.id)}
+                  className={cn(
+                    "px-3 py-1.5 rounded-full text-xs font-medium border transition-all",
+                    selectedLocations.includes(loc.id)
+                      ? "bg-zinc-900 dark:bg-zinc-100 text-white dark:text-zinc-900 border-zinc-900 dark:border-zinc-100"
+                      : "bg-white dark:bg-zinc-900 text-zinc-600 dark:text-zinc-400 border-zinc-200 dark:border-zinc-700 hover:border-zinc-400 dark:hover:border-zinc-500"
+                  )}
+                >
+                  {loc.forlocationtype}
                 </button>
               ))}
             </div>

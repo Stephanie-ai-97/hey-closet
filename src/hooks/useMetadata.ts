@@ -1,23 +1,25 @@
 import { useState, useEffect } from 'react';
 import { api } from '../services/api';
-import { Colour, Material, Style, Info } from '../types';
+import { Colour, Material, Style, Info, ForLocation } from '../types';
 
 export function useMetadata() {
   const [colours, setColours] = useState<Colour[]>([]);
   const [materials, setMaterials] = useState<Material[]>([]);
   const [styles, setStyles] = useState<Style[]>([]);
   const [infos, setInfos] = useState<Info[]>([]);
+  const [forLocations, setForLocations] = useState<ForLocation[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     async function fetchMetadata() {
       try {
         setLoading(true);
-        const [c, m, s, i] = await Promise.all([
+        const [c, m, s, i, f] = await Promise.all([
           api.list<any>('colour'),
           api.list<any>('material'),
           api.list<any>('style'),
           api.list<any>('info'),
+          api.list<any>('for_location'),
         ]);
         
         console.debug('[useMetadata] Raw API responses:', {
@@ -25,12 +27,13 @@ export function useMetadata() {
           materialsSample: m?.[0],
           stylesSample: s?.[0],
           infosSample: i?.[0],
+          forLocationsSample: f?.[0],
         });
         
         // Remap pk_* fields to id for colours, materials, styles
         const coloursData = Array.isArray(c) ? c.map((item: any) => ({
           ...item,
-          id: item.pk_colour ?? item.id,
+          id: item.pk_colourid ?? item.id,
         })) : [];
         
         const materialsData = Array.isArray(m) ? m.map((item: any) => ({
@@ -40,17 +43,23 @@ export function useMetadata() {
         
         const stylesData = Array.isArray(s) ? s.map((item: any) => ({
           ...item,
-          id: item.pk_style ?? item.id,
+          id: item.pk_styleid ?? item.id,
         })) : [];
         
         // Remap pk_* fields to expected field names for info
         const infosData = Array.isArray(i) ? i.map((info: any) => ({
-          id: info.pk_info ?? info.id,
-          dk_itemid: info.pk_item ?? info.dk_itemid ?? info.fk_item,
-          dk_styleid: info.pk_style ?? info.dk_styleid ?? info.fk_style,
-          dk_colourid: info.pk_colour ?? info.dk_colourid ?? info.fk_colour,
-          dk_material: info.pk_material ?? info.dk_material ?? info.fk_material,
+          id: info.pk_infoid ?? info.id,
+          dk_itemid: info.dk_itemid,
+          dk_styleid: info.dk_styleid,
+          dk_colourid: info.dk_colourid,
+          dk_material: info.dk_material,
           tag_source: info.tag_source ?? 'system',
+        })) : [];
+        
+        // Remap pk_* fields to id for for_location
+        const forLocationsData = Array.isArray(f) ? f.map((item: any) => ({
+          ...item,
+          id: item.pk_forlocationid ?? item.id,
         })) : [];
         
         console.debug('[useMetadata] After remapping:', {
@@ -60,18 +69,22 @@ export function useMetadata() {
           stylesCount: stylesData.length,
           infosCount: infosData.length,
           infosData: infosData.slice(0, 3),
+          forLocationsCount: forLocationsData.length,
+          forLocationsData: forLocationsData.slice(0, 3),
         });
         
         setColours(coloursData);
         setMaterials(materialsData);
         setStyles(stylesData);
         setInfos(infosData);
+        setForLocations(forLocationsData);
       } catch (err) {
         console.error('Failed to fetch metadata', err);
         setColours([]);
         setMaterials([]);
         setStyles([]);
         setInfos([]);
+        setForLocations([]);
       } finally {
         setLoading(false);
       }
@@ -79,5 +92,5 @@ export function useMetadata() {
     fetchMetadata();
   }, []);
 
-  return { colours, materials, styles, infos, loading };
+  return { colours, materials, styles, infos, forLocations, loading };
 }
