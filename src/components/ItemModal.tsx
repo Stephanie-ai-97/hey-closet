@@ -25,14 +25,28 @@ export function ItemModal({ isOpen, storages, homes, onClose, onItemAdded }: Ite
   const [styletype, setStyletype] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    const errors: Record<string, string> = {};
 
-    if (!dk_closet || !itemtype || !itemsize) {
-      setError('Please fill in all required fields (Storage Location, Item Type, Size)');
+    // Validate all required fields
+    if (!dk_closet) errors.dk_closet = 'Storage location is required';
+    if (!itemtype) errors.itemtype = 'Item type is required';
+    if (!itemsize) errors.itemsize = 'Size is required';
+    if (!colouroverall) errors.colouroverall = 'Colour is required';
+    if (!texture) errors.texture = 'Material is required';
+    if (!styletype) errors.styletype = 'Style is required';
+
+    if (Object.keys(errors).length > 0) {
+      setFieldErrors(errors);
+      setError('Please fill in all required fields marked with *');
       return;
     }
+
+    setFieldErrors({});
+    setError(null);
 
     setIsLoading(true);
     setError(null);
@@ -58,48 +72,38 @@ export function ItemModal({ isOpen, storages, homes, onClose, onItemAdded }: Ite
 
       const createdItem = await api.create<Item>('item', itemData);
 
-      // Create metadata records and link them via Info junction table
-      let colourId: number | null = null;
-      let materialId: number | null = null;
-      let styleId: number | null = null;
+      // Create metadata records - these are now REQUIRED
+      // So all of these will have valid values
+      const createdColour = await api.create<Colour>('colour', {
+        colouroverall,
+        colourinner: '',
+        colourouter: '',
+      });
+      const colourId = createdColour.id;
 
-      if (colouroverall) {
-        const createdColour = await api.create<Colour>('colour', {
-          colouroverall,
-          colourinner: '',
-          colourouter: '',
-        });
-        colourId = createdColour.id;
-      }
+      const createdMaterial = await api.create<Material>('material', {
+        texture,
+        softness: '',
+        thickness: '',
+      });
+      const materialId = createdMaterial.id;
 
-      if (texture) {
-        const createdMaterial = await api.create<Material>('material', {
-          texture,
-          softness: '',
-          thickness: '',
-        });
-        materialId = createdMaterial.id;
-      }
+      const createdStyle = await api.create<Style>('style', {
+        styletype,
+        styleyear: new Date().getFullYear(),
+        stylefitsize: itemsize,
+      });
+      const styleId = createdStyle.id;
 
-      if (styletype) {
-        const createdStyle = await api.create<Style>('style', {
-          styletype,
-          styleyear: new Date().getFullYear(),
-          stylefitsize: itemsize,
-        });
-        styleId = createdStyle.id;
-      }
-
-      // Create Info junction record if any metadata was provided
-      if (colourId || materialId || styleId) {
-        await api.create<Info>('info', {
-          dk_itemid: (createdItem as any).pk_itemid ?? (createdItem as any).id,
-          dk_styleid: styleId ?? 0,
-          dk_colourid: colourId ?? 0,
-          dk_material: materialId ?? 0,
-          tag_source: 'user',
-        });
-      }
+      // Create Info junction record with all required IDs
+      // All fields are guaranteed to be valid now
+      await api.create<Info>('info', {
+        dk_itemid: (createdItem as any).pk_itemid ?? (createdItem as any).id,
+        dk_styleid: styleId,
+        dk_colourid: colourId,
+        dk_material: materialId,
+        tag_source: 'user',
+      });
 
       // Reset form
       setDk_closet('');
@@ -113,12 +117,16 @@ export function ItemModal({ isOpen, storages, homes, onClose, onItemAdded }: Ite
       setColouroverall('');
       setTexture('');
       setStyletype('');
+      setFieldErrors({});
+      setError(null);
       
       onItemAdded();
       onClose();
     } catch (err) {
       console.error('Failed to create item:', err);
-      setError(err instanceof Error ? err.message : 'Failed to create item');
+      const errorMessage = err instanceof Error ? err.message : 'Failed to create item';
+      setError(errorMessage);
+      setFieldErrors({});
     } finally {
       setIsLoading(false);
     }
@@ -165,7 +173,11 @@ export function ItemModal({ isOpen, storages, homes, onClose, onItemAdded }: Ite
             <select
               value={dk_closet}
               onChange={(e) => setDk_closet(e.target.value)}
-              className="w-full px-3 py-2 border border-zinc-200 dark:border-zinc-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-zinc-900/5 focus:border-zinc-500 transition-all bg-white dark:bg-zinc-800 text-zinc-900 dark:text-zinc-50"
+              className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-zinc-900/5 focus:border-zinc-500 transition-all bg-white dark:bg-zinc-800 text-zinc-900 dark:text-zinc-50 ${
+                fieldErrors.dk_closet
+                  ? 'border-red-500 dark:border-red-500'
+                  : 'border-zinc-200 dark:border-zinc-700'
+              }`}
               required
             >
               <option value="">Select a storage location</option>
@@ -179,6 +191,9 @@ export function ItemModal({ isOpen, storages, homes, onClose, onItemAdded }: Ite
                 </optgroup>
               ))}
             </select>
+            {fieldErrors.dk_closet && (
+              <p className="text-red-500 text-xs mt-1">{fieldErrors.dk_closet}</p>
+            )}
           </div>
 
           <div className="grid grid-cols-2 gap-4">
@@ -192,9 +207,16 @@ export function ItemModal({ isOpen, storages, homes, onClose, onItemAdded }: Ite
                 value={itemtype}
                 onChange={(e) => setItemtype(e.target.value)}
                 placeholder="e.g., T-shirt, Jeans"
-                className="w-full px-3 py-2 border border-zinc-200 dark:border-zinc-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-zinc-900/5 focus:border-zinc-500 transition-all bg-white dark:bg-zinc-800 text-zinc-900 dark:text-zinc-50"
+                className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-zinc-900/5 focus:border-zinc-500 transition-all bg-white dark:bg-zinc-800 text-zinc-900 dark:text-zinc-50 ${
+                  fieldErrors.itemtype
+                    ? 'border-red-500 dark:border-red-500'
+                    : 'border-zinc-200 dark:border-zinc-700'
+                }`}
                 required
               />
+              {fieldErrors.itemtype && (
+                <p className="text-red-500 text-xs mt-1">{fieldErrors.itemtype}</p>
+              )}
             </div>
 
             {/* Item Size - Required */}
@@ -207,57 +229,88 @@ export function ItemModal({ isOpen, storages, homes, onClose, onItemAdded }: Ite
                 value={itemsize}
                 onChange={(e) => setItemsize(e.target.value)}
                 placeholder="e.g., M, L, XL"
-                className="w-full px-3 py-2 border border-zinc-200 dark:border-zinc-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-zinc-900/5 focus:border-zinc-500 transition-all bg-white dark:bg-zinc-800 text-zinc-900 dark:text-zinc-50"
+                className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-zinc-900/5 focus:border-zinc-500 transition-all bg-white dark:bg-zinc-800 text-zinc-900 dark:text-zinc-50 ${
+                  fieldErrors.itemsize
+                    ? 'border-red-500 dark:border-red-500'
+                    : 'border-zinc-200 dark:border-zinc-700'
+                }`}
                 required
               />
+              {fieldErrors.itemsize && (
+                <p className="text-red-500 text-xs mt-1">{fieldErrors.itemsize}</p>
+              )}
             </div>
           </div>
 
           {/* Colour and Material Details */}
           <div className="grid grid-cols-2 gap-4">
-            {/* Colour */}
+            {/* Colour - Required */}
             <div>
               <label className="block text-sm font-semibold text-zinc-900 dark:text-zinc-50 mb-2">
-                Colour
+                Colour <span className="text-red-500">*</span>
               </label>
               <input
                 type="text"
                 value={colouroverall}
                 onChange={(e) => setColouroverall(e.target.value)}
                 placeholder="e.g., Black, Navy Blue"
-                className="w-full px-3 py-2 border border-zinc-200 dark:border-zinc-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-zinc-900/5 focus:border-zinc-500 transition-all bg-white dark:bg-zinc-800 text-zinc-900 dark:text-zinc-50"
+                className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-zinc-900/5 focus:border-zinc-500 transition-all bg-white dark:bg-zinc-800 text-zinc-900 dark:text-zinc-50 ${
+                  fieldErrors.colouroverall
+                    ? 'border-red-500 dark:border-red-500'
+                    : 'border-zinc-200 dark:border-zinc-700'
+                }`}
+                required
               />
+              {fieldErrors.colouroverall && (
+                <p className="text-red-500 text-xs mt-1">{fieldErrors.colouroverall}</p>
+              )}
             </div>
 
-            {/* Material/Texture */}
+            {/* Material/Texture - Required */}
             <div>
               <label className="block text-sm font-semibold text-zinc-900 dark:text-zinc-50 mb-2">
-                Material
+                Material <span className="text-red-500">*</span>
               </label>
               <input
                 type="text"
                 value={texture}
                 onChange={(e) => setTexture(e.target.value)}
                 placeholder="e.g., Cotton, Polyester"
-                className="w-full px-3 py-2 border border-zinc-200 dark:border-zinc-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-zinc-900/5 focus:border-zinc-500 transition-all bg-white dark:bg-zinc-800 text-zinc-900 dark:text-zinc-50"
+                className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-zinc-900/5 focus:border-zinc-500 transition-all bg-white dark:bg-zinc-800 text-zinc-900 dark:text-zinc-50 ${
+                  fieldErrors.texture
+                    ? 'border-red-500 dark:border-red-500'
+                    : 'border-zinc-200 dark:border-zinc-700'
+                }`}
+                required
               />
+              {fieldErrors.texture && (
+                <p className="text-red-500 text-xs mt-1">{fieldErrors.texture}</p>
+              )}
             </div>
           </div>
 
           {/* Style and Cost */}
           <div className="grid grid-cols-2 gap-4">
-            {/* Style */}
+            {/* Style - Required */}
             <div>
               <label className="block text-sm font-semibold text-zinc-900 dark:text-zinc-50 mb-2">
-                Style
+                Style <span className="text-red-500">*</span>
               </label>
               <input
                 type="text"
                 value={styletype}
                 onChange={(e) => setStyletype(e.target.value)}
                 placeholder="e.g., Casual, Formal"
-                className="w-full px-3 py-2 border border-zinc-200 dark:border-zinc-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-zinc-900/5 focus:border-zinc-500 transition-all bg-white dark:bg-zinc-800 text-zinc-900 dark:text-zinc-50"
+                className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-zinc-900/5 focus:border-zinc-500 transition-all bg-white dark:bg-zinc-800 text-zinc-900 dark:text-zinc-50 ${
+                  fieldErrors.styletype
+                    ? 'border-red-500 dark:border-red-500'
+                    : 'border-zinc-200 dark:border-zinc-700'
+                }`}
+                required
               />
+              {fieldErrors.styletype && (
+                <p className="text-red-500 text-xs mt-1">{fieldErrors.styletype}</p>
+              )}
             </div>
 
             {/* Item Cost - Optional */}
