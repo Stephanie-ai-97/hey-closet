@@ -30,12 +30,19 @@ export default function Inventory() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [filterOpen, setFilterOpen] = useState(false);
   const [filterHome, setFilterHome] = useState<number | null>(null);
-  const [filterStatus, setFilterStatus] = useState<WashStatus | null>(null);
+  const [filterStorage, setFilterStorage] = useState<number | null>(null);
   const [filterType, setFilterType] = useState('');
+  const [filterRating, setFilterRating] = useState<number | null>(null);
+  const [filterStatus, setFilterStatus] = useState<WashStatus | null>(null);
   const [editingItem, setEditingItem] = useState<Item | null>(null);
   const [deletingItem, setDeletingItem] = useState<Item | null>(null);
 
   const itemTypes = useMemo(() => Array.from(new Set(items.map(i => i.itemtype))).sort(), [items]);
+  const uniqueStorages = useMemo(() => {
+    const storageMap = new Map<number, typeof storages[0]>();
+    storages.forEach(s => storageMap.set(s.id, s));
+    return Array.from(storageMap.values()).sort((a, b) => a.closet.localeCompare(b.closet));
+  }, [storages]);
 
   const filteredItems = useMemo(() => {
     return items
@@ -45,9 +52,11 @@ export default function Inventory() {
           item.itemcomment.toLowerCase().includes(searchTerm.toLowerCase());
         const storage = storages.find(s => s.id === item.dk_closet);
         const matchesHome = filterHome === null || storage?.dk_homelocation === filterHome;
-        const matchesStatus = filterStatus === null || (item.wash_status ?? 'clean') === filterStatus;
+        const matchesStorage = filterStorage === null || item.dk_closet === filterStorage;
         const matchesType = !filterType || item.itemtype === filterType;
-        return matchesSearch && matchesHome && matchesStatus && matchesType;
+        const matchesRating = filterRating === null || item.itemlikerating === filterRating;
+        const matchesStatus = filterStatus === null || (item.wash_status ?? 'clean') === filterStatus;
+        return matchesSearch && matchesHome && matchesStorage && matchesType && matchesRating && matchesStatus;
       })
       .sort((a, b) => {
         const factor = sortOrder === 'asc' ? 1 : -1;
@@ -55,11 +64,11 @@ export default function Inventory() {
         if (a[sortField] > b[sortField]) return 1 * factor;
         return 0;
       });
-  }, [items, searchTerm, sortField, sortOrder, filterHome, filterStatus, filterType, storages]);
+  }, [items, searchTerm, sortField, sortOrder, filterHome, filterStorage, filterType, filterRating, filterStatus, storages]);
 
   if (loading) return <div className="p-8 animate-pulse dark:text-zinc-400">Accessing inventory database...</div>;
 
-  const activeFilterCount = [filterHome, filterStatus, filterType || null].filter(Boolean).length;
+  const activeFilterCount = [filterHome, filterStorage, filterType || null, filterRating, filterStatus || null].filter(Boolean).length;
 
   const toggleSort = (field: typeof sortField) => {
     if (sortField === field) {
@@ -72,8 +81,10 @@ export default function Inventory() {
 
   const clearFilters = () => {
     setFilterHome(null);
-    setFilterStatus(null);
+    setFilterStorage(null);
     setFilterType('');
+    setFilterRating(null);
+    setFilterStatus(null);
   };
 
   return (
@@ -181,8 +192,8 @@ export default function Inventory() {
               </button>
             )}
           </div>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            {/* Home filter */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
+            {/* Location filter */}
             <div>
               <label className="block text-xs font-semibold text-zinc-500 dark:text-zinc-400 uppercase tracking-wide mb-2">Location</label>
               <select
@@ -194,7 +205,43 @@ export default function Inventory() {
                 {homes.map(h => <option key={h.id} value={h.id}>{h.homename}</option>)}
               </select>
             </div>
-            {/* Wash status filter */}
+            {/* Storage filter */}
+            <div>
+              <label className="block text-xs font-semibold text-zinc-500 dark:text-zinc-400 uppercase tracking-wide mb-2">Storage</label>
+              <select
+                value={filterStorage ?? ''}
+                onChange={(e) => setFilterStorage(e.target.value ? Number(e.target.value) : null)}
+                className="w-full px-3 py-2 text-sm border border-zinc-200 dark:border-zinc-700 rounded-lg bg-white dark:bg-zinc-800 dark:text-zinc-50 focus:outline-none focus:ring-2 focus:ring-zinc-900/5"
+              >
+                <option value="">All storages</option>
+                {uniqueStorages.map(s => <option key={s.id} value={s.id}>{s.closet} - {s.closetpartition}</option>)}
+              </select>
+            </div>
+            {/* Item Type filter */}
+            <div>
+              <label className="block text-xs font-semibold text-zinc-500 dark:text-zinc-400 uppercase tracking-wide mb-2">Item Type</label>
+              <select
+                value={filterType}
+                onChange={(e) => setFilterType(e.target.value)}
+                className="w-full px-3 py-2 text-sm border border-zinc-200 dark:border-zinc-700 rounded-lg bg-white dark:bg-zinc-800 dark:text-zinc-50 focus:outline-none focus:ring-2 focus:ring-zinc-900/5"
+              >
+                <option value="">All types</option>
+                {itemTypes.map(t => <option key={t} value={t}>{t}</option>)}
+              </select>
+            </div>
+            {/* Rating filter */}
+            <div>
+              <label className="block text-xs font-semibold text-zinc-500 dark:text-zinc-400 uppercase tracking-wide mb-2">Rating</label>
+              <select
+                value={filterRating ?? ''}
+                onChange={(e) => setFilterRating(e.target.value ? Number(e.target.value) : null)}
+                className="w-full px-3 py-2 text-sm border border-zinc-200 dark:border-zinc-700 rounded-lg bg-white dark:bg-zinc-800 dark:text-zinc-50 focus:outline-none focus:ring-2 focus:ring-zinc-900/5"
+              >
+                <option value="">All ratings</option>
+                {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map(r => <option key={r} value={r}>{r}</option>)}
+              </select>
+            </div>
+            {/* Laundry Status filter */}
             <div>
               <label className="block text-xs font-semibold text-zinc-500 dark:text-zinc-400 uppercase tracking-wide mb-2">Laundry Status</label>
               <select
@@ -207,18 +254,6 @@ export default function Inventory() {
                 <option value="dirty">Dirty</option>
                 <option value="washing">Washing</option>
                 <option value="drying">Drying</option>
-              </select>
-            </div>
-            {/* Type filter */}
-            <div>
-              <label className="block text-xs font-semibold text-zinc-500 dark:text-zinc-400 uppercase tracking-wide mb-2">Item Type</label>
-              <select
-                value={filterType}
-                onChange={(e) => setFilterType(e.target.value)}
-                className="w-full px-3 py-2 text-sm border border-zinc-200 dark:border-zinc-700 rounded-lg bg-white dark:bg-zinc-800 dark:text-zinc-50 focus:outline-none focus:ring-2 focus:ring-zinc-900/5"
-              >
-                <option value="">All types</option>
-                {itemTypes.map(t => <option key={t} value={t}>{t}</option>)}
               </select>
             </div>
           </div>
