@@ -1,5 +1,14 @@
 export const RATING_OPTIONS = Array.from({ length: 10 }, (_, index) => index + 1);
 
+export const WASH_METHOD_OPTIONS = [
+  { value: 'hand wash', label: 'Hand Wash' },
+  { value: 'machine wash cold', label: 'Machine Wash - Cold' },
+  { value: 'machine wash warm', label: 'Machine Wash - Warm' },
+  { value: 'machine wash hot', label: 'Machine Wash - Hot' },
+  { value: 'dry clean', label: 'Dry Clean' },
+  { value: 'delicate', label: 'Delicate' },
+];
+
 export const SIZE_OPTION_GROUPS = [
   {
     label: 'Alpha clothing',
