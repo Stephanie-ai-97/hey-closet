@@ -4,6 +4,7 @@ import { Storage, Home, Info } from '../types';
 import { api } from '../services/api';
 import { useMetadata } from '../hooks/useMetadata';
 import { RATING_OPTIONS, SIZE_OPTION_GROUPS, SIZE_OPTIONS, WASH_METHOD_OPTIONS } from '../lib/itemOptions';
+import { ComboboxInput } from './ComboboxInput';
 
 interface ItemModalProps {
   isOpen: boolean;
@@ -257,22 +258,6 @@ export function ItemModal({ isOpen, storages, homes, onClose, onItemAdded }: Ite
             </div>
           </div>
 
-          <datalist id="item-colour-options">
-            {existingColours.map((colour) => (
-              <option key={colour} value={colour} />
-            ))}
-          </datalist>
-          <datalist id="item-material-options">
-            {existingTextures.map((material) => (
-              <option key={material} value={material} />
-            ))}
-          </datalist>
-          <datalist id="item-style-options">
-            {existingStyles.map((style) => (
-              <option key={style} value={style} />
-            ))}
-          </datalist>
-
           {/* Colour and Material Details */}
           <div className="grid grid-cols-2 gap-4">
             {/* Colour - Required */}
@@ -280,18 +265,13 @@ export function ItemModal({ isOpen, storages, homes, onClose, onItemAdded }: Ite
               <label className="block text-sm font-semibold text-zinc-900 dark:text-zinc-50 mb-2">
                 Colour <span className="text-red-500">*</span>
               </label>
-              <input
-                type="text"
-                list="item-colour-options"
+              <ComboboxInput
+                id="item-colour"
                 value={colouroverall}
-                onChange={(e) => setColouroverall(e.target.value)}
+                onChange={setColouroverall}
+                options={existingColours}
                 placeholder={existingColours.length ? 'Select or type colour' : 'Type colour'}
-                className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-zinc-900/5 focus:border-zinc-500 transition-all bg-white dark:bg-zinc-800 text-zinc-900 dark:text-zinc-50 ${
-                  fieldErrors.colouroverall
-                    ? 'border-red-500 dark:border-red-500'
-                    : 'border-zinc-200 dark:border-zinc-700'
-                }`}
-                required
+                hasError={Boolean(fieldErrors.colouroverall)}
               />
               {fieldErrors.colouroverall && (
                 <p className="text-red-500 text-xs mt-1">{fieldErrors.colouroverall}</p>
@@ -303,18 +283,13 @@ export function ItemModal({ isOpen, storages, homes, onClose, onItemAdded }: Ite
               <label className="block text-sm font-semibold text-zinc-900 dark:text-zinc-50 mb-2">
                 Material <span className="text-red-500">*</span>
               </label>
-              <input
-                type="text"
-                list="item-material-options"
+              <ComboboxInput
+                id="item-material"
                 value={texture}
-                onChange={(e) => setTexture(e.target.value)}
+                onChange={setTexture}
+                options={existingTextures}
                 placeholder={existingTextures.length ? 'Select or type material' : 'Type material'}
-                className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-zinc-900/5 focus:border-zinc-500 transition-all bg-white dark:bg-zinc-800 text-zinc-900 dark:text-zinc-50 ${
-                  fieldErrors.texture
-                    ? 'border-red-500 dark:border-red-500'
-                    : 'border-zinc-200 dark:border-zinc-700'
-                }`}
-                required
+                hasError={Boolean(fieldErrors.texture)}
               />
               {fieldErrors.texture && (
                 <p className="text-red-500 text-xs mt-1">{fieldErrors.texture}</p>
@@ -329,18 +304,13 @@ export function ItemModal({ isOpen, storages, homes, onClose, onItemAdded }: Ite
               <label className="block text-sm font-semibold text-zinc-900 dark:text-zinc-50 mb-2">
                 Style <span className="text-red-500">*</span>
               </label>
-              <input
-                type="text"
-                list="item-style-options"
+              <ComboboxInput
+                id="item-style"
                 value={styletype}
-                onChange={(e) => setStyletype(e.target.value)}
+                onChange={setStyletype}
+                options={existingStyles}
                 placeholder={existingStyles.length ? 'Select or type style' : 'Type style'}
-                className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-zinc-900/5 focus:border-zinc-500 transition-all bg-white dark:bg-zinc-800 text-zinc-900 dark:text-zinc-50 ${
-                  fieldErrors.styletype
-                    ? 'border-red-500 dark:border-red-500'
-                    : 'border-zinc-200 dark:border-zinc-700'
-                }`}
-                required
+                hasError={Boolean(fieldErrors.styletype)}
               />
               {fieldErrors.styletype && (
                 <p className="text-red-500 text-xs mt-1">{fieldErrors.styletype}</p>
