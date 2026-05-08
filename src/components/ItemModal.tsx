@@ -1,8 +1,9 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, type FormEvent } from 'react';
 import { X, ChevronDown } from 'lucide-react';
 import { Storage, Home, Info } from '../types';
 import { api } from '../services/api';
 import { useMetadata } from '../hooks/useMetadata';
+import { RATING_OPTIONS, SIZE_OPTION_GROUPS, SIZE_OPTIONS } from '../lib/itemOptions';
 
 interface ItemModalProps {
   isOpen: boolean;
@@ -39,9 +40,15 @@ export function ItemModal({ isOpen, storages, homes, onClose, onItemAdded }: Ite
   const [styleSearchTerm, setStyleSearchTerm] = useState('');
   
   // Get unique values from metadata
-  const existingColours = Array.from(new Set(colours.map(c => c.colouroverall).filter(Boolean))).sort();
-  const existingTextures = Array.from(new Set(materials.map(m => m.texture).filter(Boolean))).sort();
-  const existingStyles = Array.from(new Set(styles.map(s => s.styletype).filter(Boolean))).sort();
+  const existingColours = Array.from(new Set<string>(
+    colours.map(c => c.colouroverall).filter((colour): colour is string => typeof colour === 'string' && Boolean(colour))
+  )).sort();
+  const existingTextures = Array.from(new Set<string>(
+    materials.map(m => m.texture).filter((texture): texture is string => typeof texture === 'string' && Boolean(texture))
+  )).sort();
+  const existingStyles = Array.from(new Set<string>(
+    styles.map(s => s.styletype).filter((style): style is string => typeof style === 'string' && Boolean(style))
+  )).sort();
   
   // Filter functions
   const filteredColours = existingColours.filter(c => 
@@ -81,7 +88,7 @@ export function ItemModal({ isOpen, storages, homes, onClose, onItemAdded }: Ite
     }
   }, [isOpen, colourDropdownOpen, textureDropdownOpen, styleDropdownOpen]);
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
     
     // Close all dropdowns
@@ -275,18 +282,30 @@ export function ItemModal({ isOpen, storages, homes, onClose, onItemAdded }: Ite
               <label className="block text-sm font-semibold text-zinc-900 dark:text-zinc-50 mb-2">
                 Size <span className="text-red-500">*</span>
               </label>
-              <input
-                type="text"
+              <select
                 value={itemsize}
                 onChange={(e) => setItemsize(e.target.value)}
-                placeholder="e.g., M, L, XL"
                 className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-zinc-900/5 focus:border-zinc-500 transition-all bg-white dark:bg-zinc-800 text-zinc-900 dark:text-zinc-50 ${
                   fieldErrors.itemsize
                     ? 'border-red-500 dark:border-red-500'
                     : 'border-zinc-200 dark:border-zinc-700'
                 }`}
                 required
-              />
+              >
+                <option value="">Select size</option>
+                {itemsize && !SIZE_OPTIONS.includes(itemsize) && (
+                  <option value={itemsize}>{itemsize}</option>
+                )}
+                {SIZE_OPTION_GROUPS.map((group) => (
+                  <optgroup key={group.label} label={group.label}>
+                    {group.options.map((size) => (
+                      <option key={`${group.label}-${size}`} value={size}>
+                        {size}
+                      </option>
+                    ))}
+                  </optgroup>
+                ))}
+              </select>
               {fieldErrors.itemsize && (
                 <p className="text-red-500 text-xs mt-1">{fieldErrors.itemsize}</p>
               )}
@@ -526,14 +545,17 @@ export function ItemModal({ isOpen, storages, homes, onClose, onItemAdded }: Ite
               <label className="block text-sm font-semibold text-zinc-900 dark:text-zinc-50 mb-2">
                 Rating (1-10)
               </label>
-              <input
-                type="number"
+              <select
                 value={itemlikerating}
                 onChange={(e) => setItemlikerating(Number(e.target.value))}
-                min="1"
-                max="10"
                 className="w-full px-3 py-2 border border-zinc-200 dark:border-zinc-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-zinc-900/5 focus:border-zinc-500 transition-all bg-white dark:bg-zinc-800 text-zinc-900 dark:text-zinc-50"
-              />
+              >
+                {RATING_OPTIONS.map((rating) => (
+                  <option key={rating} value={rating}>
+                    {rating}
+                  </option>
+                ))}
+              </select>
             </div>
 
             {/* Wash Method */}
