@@ -7,11 +7,16 @@ import {
   Search, 
   Filter,
   X,
-  ExternalLink,
   Plus,
   MapPin,
   Pencil,
   Trash2,
+  LayoutGrid,
+  Grid2X2,
+  List,
+  Tag,
+  ArrowUp,
+  ArrowDown,
 } from 'lucide-react';
 import { useState, useMemo } from 'react';
 import { cn } from '../lib/utils';
@@ -21,12 +26,14 @@ import { Item } from '../types';
 import { api } from '../services/api';
 
 type WashStatus = Item['wash_status'];
+type DisplayMode = 'tile' | 'compactTile' | 'list' | 'iconName';
+type SortField = 'created_at' | 'updated_at' | 'itemcost' | 'itemlikerating';
 
 export default function Inventory() {
   const { items, loading, homes, storages, refetch } = useDashboardData();
   const [searchTerm, setSearchTerm] = useState('');
-  const [sortField, setSortField] = useState<'itemtype' | 'itemcost' | 'itemlikerating'>('itemtype');
-  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc');
+  const [sortField, setSortField] = useState<SortField>('created_at');
+  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [filterOpen, setFilterOpen] = useState(false);
   const [filterHome, setFilterHome] = useState<number | null>(null);
@@ -36,6 +43,7 @@ export default function Inventory() {
   const [filterStatus, setFilterStatus] = useState<WashStatus | null>(null);
   const [editingItem, setEditingItem] = useState<Item | null>(null);
   const [deletingItem, setDeletingItem] = useState<Item | null>(null);
+  const [displayMode, setDisplayMode] = useState<DisplayMode>('tile');
 
   const itemTypes = useMemo(() => Array.from(new Set(items.map(i => i.itemtype))).sort(), [items]);
   const uniqueStorages = useMemo(() => {
@@ -60,6 +68,11 @@ export default function Inventory() {
       })
       .sort((a, b) => {
         const factor = sortOrder === 'asc' ? 1 : -1;
+        if (sortField === 'created_at' || sortField === 'updated_at') {
+          const aTime = a[sortField] ? new Date(a[sortField] as string).getTime() : 0;
+          const bTime = b[sortField] ? new Date(b[sortField] as string).getTime() : 0;
+          return (aTime - bTime) * factor;
+        }
         if (a[sortField] < b[sortField]) return -1 * factor;
         if (a[sortField] > b[sortField]) return 1 * factor;
         return 0;
@@ -70,15 +83,6 @@ export default function Inventory() {
 
   const activeFilterCount = [filterHome, filterStorage, filterType || null, filterRating, filterStatus || null].filter(Boolean).length;
 
-  const toggleSort = (field: typeof sortField) => {
-    if (sortField === field) {
-      setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc');
-    } else {
-      setSortField(field);
-      setSortOrder('asc');
-    }
-  };
-
   const clearFilters = () => {
     setFilterHome(null);
     setFilterStorage(null);
@@ -86,6 +90,20 @@ export default function Inventory() {
     setFilterRating(null);
     setFilterStatus(null);
   };
+
+  const displayOptions: Array<{ mode: DisplayMode; label: string; icon: typeof LayoutGrid }> = [
+    { mode: 'tile', label: 'Tile', icon: LayoutGrid },
+    { mode: 'compactTile', label: 'Card', icon: Grid2X2 },
+    { mode: 'list', label: 'List', icon: List },
+    { mode: 'iconName', label: 'Icon', icon: Tag },
+  ];
+
+  const sortOptions: Array<{ value: SortField; label: string }> = [
+    { value: 'created_at', label: 'Item Created Date' },
+    { value: 'updated_at', label: 'Item Modified Date' },
+    { value: 'itemcost', label: 'Cost' },
+    { value: 'itemlikerating', label: 'Rating' },
+  ];
 
   return (
     <>
@@ -143,7 +161,7 @@ export default function Inventory() {
             onChange={(e) => setSearchTerm(e.target.value)}
           />
         </div>
-        <div className="flex gap-2">
+        <div className="flex flex-col sm:flex-row gap-2 md:justify-end">
           <button
             onClick={() => setFilterOpen(!filterOpen)}
             className={cn(
@@ -161,20 +179,46 @@ export default function Inventory() {
               </span>
             )}
           </button>
-          <div className="flex bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-700 rounded-xl p-1">
-            {(['itemtype', 'itemcost', 'itemlikerating'] as const).map((field) => (
+          <div className="flex items-center gap-1 rounded-xl border border-zinc-200 bg-white p-1 dark:border-zinc-700 dark:bg-zinc-900">
+            <select
+              value={sortField}
+              onChange={(e) => setSortField(e.target.value as SortField)}
+              aria-label="Order items by"
+              className="h-8 max-w-[13rem] rounded-lg bg-transparent px-2 text-xs font-bold text-zinc-700 outline-none dark:text-zinc-200 sm:max-w-none"
+            >
+              {sortOptions.map(option => (
+                <option key={option.value} value={option.value}>
+                  {option.label}
+                </option>
+              ))}
+            </select>
+            <button
+              type="button"
+              onClick={() => setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc')}
+              title={sortOrder === 'asc' ? 'Ascending' : 'Descending'}
+              aria-label={sortOrder === 'asc' ? 'Ascending order' : 'Descending order'}
+              className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-zinc-900 text-white transition-all hover:bg-zinc-800 dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-zinc-200"
+            >
+              {sortOrder === 'asc' ? <ArrowUp size={15} /> : <ArrowDown size={15} />}
+            </button>
+          </div>
+          <div className="flex overflow-x-auto rounded-xl border border-zinc-200 bg-white p-1 dark:border-zinc-700 dark:bg-zinc-900">
+            {displayOptions.map(({ mode, label, icon: Icon }) => (
               <button
-                key={field}
-                onClick={() => toggleSort(field)}
+                key={mode}
+                type="button"
+                onClick={() => setDisplayMode(mode)}
+                title={label}
+                aria-label={`${label} display`}
+                aria-pressed={displayMode === mode}
                 className={cn(
-                  "px-3 py-1.5 rounded-lg text-xs font-bold transition-all",
-                  sortField === field ? "bg-zinc-900 dark:bg-zinc-100 text-white dark:text-zinc-900" : "text-zinc-500 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-50"
+                  'flex h-8 w-8 shrink-0 items-center justify-center rounded-lg transition-all',
+                  displayMode === mode
+                    ? 'bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-900'
+                    : 'text-zinc-500 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-50'
                 )}
               >
-                {field === 'itemtype' ? 'Type' : field === 'itemcost' ? 'Cost' : 'Rating'}
-                {sortField === field && (
-                  <span className="ml-1">{sortOrder === 'asc' ? '↑' : '↓'}</span>
-                )}
+                <Icon size={16} />
               </button>
             ))}
           </div>
@@ -260,8 +304,15 @@ export default function Inventory() {
         </div>
       )}
 
-      {/* Grid View */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+      {/* Inventory View */}
+      <div
+        className={cn(
+          displayMode === 'tile' && 'grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4',
+          displayMode === 'compactTile' && 'grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3',
+          displayMode === 'list' && 'space-y-3',
+          displayMode === 'iconName' && 'grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-8 gap-3'
+        )}
+      >
         {filteredItems.map(item => {
           const storage = storages.find(s => s.id === item.dk_closet);
           const home = storage ? homes.find(h => h.id === storage.dk_homelocation) : null;
@@ -269,28 +320,117 @@ export default function Inventory() {
             ? `${home?.homename ?? '?'} → ${storage.closet} → ${storage.closetpartition}`
             : 'Unknown';
 
+          const actionButtons = (
+            <div className="flex gap-1 opacity-100 transition-opacity sm:opacity-0 sm:group-hover:opacity-100">
+              <button
+                onClick={(e) => { e.preventDefault(); setEditingItem(item); }}
+                className="p-1.5 rounded-lg bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 hover:bg-zinc-100 dark:hover:bg-zinc-700 transition-colors"
+                title="Edit item"
+              >
+                <Pencil size={13} className="text-zinc-500 dark:text-zinc-400" />
+              </button>
+              <button
+                onClick={(e) => { e.preventDefault(); setDeletingItem(item); }}
+                className="p-1.5 rounded-lg bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 hover:bg-red-50 dark:hover:bg-red-950 hover:border-red-200 dark:hover:border-red-800 transition-colors"
+                title="Delete item"
+              >
+                <Trash2 size={13} className="text-zinc-500 dark:text-zinc-400" />
+              </button>
+            </div>
+          );
+
+          if (displayMode === 'compactTile') {
+            return (
+              <div
+                key={item.id}
+                className="group relative bg-white dark:bg-zinc-900 rounded-xl border border-zinc-200 dark:border-zinc-800 p-3 hover:border-zinc-400 dark:hover:border-zinc-600 hover:shadow-md transition-all"
+              >
+                <div className="absolute right-2 top-2 z-10">{actionButtons}</div>
+                <Link to={`/item/${item.id}`} className="block">
+                  <div className="relative aspect-square bg-zinc-100 dark:bg-zinc-800 rounded-lg mb-3 overflow-hidden flex items-center justify-center text-zinc-400 group-hover:bg-zinc-200 dark:group-hover:bg-zinc-700 transition-colors">
+                    <ItemSVGIcon itemtype={item.itemtype} size={36} />
+                    <div className="absolute bottom-1.5 right-1.5 max-w-[70%] truncate px-1.5 py-0.5 bg-white/85 dark:bg-zinc-900/85 backdrop-blur rounded text-[9px] font-bold uppercase dark:text-zinc-50">
+                      {item.itemsize}
+                    </div>
+                  </div>
+                  <div className="min-w-0">
+                    <div className="flex items-start justify-between gap-2">
+                      <h3 className="truncate text-sm font-bold text-zinc-900 dark:text-zinc-50">{item.itemtype}</h3>
+                      <span className="shrink-0 text-[9px] font-mono text-zinc-400 dark:text-zinc-500">#{item.id}</span>
+                    </div>
+                    <div className="mt-1 flex items-center justify-between gap-2">
+                      <span className="truncate text-[10px] capitalize text-zinc-500 dark:text-zinc-400">{item.wash_status ?? 'clean'}</span>
+                      <span className="text-xs font-bold text-zinc-900 dark:text-zinc-50">${item.itemcost.toFixed(2)}</span>
+                    </div>
+                  </div>
+                </Link>
+              </div>
+            );
+          }
+
+          if (displayMode === 'list') {
+            return (
+              <div
+                key={item.id}
+                className="group bg-white dark:bg-zinc-900 rounded-xl border border-zinc-200 dark:border-zinc-800 p-3 hover:border-zinc-400 dark:hover:border-zinc-600 hover:shadow-md transition-all"
+              >
+                <div className="flex items-center gap-3">
+                  <Link to={`/item/${item.id}`} className="flex min-w-0 flex-1 items-center gap-3">
+                    <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-lg bg-zinc-100 text-zinc-400 transition-colors group-hover:bg-zinc-200 dark:bg-zinc-800 dark:group-hover:bg-zinc-700">
+                      <ItemSVGIcon itemtype={item.itemtype} size={30} />
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
+                        <h3 className="font-bold text-zinc-900 dark:text-zinc-50">{item.itemtype}</h3>
+                        <span className="rounded-md bg-zinc-100 px-1.5 py-0.5 text-[10px] font-bold uppercase text-zinc-500 dark:bg-zinc-800 dark:text-zinc-400">{item.itemsize}</span>
+                        <span className="text-[10px] font-mono text-zinc-400 dark:text-zinc-500">#{item.id}</span>
+                      </div>
+                      <p className="mt-0.5 line-clamp-1 text-xs text-zinc-500 dark:text-zinc-400">
+                        {item.itemcomment || "No description provided."}
+                      </p>
+                      <div className="mt-1 flex items-center gap-1 text-zinc-400 dark:text-zinc-500">
+                        <MapPin size={10} />
+                        <span className="truncate text-[10px]">{locationPath}</span>
+                      </div>
+                    </div>
+                  </Link>
+                  <div className="hidden text-right sm:block">
+                    <p className="text-sm font-bold text-zinc-900 dark:text-zinc-50">${item.itemcost.toFixed(2)}</p>
+                    <p className="text-xs capitalize text-zinc-500 dark:text-zinc-400">{item.wash_status ?? 'clean'}</p>
+                  </div>
+                  {actionButtons}
+                </div>
+              </div>
+            );
+          }
+
+          if (displayMode === 'iconName') {
+            return (
+              <div
+                key={item.id}
+                className="group relative bg-white dark:bg-zinc-900 rounded-xl border border-zinc-200 dark:border-zinc-800 p-3 hover:border-zinc-400 dark:hover:border-zinc-600 hover:shadow-md transition-all"
+              >
+                <div className="absolute right-2 top-2 z-10">{actionButtons}</div>
+                <Link to={`/item/${item.id}`} className="flex min-h-28 flex-col items-center justify-center gap-2 text-center">
+                  <div className="flex h-14 w-14 items-center justify-center rounded-xl bg-zinc-100 text-zinc-400 transition-colors group-hover:bg-zinc-200 dark:bg-zinc-800 dark:group-hover:bg-zinc-700">
+                    <ItemSVGIcon itemtype={item.itemtype} size={32} />
+                  </div>
+                  <div className="w-full min-w-0">
+                    <h3 className="truncate text-sm font-bold text-zinc-900 dark:text-zinc-50">{item.itemtype}</h3>
+                    <p className="truncate text-[10px] font-semibold uppercase text-zinc-500 dark:text-zinc-400">{item.itemsize}</p>
+                  </div>
+                </Link>
+              </div>
+            );
+          }
+
           return (
             <div
               key={item.id}
               className="group relative bg-white dark:bg-zinc-900 rounded-2xl border border-zinc-200 dark:border-zinc-800 p-4 hover:border-zinc-400 dark:hover:border-zinc-600 hover:shadow-lg transition-all flex flex-col"
             >
               {/* Edit/Delete action buttons */}
-              <div className="absolute top-3 right-3 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity z-10">
-                <button
-                  onClick={() => setEditingItem(item)}
-                  className="p-1.5 rounded-lg bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 hover:bg-zinc-100 dark:hover:bg-zinc-700 transition-colors"
-                  title="Edit item"
-                >
-                  <Pencil size={13} className="text-zinc-500 dark:text-zinc-400" />
-                </button>
-                <button
-                  onClick={() => setDeletingItem(item)}
-                  className="p-1.5 rounded-lg bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 hover:bg-red-50 dark:hover:bg-red-950 hover:border-red-200 dark:hover:border-red-800 transition-colors"
-                  title="Delete item"
-                >
-                  <Trash2 size={13} className="text-zinc-500 dark:text-zinc-400" />
-                </button>
-              </div>
+              <div className="absolute top-3 right-3 z-10">{actionButtons}</div>
               <Link to={`/item/${item.id}`} className="flex flex-col flex-1">
               <div className="relative aspect-square bg-zinc-100 dark:bg-zinc-800 rounded-xl mb-4 overflow-hidden flex items-center justify-center text-zinc-400 group-hover:bg-zinc-200 dark:group-hover:bg-zinc-700 transition-colors">
                 <ItemSVGIcon itemtype={item.itemtype} size={48} />

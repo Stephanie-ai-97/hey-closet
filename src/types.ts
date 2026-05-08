@@ -25,6 +25,7 @@ export interface Item {
   itemwashmethod: string;
   wash_status: 'clean' | 'washing' | 'drying' | 'dirty';
   created_at?: string;
+  updated_at?: string;
 }
 
 export interface Colour {
