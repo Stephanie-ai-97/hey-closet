@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react';
-import { X } from 'lucide-react';
-import { Item, Storage, Home } from '../types';
+import { X, ChevronDown } from 'lucide-react';
+import { Item, Storage, Home, Info } from '../types';
 import { api } from '../services/api';
+import { useMetadata } from '../hooks/useMetadata';
 
 interface EditItemModalProps {
   isOpen: boolean;
@@ -13,6 +14,8 @@ interface EditItemModalProps {
 }
 
 export function EditItemModal({ isOpen, item, storages, homes, onClose, onItemUpdated }: EditItemModalProps) {
+  const { colours, materials, styles, infos } = useMetadata();
+  
   const [dk_closet, setDk_closet] = useState<string>(String(item.dk_closet));
   const [itemtype, setItemtype] = useState(item.itemtype);
   const [itemsize, setItemsize] = useState(item.itemsize);
@@ -21,8 +24,36 @@ export function EditItemModal({ isOpen, item, storages, homes, onClose, onItemUp
   const [itemcost, setItemcost] = useState(String(item.itemcost));
   const [itemcomment, setItemcomment] = useState(item.itemcomment);
   const [itemwashmethod, setItemwashmethod] = useState(item.itemwashmethod);
+  const [colouroverall, setColouroverall] = useState('');
+  const [texture, setTexture] = useState('');
+  const [styletype, setStyletype] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
+  
+  // Dropdown states
+  const [colourDropdownOpen, setColourDropdownOpen] = useState(false);
+  const [colourSearchTerm, setColourSearchTerm] = useState('');
+  const [textureDropdownOpen, setTextureDropdownOpen] = useState(false);
+  const [textureSearchTerm, setTextureSearchTerm] = useState('');
+  const [styleDropdownOpen, setStyleDropdownOpen] = useState(false);
+  const [styleSearchTerm, setStyleSearchTerm] = useState('');
+  
+  // Get unique values from metadata
+  const existingColours = Array.from(new Set(colours.map(c => c.colouroverall).filter(Boolean))).sort();
+  const existingTextures = Array.from(new Set(materials.map(m => m.texture).filter(Boolean))).sort();
+  const existingStyles = Array.from(new Set(styles.map(s => s.styletype).filter(Boolean))).sort();
+  
+  // Filter functions
+  const filteredColours = existingColours.filter(c => 
+    c.toLowerCase().includes(colourSearchTerm.toLowerCase())
+  );
+  const filteredTextures = existingTextures.filter(t => 
+    t.toLowerCase().includes(textureSearchTerm.toLowerCase())
+  );
+  const filteredStyles = existingStyles.filter(s => 
+    s.toLowerCase().includes(styleSearchTerm.toLowerCase())
+  );
 
   useEffect(() => {
     if (isOpen) {
@@ -34,19 +65,85 @@ export function EditItemModal({ isOpen, item, storages, homes, onClose, onItemUp
       setItemcost(String(item.itemcost));
       setItemcomment(item.itemcomment);
       setItemwashmethod(item.itemwashmethod);
+      
+      // Load current metadata
+      const currentInfo = infos.find(info => info.dk_itemid === item.id);
+      if (currentInfo) {
+        const currentColour = colours.find(c => c.id === currentInfo.dk_colourid);
+        const currentMaterial = materials.find(m => m.id === currentInfo.dk_material);
+        const currentStyle = styles.find(s => s.id === currentInfo.dk_styleid);
+        
+        setColouroverall(currentColour?.colouroverall || '');
+        setTexture(currentMaterial?.texture || '');
+        setStyletype(currentStyle?.styletype || '');
+      } else {
+        setColouroverall('');
+        setTexture('');
+        setStyletype('');
+      }
+      
       setError(null);
+      setFieldErrors({});
     }
-  }, [isOpen, item]);
+  }, [isOpen, item, infos, colours, materials, styles]);
+
+  // Close dropdowns when modal closes
+  useEffect(() => {
+    if (!isOpen) {
+      setColourDropdownOpen(false);
+      setTextureDropdownOpen(false);
+      setStyleDropdownOpen(false);
+      setColourSearchTerm('');
+      setTextureSearchTerm('');
+      setStyleSearchTerm('');
+    }
+  }, [isOpen]);
+
+  // Close dropdowns when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      const target = e.target as HTMLElement;
+      if (!target.closest('[data-dropdown="colour"]')) setColourDropdownOpen(false);
+      if (!target.closest('[data-dropdown="texture"]')) setTextureDropdownOpen(false);
+      if (!target.closest('[data-dropdown="style"]')) setStyleDropdownOpen(false);
+    };
+
+    if (isOpen && (colourDropdownOpen || textureDropdownOpen || styleDropdownOpen)) {
+      document.addEventListener('mousedown', handleClickOutside);
+      return () => document.removeEventListener('mousedown', handleClickOutside);
+    }
+  }, [isOpen, colourDropdownOpen, textureDropdownOpen, styleDropdownOpen]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!dk_closet || !itemtype || !itemsize) {
-      setError('Storage Location, Item Type, and Size are required.');
+    
+    // Close all dropdowns
+    setColourDropdownOpen(false);
+    setTextureDropdownOpen(false);
+    setStyleDropdownOpen(false);
+    
+    const errors: Record<string, string> = {};
+
+    // Validate all required fields
+    if (!dk_closet) errors.dk_closet = 'Storage location is required';
+    if (!itemtype) errors.itemtype = 'Item type is required';
+    if (!itemsize) errors.itemsize = 'Size is required';
+    if (!colouroverall) errors.colouroverall = 'Colour is required';
+    if (!texture) errors.texture = 'Material is required';
+    if (!styletype) errors.styletype = 'Style is required';
+
+    if (Object.keys(errors).length > 0) {
+      setFieldErrors(errors);
+      setError('Please fill in all required fields marked with *');
       return;
     }
-    setIsLoading(true);
+
+    setFieldErrors({});
     setError(null);
+    setIsLoading(true);
+
     try {
+      // Step 1: Update item
       await api.update<Item>('item', item.id, {
         dk_closet: Number(dk_closet),
         itemtype,
@@ -57,10 +154,67 @@ export function EditItemModal({ isOpen, item, storages, homes, onClose, onItemUp
         itemcomment,
         itemwashmethod,
       });
+
+      // Step 2: Handle metadata (colour, material, style)
+      // Check if colour exists
+      let colourId = colours.find(c => c.colouroverall === colouroverall)?.id;
+      if (!colourId) {
+        const colourResponse = await api.create<any>('colour', {
+          colouroverall,
+          colourinner: '',
+          colourouter: '',
+        });
+        colourId = colourResponse.data?.pk_colourid ?? colourResponse.pk_colourid;
+      }
+
+      // Check if material exists
+      let materialId = materials.find(m => m.texture === texture)?.id;
+      if (!materialId) {
+        const materialResponse = await api.create<any>('material', {
+          texture,
+          softness: '',
+          thickness: '',
+        });
+        materialId = materialResponse.data?.pk_material ?? materialResponse.pk_material;
+      }
+
+      // Check if style exists
+      let styleId = styles.find(s => s.styletype === styletype)?.id;
+      if (!styleId) {
+        const styleResponse = await api.create<any>('style', {
+          styletype,
+          styleyear: new Date().getFullYear(),
+          stylefitsize: itemsize,
+        });
+        styleId = styleResponse.data?.pk_styleid ?? styleResponse.pk_styleid;
+      }
+
+      // Step 3: Update or create info junction
+      const currentInfo = infos.find(info => info.dk_itemid === item.id);
+      if (currentInfo) {
+        // Update existing info record
+        await api.update<Info>('info', currentInfo.id, {
+          dk_itemid: item.id,
+          dk_styleid: styleId,
+          dk_colourid: colourId,
+          dk_material: materialId,
+        });
+      } else {
+        // Create new info record
+        await api.create<Info>('info', {
+          dk_itemid: item.id,
+          dk_styleid: styleId,
+          dk_colourid: colourId,
+          dk_material: materialId,
+        });
+      }
+
       onItemUpdated();
       onClose();
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to update item');
+      console.error('Failed to update item:', err);
+      const errorMessage = err instanceof Error ? err.message : 'Failed to update item';
+      setError(errorMessage);
     } finally {
       setIsLoading(false);
     }
@@ -98,7 +252,11 @@ export function EditItemModal({ isOpen, item, storages, homes, onClose, onItemUp
             <select
               value={dk_closet}
               onChange={(e) => setDk_closet(e.target.value)}
-              className="w-full px-3 py-2 border border-zinc-200 dark:border-zinc-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-zinc-900/5 focus:border-zinc-500 transition-all bg-white dark:bg-zinc-800 text-zinc-900 dark:text-zinc-50"
+              className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-zinc-900/5 focus:border-zinc-500 transition-all bg-white dark:bg-zinc-800 text-zinc-900 dark:text-zinc-50 ${
+                fieldErrors.dk_closet
+                  ? 'border-red-500 dark:border-red-500'
+                  : 'border-zinc-200 dark:border-zinc-700'
+              }`}
               required
             >
               <option value="">Select a storage location</option>
@@ -112,6 +270,9 @@ export function EditItemModal({ isOpen, item, storages, homes, onClose, onItemUp
                 </optgroup>
               ))}
             </select>
+            {fieldErrors.dk_closet && (
+              <p className="text-red-500 text-xs mt-1">{fieldErrors.dk_closet}</p>
+            )}
           </div>
 
           <div className="grid grid-cols-2 gap-4">
@@ -123,9 +284,16 @@ export function EditItemModal({ isOpen, item, storages, homes, onClose, onItemUp
                 type="text"
                 value={itemtype}
                 onChange={(e) => setItemtype(e.target.value)}
-                className="w-full px-3 py-2 border border-zinc-200 dark:border-zinc-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-zinc-900/5 focus:border-zinc-500 transition-all bg-white dark:bg-zinc-800 text-zinc-900 dark:text-zinc-50"
+                className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-zinc-900/5 focus:border-zinc-500 transition-all bg-white dark:bg-zinc-800 text-zinc-900 dark:text-zinc-50 ${
+                  fieldErrors.itemtype
+                    ? 'border-red-500 dark:border-red-500'
+                    : 'border-zinc-200 dark:border-zinc-700'
+                }`}
                 required
               />
+              {fieldErrors.itemtype && (
+                <p className="text-red-500 text-xs mt-1">{fieldErrors.itemtype}</p>
+              )}
             </div>
             <div>
               <label className="block text-sm font-semibold text-zinc-900 dark:text-zinc-50 mb-2">
@@ -135,10 +303,225 @@ export function EditItemModal({ isOpen, item, storages, homes, onClose, onItemUp
                 type="text"
                 value={itemsize}
                 onChange={(e) => setItemsize(e.target.value)}
-                className="w-full px-3 py-2 border border-zinc-200 dark:border-zinc-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-zinc-900/5 focus:border-zinc-500 transition-all bg-white dark:bg-zinc-800 text-zinc-900 dark:text-zinc-50"
+                className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-zinc-900/5 focus:border-zinc-500 transition-all bg-white dark:bg-zinc-800 text-zinc-900 dark:text-zinc-50 ${
+                  fieldErrors.itemsize
+                    ? 'border-red-500 dark:border-red-500'
+                    : 'border-zinc-200 dark:border-zinc-700'
+                }`}
                 required
               />
+              {fieldErrors.itemsize && (
+                <p className="text-red-500 text-xs mt-1">{fieldErrors.itemsize}</p>
+              )}
             </div>
+          </div>
+
+          {/* Colour and Material Details */}
+          <div className="grid grid-cols-2 gap-4">
+            {/* Colour - Required - Dropdown with custom input */}
+            <div>
+              <label className="block text-sm font-semibold text-zinc-900 dark:text-zinc-50 mb-2">
+                Colour <span className="text-red-500">*</span>
+              </label>
+              <div className="relative" data-dropdown="colour">
+                <button
+                  type="button"
+                  onClick={() => setColourDropdownOpen(!colourDropdownOpen)}
+                  className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-zinc-900/5 focus:border-zinc-500 transition-all bg-white dark:bg-zinc-800 text-zinc-900 dark:text-zinc-50 text-left flex items-center justify-between ${
+                    fieldErrors.colouroverall
+                      ? 'border-red-500 dark:border-red-500'
+                      : 'border-zinc-200 dark:border-zinc-700'
+                  }`}
+                >
+                  <span>{colouroverall || 'Select or type colour...'}</span>
+                  <ChevronDown size={16} className={`transition-transform ${colourDropdownOpen ? 'rotate-180' : ''}`} />
+                </button>
+                
+                {colourDropdownOpen && (
+                  <div className="absolute z-50 w-full mt-1 bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-lg shadow-lg">
+                    <input
+                      type="text"
+                      placeholder="Search or type new colour..."
+                      value={colourSearchTerm}
+                      onChange={(e) => setColourSearchTerm(e.target.value)}
+                      className="w-full px-3 py-2 border-b border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-zinc-900 dark:text-zinc-50 focus:outline-none"
+                    />
+                    <div className="max-h-48 overflow-y-auto">
+                      {filteredColours.length > 0 ? (
+                        filteredColours.map(colour => (
+                          <button
+                            key={colour}
+                            type="button"
+                            onClick={() => {
+                              setColouroverall(colour);
+                              setColourDropdownOpen(false);
+                              setColourSearchTerm('');
+                            }}
+                            className="w-full text-left px-3 py-2 hover:bg-zinc-100 dark:hover:bg-zinc-700 text-zinc-900 dark:text-zinc-50 transition-colors"
+                          >
+                            {colour}
+                          </button>
+                        ))
+                      ) : colourSearchTerm.trim() ? (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setColouroverall(colourSearchTerm.trim());
+                            setColourDropdownOpen(false);
+                            setColourSearchTerm('');
+                          }}
+                          className="w-full text-left px-3 py-2 hover:bg-zinc-100 dark:hover:bg-zinc-700 text-zinc-900 dark:text-zinc-50 transition-colors font-medium"
+                        >
+                          + Add new: "{colourSearchTerm.trim()}"
+                        </button>
+                      ) : (
+                        <div className="px-3 py-2 text-zinc-500 dark:text-zinc-400 text-sm">No colours found</div>
+                      )}
+                    </div>
+                  </div>
+                )}
+              </div>
+              {fieldErrors.colouroverall && (
+                <p className="text-red-500 text-xs mt-1">{fieldErrors.colouroverall}</p>
+              )}
+            </div>
+
+            {/* Material/Texture - Required - Dropdown with custom input */}
+            <div>
+              <label className="block text-sm font-semibold text-zinc-900 dark:text-zinc-50 mb-2">
+                Material <span className="text-red-500">*</span>
+              </label>
+              <div className="relative" data-dropdown="texture">
+                <button
+                  type="button"
+                  onClick={() => setTextureDropdownOpen(!textureDropdownOpen)}
+                  className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-zinc-900/5 focus:border-zinc-500 transition-all bg-white dark:bg-zinc-800 text-zinc-900 dark:text-zinc-50 text-left flex items-center justify-between ${
+                    fieldErrors.texture
+                      ? 'border-red-500 dark:border-red-500'
+                      : 'border-zinc-200 dark:border-zinc-700'
+                  }`}
+                >
+                  <span>{texture || 'Select or type material...'}</span>
+                  <ChevronDown size={16} className={`transition-transform ${textureDropdownOpen ? 'rotate-180' : ''}`} />
+                </button>
+                
+                {textureDropdownOpen && (
+                  <div className="absolute z-50 w-full mt-1 bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-lg shadow-lg">
+                    <input
+                      type="text"
+                      placeholder="Search or type new material..."
+                      value={textureSearchTerm}
+                      onChange={(e) => setTextureSearchTerm(e.target.value)}
+                      className="w-full px-3 py-2 border-b border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-zinc-900 dark:text-zinc-50 focus:outline-none"
+                    />
+                    <div className="max-h-48 overflow-y-auto">
+                      {filteredTextures.length > 0 ? (
+                        filteredTextures.map(mat => (
+                          <button
+                            key={mat}
+                            type="button"
+                            onClick={() => {
+                              setTexture(mat);
+                              setTextureDropdownOpen(false);
+                              setTextureSearchTerm('');
+                            }}
+                            className="w-full text-left px-3 py-2 hover:bg-zinc-100 dark:hover:bg-zinc-700 text-zinc-900 dark:text-zinc-50 transition-colors"
+                          >
+                            {mat}
+                          </button>
+                        ))
+                      ) : textureSearchTerm.trim() ? (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setTexture(textureSearchTerm.trim());
+                            setTextureDropdownOpen(false);
+                            setTextureSearchTerm('');
+                          }}
+                          className="w-full text-left px-3 py-2 hover:bg-zinc-100 dark:hover:bg-zinc-700 text-zinc-900 dark:text-zinc-50 transition-colors font-medium"
+                        >
+                          + Add new: "{textureSearchTerm.trim()}"
+                        </button>
+                      ) : (
+                        <div className="px-3 py-2 text-zinc-500 dark:text-zinc-400 text-sm">No materials found</div>
+                      )}
+                    </div>
+                  </div>
+                )}
+              </div>
+              {fieldErrors.texture && (
+                <p className="text-red-500 text-xs mt-1">{fieldErrors.texture}</p>
+              )}
+            </div>
+          </div>
+
+          {/* Style */}
+          <div>
+            {/* Style - Required - Dropdown with custom input */}
+            <label className="block text-sm font-semibold text-zinc-900 dark:text-zinc-50 mb-2">
+              Style <span className="text-red-500">*</span>
+            </label>
+            <div className="relative" data-dropdown="style">
+              <button
+                type="button"
+                onClick={() => setStyleDropdownOpen(!styleDropdownOpen)}
+                className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-zinc-900/5 focus:border-zinc-500 transition-all bg-white dark:bg-zinc-800 text-zinc-900 dark:text-zinc-50 text-left flex items-center justify-between ${
+                  fieldErrors.styletype
+                    ? 'border-red-500 dark:border-red-500'
+                    : 'border-zinc-200 dark:border-zinc-700'
+                }`}
+              >
+                <span>{styletype || 'Select or type style...'}</span>
+                <ChevronDown size={16} className={`transition-transform ${styleDropdownOpen ? 'rotate-180' : ''}`} />
+              </button>
+              
+              {styleDropdownOpen && (
+                <div className="absolute z-50 w-full mt-1 bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-lg shadow-lg">
+                  <input
+                    type="text"
+                    placeholder="Search or type new style..."
+                    value={styleSearchTerm}
+                    onChange={(e) => setStyleSearchTerm(e.target.value)}
+                    className="w-full px-3 py-2 border-b border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-zinc-900 dark:text-zinc-50 focus:outline-none"
+                  />
+                  <div className="max-h-48 overflow-y-auto">
+                    {filteredStyles.length > 0 ? (
+                      filteredStyles.map(style => (
+                        <button
+                          key={style}
+                          type="button"
+                          onClick={() => {
+                            setStyletype(style);
+                            setStyleDropdownOpen(false);
+                            setStyleSearchTerm('');
+                          }}
+                          className="w-full text-left px-3 py-2 hover:bg-zinc-100 dark:hover:bg-zinc-700 text-zinc-900 dark:text-zinc-50 transition-colors"
+                        >
+                          {style}
+                        </button>
+                      ))
+                    ) : styleSearchTerm.trim() ? (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setStyletype(styleSearchTerm.trim());
+                          setStyleDropdownOpen(false);
+                          setStyleSearchTerm('');
+                        }}
+                        className="w-full text-left px-3 py-2 hover:bg-zinc-100 dark:hover:bg-zinc-700 text-zinc-900 dark:text-zinc-50 transition-colors font-medium"
+                      >
+                        + Add new: "{styleSearchTerm.trim()}"
+                      </button>
+                    ) : (
+                      <div className="px-3 py-2 text-zinc-500 dark:text-zinc-400 text-sm">No styles found</div>
+                    )}
+                  </div>
+                </div>
+              )}
+            </div>
+            {fieldErrors.styletype && (
+              <p className="text-red-500 text-xs mt-1">{fieldErrors.styletype}</p>
+            )}
           </div>
 
           <div className="grid grid-cols-2 gap-4">
