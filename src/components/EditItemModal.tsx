@@ -186,7 +186,6 @@ export function EditItemModal({ isOpen, item, storages, homes, onClose, onItemUp
       }
 
       // Step 3: Update or create info junction
-      const currentInfo = infos.find(info => info.dk_itemid === item.id);
       if (currentInfo) {
         // Update existing info record
         await api.update<Info>('info', currentInfo.id, {
