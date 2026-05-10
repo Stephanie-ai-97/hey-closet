@@ -363,50 +363,6 @@ export function ItemModal({ isOpen, storages, homes, onClose, onItemAdded }: Ite
             )}
           </div>
 
-          {/* Major and Minor Colour Fields - Show when multi-colour */}
-          {isMultiColour && (
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <label className="block text-sm font-semibold text-zinc-900 dark:text-zinc-50 mb-2">
-                  Major Colour <span className="text-red-500">*</span>
-                </label>
-                <input
-                  type="text"
-                  value={majorcolour}
-                  onChange={(e) => setMajorcolour(e.target.value)}
-                  placeholder="e.g., Blue"
-                  className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-zinc-900/5 focus:border-zinc-500 transition-all bg-white dark:bg-zinc-800 text-zinc-900 dark:text-zinc-50 ${
-                    fieldErrors.majorcolour
-                      ? 'border-red-500 dark:border-red-500'
-                      : 'border-zinc-200 dark:border-zinc-700'
-                  }`}
-                />
-                {fieldErrors.majorcolour && (
-                  <p className="text-red-500 text-xs mt-1">{fieldErrors.majorcolour}</p>
-                )}
-              </div>
-              <div>
-                <label className="block text-sm font-semibold text-zinc-900 dark:text-zinc-50 mb-2">
-                  Minor Colour <span className="text-red-500">*</span>
-                </label>
-                <input
-                  type="text"
-                  value={minorcolour}
-                  onChange={(e) => setMinorcolour(e.target.value)}
-                  placeholder="e.g., White"
-                  className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-zinc-900/5 focus:border-zinc-500 transition-all bg-white dark:bg-zinc-800 text-zinc-900 dark:text-zinc-50 ${
-                    fieldErrors.minorcolour
-                      ? 'border-red-500 dark:border-red-500'
-                      : 'border-zinc-200 dark:border-zinc-700'
-                  }`}
-                />
-                {fieldErrors.minorcolour && (
-                  <p className="text-red-500 text-xs mt-1">{fieldErrors.minorcolour}</p>
-                )}
-              </div>
-            </div>
-          )}
-
           {/* Style and Cost */}
           <div className="grid grid-cols-2 gap-4">
             {/* Style - Required */}
