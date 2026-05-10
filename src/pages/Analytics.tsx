@@ -85,6 +85,7 @@ export default function Analytics() {
               </Link>
             );
             })}
+          </div>
         </div>
 
         {/* Spending by Month */}
