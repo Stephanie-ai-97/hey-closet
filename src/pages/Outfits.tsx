@@ -69,6 +69,7 @@ export default function Outfits() {
               const itemsWithColourData = items.map(item => 
                 itemsWithColours.find(iwc => iwc.id === item.id) || item
               );
+              return (
               <div
                 key={outfit.id}
                 className="bg-white dark:bg-zinc-900 rounded-2xl border border-zinc-200 dark:border-zinc-800 p-5 shadow-sm hover:shadow-md transition-all flex flex-col"
@@ -129,7 +130,7 @@ export default function Outfits() {
                   </button>
                 </div>
               </div>
-            ))}
+              );
             })}
           </div>
         )}
