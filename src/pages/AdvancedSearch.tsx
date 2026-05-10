@@ -33,14 +33,14 @@ export default function AdvancedSearch() {
   const [displayMode, setDisplayMode] = useState<DisplayMode>('card');
 
   console.debug('[AdvancedSearch] Component rendered with:', {
-    itemsCount: items.length,
+    itemsCount: itemsWithColours.length,
     infosCount: infos.length,
     coloursCount: colours.length,
     stylesCount: styles.length,
     materialsCount: materials.length,
     forLocationsCount: forLocations.length,
     sampleInfos: infos.slice(0, 3),
-    sampleItems: items.slice(0, 3).map(i => ({
+    sampleItems: itemsWithColours.slice(0, 3).map(i => ({
       id: i.id,
       itemtype: i.itemtype,
       // Check if metadata might be stored differently on item
@@ -67,9 +67,9 @@ export default function AdvancedSearch() {
       selectedStyles,
       selectedMaterials,
       selectedLocations,
-      totalItems: items.length,
+      totalItems: itemsWithColours.length,
       totalInfos: infos.length,
-      itemIds: items.map(i => i.id),
+      itemIds: itemsWithColours.map(i => i.id),
       infoRecords: infos.slice(0, 3), // Log first 3 info records
     });
 
@@ -78,7 +78,7 @@ export default function AdvancedSearch() {
       return [];
     }
 
-    const result = items.filter(item => {
+    const result = itemsWithColours.filter(item => {
       const itemInfo = infos.filter(info => {
         const matches = info.dk_itemid === item.id;
         if (!matches) {
@@ -111,7 +111,7 @@ export default function AdvancedSearch() {
     
     console.debug('[AdvancedSearch] Filtered result count:', result.length);
     return result;
-  }, [items, infos, selectedColours, selectedStyles, selectedMaterials, selectedLocations, forLocations]);
+  }, [itemsWithColours, infos, selectedColours, selectedStyles, selectedMaterials, selectedLocations, forLocations]);
 
   const resetFilters = () => {
     setSelectedColours([]);

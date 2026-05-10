@@ -5,6 +5,8 @@ import { EditStorageModal } from '../components/EditStorageModal';
 import { EditItemModal } from '../components/EditItemModal';
 import { DeleteConfirmModal } from '../components/DeleteConfirmModal';
 import { useDashboardData } from '../hooks/useDashboardData';
+import { useItemColours } from '../hooks/useItemColours';
+import { ItemSVGIcon } from '../components/ItemSVGIcon';
 import { useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { 
@@ -14,7 +16,6 @@ import {
   Grid3X3,
   List,
   Plus,
-  Package,
   Pencil,
   Trash2,
 } from 'lucide-react';
@@ -27,13 +28,14 @@ type ViewMode = 'grid' | 'list';
 
 export default function Warehouse() {
   const { homes, storages, items, loading, error, refetch } = useDashboardData();
+  const { itemsWithColours } = useItemColours(items);
   const navigate = useNavigate();
   
   console.debug('[Warehouse] Data from useDashboardData:', { 
     homesCount: homes.length, 
     homes: homes,
     storagesCount: storages.length,
-    itemsCount: items.length,
+    itemsCount: itemsWithColours.length,
     loading,
     error
   });
@@ -82,8 +84,8 @@ export default function Warehouse() {
     const storageIds = storagesByHome
       .filter(s => s.closet === selectedStorageName && s.closetpartition === selectedPartition)
       .map(s => s.id);
-    return items.filter(i => storageIds.includes(i.dk_closet));
-  }, [selectedPartition, selectedStorageName, storagesByHome, items]);
+    return itemsWithColours.filter(i => storageIds.includes(i.dk_closet));
+  }, [selectedPartition, selectedStorageName, storagesByHome, itemsWithColours]);
 
   // Calculate item statistics
   const itemStats = useMemo(() => {
@@ -193,7 +195,7 @@ export default function Warehouse() {
             className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"
           >
             {homes.map(home => {
-              const canDeleteHome = items.filter(i =>
+              const canDeleteHome = itemsWithColours.filter(i =>
                 storages.filter(s => s.dk_homelocation === home.id).map(s => s.id).includes(i.dk_closet)
               ).length === 0;
               return (
@@ -253,7 +255,7 @@ export default function Warehouse() {
           >
             {uniqueStorageNames.map(storageName => {
               const storageCount = storagesByHome.filter(s => s.closet === storageName).length;
-              const storageItems = items.filter(i => 
+              const storageItems = itemsWithColours.filter(i => 
                 storagesByHome
                   .filter(s => s.closet === storageName)
                   .map(s => s.id)
@@ -315,7 +317,7 @@ export default function Warehouse() {
               const partitionStorageIds = storagesByHome
                 .filter(s => s.closet === selectedStorageName && s.closetpartition === partition)
                 .map(s => s.id);
-              const partitionItems = items.filter(i => partitionStorageIds.includes(i.dk_closet));
+              const partitionItems = itemsWithColours.filter(i => partitionStorageIds.includes(i.dk_closet));
               const canDeletePartition = partitionItems.length === 0;
               const storageUnit = storagesByHome.find(s => s.closet === selectedStorageName && s.closetpartition === partition);
               
@@ -479,7 +481,13 @@ export default function Warehouse() {
                       <td className="px-6 py-4">
                         <div className="flex items-center gap-3">
                           <div className="w-10 h-10 bg-zinc-100 dark:bg-zinc-800 rounded flex items-center justify-center text-zinc-400 dark:text-zinc-500">
-                            <Package size={18} />
+                            <ItemSVGIcon
+                              itemtype={item.itemtype}
+                              size={24}
+                              majorColour={item.colour?.majorcolour}
+                              minorColour={item.colour?.minorcolour}
+                              color={item.colour?.majorcolour}
+                            />
                           </div>
                           <span className="font-medium">{item.itemtype}</span>
                         </div>

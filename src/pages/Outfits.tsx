@@ -28,7 +28,7 @@ export default function Outfits() {
     <>
       <OutfitModal
         isOpen={modalOpen}
-        allItems={allItems}
+        allItems={itemsWithColours}
         onClose={() => setModalOpen(false)}
         onOutfitCreated={refetch}
       />
@@ -64,11 +64,9 @@ export default function Outfits() {
           </div>
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-            {outfits.map(({ outfit, items }) => {
-              // Get colour data for outfit items
-              const itemsWithColourData = items.map(item => 
-                itemsWithColours.find(iwc => iwc.id === item.id) || item
-              );
+            {outfits.map(({ outfit, items: linkedItems }) => {
+              const linkedItemIds = new Set(linkedItems.map(item => item.id));
+              const itemsWithColourData = itemsWithColours.filter(item => linkedItemIds.has(item.id));
               return (
               <div
                 key={outfit.id}
@@ -76,7 +74,7 @@ export default function Outfits() {
               >
                 {/* Item icons strip */}
                 <div className="flex gap-2 mb-4 overflow-x-auto pb-1 min-h-[56px] items-center">
-                  {items.length === 0 ? (
+                  {itemsWithColourData.length === 0 ? (
                     <div className="text-xs text-zinc-400 italic">No items linked</div>
                   ) : (
                     itemsWithColourData.slice(0, 6).map(item => (
@@ -95,9 +93,9 @@ export default function Outfits() {
                       </div>
                     ))
                   )}
-                  {items.length > 6 && (
+                  {itemsWithColourData.length > 6 && (
                     <div className="w-12 h-12 bg-zinc-100 dark:bg-zinc-800 rounded-xl flex items-center justify-center text-zinc-500 dark:text-zinc-400 text-xs font-bold shrink-0">
-                      +{items.length - 6}
+                      +{itemsWithColourData.length - 6}
                     </div>
                   )}
                 </div>
@@ -120,7 +118,7 @@ export default function Outfits() {
                 </div>
 
                 <div className="flex items-center justify-between mt-4 pt-4 border-t border-zinc-50 dark:border-zinc-800">
-                  <span className="text-xs text-zinc-400 dark:text-zinc-500">{items.length} item{items.length !== 1 ? 's' : ''}</span>
+                  <span className="text-xs text-zinc-400 dark:text-zinc-500">{itemsWithColourData.length} item{itemsWithColourData.length !== 1 ? 's' : ''}</span>
                   <button
                     onClick={() => setDeleteTarget({ id: outfit.id, name: outfit.outfitname })}
                     className="p-1.5 text-zinc-300 dark:text-zinc-600 hover:text-red-500 transition-colors rounded-lg hover:bg-red-50 dark:hover:bg-red-950"

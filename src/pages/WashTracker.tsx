@@ -1,6 +1,8 @@
 import { PageContainer } from '../components/PageContainer';
 import { WashModal } from '../components/WashModal';
 import { useDashboardData } from '../hooks/useDashboardData';
+import { useItemColours } from '../hooks/useItemColours';
+import { ItemSVGIcon } from '../components/ItemSVGIcon';
 import { useState, useEffect } from 'react';
 import { api } from '../services/api';
 import { Wash, Item } from '../types';
@@ -19,6 +21,7 @@ import { Link } from 'react-router-dom';
 
 export default function WashTracker() {
   const { items, loading: itemsLoading } = useDashboardData();
+  const { itemsWithColours } = useItemColours(items);
   const [washes, setWashes] = useState<Wash[]>([]);
   const [loadingWashes, setLoadingWashes] = useState(true);
   const [selectedItem, setSelectedItem] = useState<Item | null>(null);
@@ -65,7 +68,7 @@ export default function WashTracker() {
     return acc;
   }, {} as Record<number, Wash>);
 
-  const itemsWithStatus = items.map(item => {
+  const itemsWithStatus = itemsWithColours.map(item => {
     const lastWash = latestWashes[item.id];
     const daysSince = lastWash ? differenceInDays(new Date(), new Date(lastWash.lastwashdate)) : Infinity;
     const isCritical = daysSince > 30;
@@ -125,7 +128,13 @@ export default function WashTracker() {
                       "w-10 h-10 rounded-lg flex items-center justify-center",
                       item.isCritical ? "bg-red-50 dark:bg-red-950 text-red-500" : "bg-zinc-50 dark:bg-zinc-800 text-zinc-400"
                     )}>
-                      <Droplets size={18} />
+                      <ItemSVGIcon
+                        itemtype={item.itemtype}
+                        size={24}
+                        majorColour={item.colour?.majorcolour}
+                        minorColour={item.colour?.minorcolour}
+                        color={item.colour?.majorcolour}
+                      />
                     </div>
                     <div>
                       <p className="font-bold text-sm text-zinc-900 dark:text-zinc-50">{item.itemtype}</p>
@@ -180,7 +189,13 @@ export default function WashTracker() {
                     "w-10 h-10 rounded-lg flex items-center justify-center",
                     item.isCritical ? "bg-red-50 dark:bg-red-950 text-red-500" : "bg-zinc-50 dark:bg-zinc-800 text-zinc-400"
                   )}>
-                    <Droplets size={18} />
+                    <ItemSVGIcon
+                      itemtype={item.itemtype}
+                      size={24}
+                      majorColour={item.colour?.majorcolour}
+                      minorColour={item.colour?.minorcolour}
+                      color={item.colour?.majorcolour}
+                    />
                   </div>
                   <div>
                     <Link to={`/item/${item.id}`} className="font-bold text-sm text-zinc-900 dark:text-zinc-50 hover:underline">{item.itemtype}</Link>
@@ -232,12 +247,22 @@ export default function WashTracker() {
               .sort((a, b) => new Date(b.lastwashdate).getTime() - new Date(a.lastwashdate).getTime())
               .slice(0, 6)
               .map((wash) => {
-                const item = items.find(i => i.id === wash.dk_itemid);
+                const item = itemsWithColours.find(i => i.id === wash.dk_itemid);
                 return (
                   <div key={wash.id} className="bg-white dark:bg-zinc-900 rounded-2xl border border-zinc-200 dark:border-zinc-800 p-4 hover:shadow-md transition-shadow">
                     <div className="flex items-start gap-3">
                       <div className="w-10 h-10 rounded-lg bg-indigo-50 dark:bg-indigo-950 flex items-center justify-center text-indigo-600 shrink-0">
-                        <Droplets size={18} />
+                        {item ? (
+                          <ItemSVGIcon
+                            itemtype={item.itemtype}
+                            size={24}
+                            majorColour={item.colour?.majorcolour}
+                            minorColour={item.colour?.minorcolour}
+                            color={item.colour?.majorcolour}
+                          />
+                        ) : (
+                          <Droplets size={18} />
+                        )}
                       </div>
                       <div className="flex-1 min-w-0">
                         <p className="font-bold text-sm text-zinc-900 dark:text-zinc-50 truncate">

@@ -6,10 +6,12 @@ import { ItemSVGIcon } from '../components/ItemSVGIcon';
 import { Link } from 'react-router-dom';
 import { TrendingDown, BarChart2, Palette, Archive } from 'lucide-react';
 import { cn } from '../lib/utils';
+import { useMemo } from 'react';
 
 export default function Analytics() {
   const { data, loading, error } = useAnalytics();
   const { itemsWithColours } = useItemColours(data?.cpwItems?.map(c => c.item) ?? []);
+  const itemColourMap = useMemo(() => new Map(itemsWithColours.map(item => [item.id, item])), [itemsWithColours]);
 
   if (loading) return <div className="p-8 animate-pulse text-center dark:text-zinc-400">Computing fashion ROI...</div>;
   if (error) return <div className="p-8 text-red-500 text-center">{error}</div>;
@@ -54,7 +56,7 @@ export default function Analytics() {
           </div>
           <div className="space-y-2 max-h-[400px] overflow-y-auto">
             {cpwItems.slice(0, 20).map(({ item, wearCount, cpw }) => {
-              const itemWithColour = itemsWithColours.find(iwc => iwc.id === item.id);
+              const itemWithColour = itemColourMap.get(item.id);
               return (
               <Link
                 to={`/item/${item.id}`}
@@ -177,7 +179,9 @@ export default function Analytics() {
             <p className="text-sm text-zinc-400 dark:text-zinc-500 text-center py-12">No dormant items — great rotation!</p>
           ) : (
             <div className="space-y-2 max-h-[340px] overflow-y-auto">
-              {dormantItems.map(item => (
+              {dormantItems.map(item => {
+                const itemWithColour = itemColourMap.get(item.id);
+                return (
                 <Link
                   to={`/item/${item.id}`}
                   key={item.id}
@@ -187,9 +191,9 @@ export default function Analytics() {
                     <ItemSVGIcon 
                       itemtype={item.itemtype} 
                       size={18}
-                      majorColour={itemsWithColours.find(iwc => iwc.id === item.id)?.colour?.majorcolour}
-                      minorColour={itemsWithColours.find(iwc => iwc.id === item.id)?.colour?.minorcolour}
-                      color={itemsWithColours.find(iwc => iwc.id === item.id)?.colour?.majorcolour}
+                      majorColour={itemWithColour?.colour?.majorcolour}
+                      minorColour={itemWithColour?.colour?.minorcolour}
+                      color={itemWithColour?.colour?.majorcolour}
                     />
                   </div>
                   <div className="flex-1 min-w-0">
@@ -198,7 +202,8 @@ export default function Analytics() {
                   </div>
                   <span className="text-xs text-amber-500 font-medium shrink-0">Dormant</span>
                 </Link>
-              ))}
+                );
+              })}
             </div>
           )}
         </div>

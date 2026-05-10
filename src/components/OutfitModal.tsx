@@ -1,14 +1,14 @@
-import { useState } from 'react';
+import { FormEvent, useState } from 'react';
 import { X, Search } from 'lucide-react';
-import { Item, Outfit, OutfitItem } from '../types';
+import { Outfit, OutfitItem } from '../types';
 import { api } from '../services/api';
 import { ItemSVGIcon } from './ItemSVGIcon';
-import { useItemColours } from '../hooks/useItemColours';
+import { ItemWithColour } from '../hooks/useItemColours';
 import { cn } from '../lib/utils';
 
 interface OutfitModalProps {
   isOpen: boolean;
-  allItems: Item[];
+  allItems: ItemWithColour[];
   onClose: () => void;
   onOutfitCreated: () => void;
 }
@@ -17,7 +17,6 @@ const OCCASIONS = ['Casual', 'Formal', 'Business', 'Sport', 'Evening', 'Beach', 
 const SEASONS = ['All Season', 'Spring', 'Summer', 'Autumn', 'Winter'];
 
 export function OutfitModal({ isOpen, allItems, onClose, onOutfitCreated }: OutfitModalProps) {
-  const { itemsWithColours } = useItemColours(allItems);
   const [outfitname, setOutfitname] = useState('');
   const [occasion, setOccasion] = useState('Casual');
   const [season, setSeason] = useState('All Season');
@@ -27,7 +26,7 @@ export function OutfitModal({ isOpen, allItems, onClose, onOutfitCreated }: Outf
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const filteredItems = itemsWithColours.filter(item =>
+  const filteredItems = allItems.filter(item =>
     item.itemtype.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
@@ -37,7 +36,7 @@ export function OutfitModal({ isOpen, allItems, onClose, onOutfitCreated }: Outf
     );
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
     if (!outfitname.trim()) {
       setError('Outfit name is required.');

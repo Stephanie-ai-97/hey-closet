@@ -10,9 +10,12 @@ import {
 } from 'lucide-react';
 import { cn } from '../lib/utils';
 import { motion } from 'motion/react';
+import { ItemSVGIcon } from '../components/ItemSVGIcon';
+import { useItemColours } from '../hooks/useItemColours';
 
 export default function Dashboard() {
   const { homes, storages, items, loading, error } = useDashboardData();
+  const { itemsWithColours } = useItemColours(items);
 
   if (loading) return <div className="p-8 animate-pulse dark:text-zinc-400">Loading archive...</div>;
   if (error) return (
@@ -23,7 +26,7 @@ export default function Dashboard() {
   );
 
   const stats = [
-    { label: 'Total Items', value: items.length, icon: Package, color: 'text-blue-500', bg: 'bg-blue-50 dark:bg-blue-950' },
+    { label: 'Total Items', value: itemsWithColours.length, icon: Package, color: 'text-blue-500', bg: 'bg-blue-50 dark:bg-blue-950' },
     { label: 'Locations', value: homes.length, icon: HomeIcon, color: 'text-purple-500', bg: 'bg-purple-50 dark:bg-purple-950' },
     { label: 'Storage Units', value: storages.length, icon: Warehouse, color: 'text-amber-500', bg: 'bg-amber-50 dark:bg-amber-950' },
   ];
@@ -57,11 +60,17 @@ export default function Dashboard() {
             </div>
           </div>
           <div className="divide-y divide-zinc-50 dark:divide-zinc-800">
-            {items.slice(-5).reverse().map((item) => (
+            {itemsWithColours.slice(-5).reverse().map((item) => (
               <div key={item.id} className="p-4 flex items-center justify-between hover:bg-zinc-50 dark:hover:bg-zinc-800 transition-colors">
                 <div className="flex items-center gap-4">
                   <div className="w-12 h-12 bg-zinc-100 dark:bg-zinc-800 rounded-lg flex items-center justify-center text-zinc-400 group-hover:text-zinc-600 transition-colors">
-                    <Package size={20} />
+                    <ItemSVGIcon
+                      itemtype={item.itemtype}
+                      size={28}
+                      majorColour={item.colour?.majorcolour}
+                      minorColour={item.colour?.minorcolour}
+                      color={item.colour?.majorcolour}
+                    />
                   </div>
                   <div>
                     <p className="font-medium text-sm">{item.itemtype}</p>
@@ -73,7 +82,7 @@ export default function Dashboard() {
                 </div>
               </div>
             ))}
-            {items.length === 0 && (
+            {itemsWithColours.length === 0 && (
               <div className="p-12 text-center text-zinc-400 dark:text-zinc-500 text-sm">No items archived yet.</div>
             )}
           </div>
@@ -89,8 +98,8 @@ export default function Dashboard() {
             {homes.map((home) => {
               const homeStorages = storages.filter(s => s.dk_homelocation === home.id);
               const storageIds = homeStorages.map(s => s.id);
-              const homeItems = items.filter(i => storageIds.includes(i.dk_closet));
-              const percentage = items.length > 0 ? (homeItems.length / items.length) * 100 : 0;
+              const homeItems = itemsWithColours.filter(i => storageIds.includes(i.dk_closet));
+              const percentage = itemsWithColours.length > 0 ? (homeItems.length / itemsWithColours.length) * 100 : 0;
 
               return (
                 <div key={home.id} className="space-y-2">

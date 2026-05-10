@@ -23,6 +23,7 @@ export function useItemColours(items: Item[]) {
     const enrichItems = async () => {
       try {
         setLoading(true);
+        setItemsWithColours(items);
         
         // Fetch all infos and colours
         const [infos, colours] = await Promise.all([
@@ -34,11 +35,22 @@ export function useItemColours(items: Item[]) {
         const colourMap = new Map<number, Colour>();
 
         infos.forEach(info => {
-          infoMap.set(info.dk_itemid, info);
+          const normalizedInfo = {
+            ...info,
+            id: (info as any).pk_infoid ?? info.id,
+          };
+          const existing = infoMap.get(normalizedInfo.dk_itemid);
+          if (!existing || (!existing.dk_colourid && normalizedInfo.dk_colourid)) {
+            infoMap.set(normalizedInfo.dk_itemid, normalizedInfo);
+          }
         });
 
         colours.forEach(colour => {
-          colourMap.set(colour.id, colour);
+          const normalizedColour = {
+            ...colour,
+            id: (colour as any).pk_colourid ?? colour.id,
+          };
+          colourMap.set(normalizedColour.id, normalizedColour);
         });
 
         // Enrich each item with its colour data

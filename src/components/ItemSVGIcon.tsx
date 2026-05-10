@@ -1,3 +1,4 @@
+import { useId } from 'react';
 import { getItemIcon } from '../lib/itemIcons';
 
 interface ItemSVGIconProps {
@@ -11,11 +12,12 @@ interface ItemSVGIconProps {
 
 export function ItemSVGIcon({ itemtype, size = 48, color, majorColour, minorColour, className = '' }: ItemSVGIconProps) {
   const icon = getItemIcon(itemtype);
+  const gradientBaseId = useId().replace(/:/g, '');
   
   // Determine the effective color to use
   const effectiveColor = majorColour || color || 'currentColor';
-  const gradientId = `gradient-${itemtype}-${majorColour}-${minorColour}`;
   const hasGradient = majorColour && minorColour;
+  const gradientId = `gradient-${gradientBaseId}`;
 
   return (
     <svg
