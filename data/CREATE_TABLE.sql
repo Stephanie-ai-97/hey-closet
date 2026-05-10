@@ -1,8 +1,8 @@
 create table public.colour (
   pk_colourid integer generated always as identity not null,
   colouroverall character varying(100) null,
-  colourinner character varying(100) null,
-  colourouter character varying(100) null,
+  majorcolour character varying(100) null,
+  minorcolour character varying(100) null,
   created_at timestamp without time zone null default CURRENT_TIMESTAMP,
   updated_at timestamp without time zone null default CURRENT_TIMESTAMP,
   constraint colour_pkey primary key (pk_colourid)

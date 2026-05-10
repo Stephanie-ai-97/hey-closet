@@ -31,8 +31,8 @@ export interface Item {
 export interface Colour {
   id: number;
   colouroverall: string;
-  colourinner: string;
-  colourouter: string;
+  majorcolour: string;
+  minorcolour: string;
 }
 
 export interface Material {

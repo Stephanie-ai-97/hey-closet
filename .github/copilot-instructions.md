@@ -69,8 +69,8 @@ Auth header: `VITE_SUPABASE_API_KEY` (env var, never hardcode).
 |-------|------|-----------|-------|
 | `pk_colourid` | INT (identity) | Primary Key | Remapped to `id` |
 | `colouroverall` | VARCHAR(100) | – | Primary colour |
-| `colourinner` | VARCHAR(100) | – | Inner colour (for layered items) |
-| `colourouter` | VARCHAR(100) | – | Outer colour (for layered items) |
+| `majorcolour` | VARCHAR(100) | – | Major colour (for layered items) |
+| `minorcolour` | VARCHAR(100) | – | Minor colour (for layered items) |
 | `created_at` | TIMESTAMP | Default: CURRENT_TIMESTAMP | – |
 | `updated_at` | TIMESTAMP | Default: CURRENT_TIMESTAMP | Auto-updated on write |
 

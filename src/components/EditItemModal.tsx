@@ -27,6 +27,9 @@ export function EditItemModal({ isOpen, item, storages, homes, onClose, onItemUp
   const [itemcomment, setItemcomment] = useState(item.itemcomment);
   const [itemwashmethod, setItemwashmethod] = useState(item.itemwashmethod);
   const [colouroverall, setColouroverall] = useState('');
+  const [isMultiColour, setIsMultiColour] = useState(false);
+  const [majorcolour, setMajorcolour] = useState('');
+  const [minorcolour, setMinorcolour] = useState('');
   const [texture, setTexture] = useState('');
   const [styletype, setStyletype] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -62,10 +65,23 @@ export function EditItemModal({ isOpen, item, storages, homes, onClose, onItemUp
         const currentStyle = styles.find(s => s.id === currentInfo.dk_styleid);
         
         setColouroverall(currentColour?.colouroverall || '');
+        setMajorcolour(currentColour?.majorcolour || '');
+        setMinorcolour(currentColour?.minorcolour || '');
+        
+        // Determine if multi-colour: if majorcolour and minorcolour are different from colouroverall
+        const isMulti = currentColour && (
+          currentColour.majorcolour !== currentColour.colouroverall ||
+          currentColour.minorcolour !== currentColour.colouroverall
+        );
+        setIsMultiColour(isMulti || false);
+        
         setTexture(currentMaterial?.texture || '');
         setStyletype(currentStyle?.styletype || '');
       } else {
         setColouroverall('');
+        setMajorcolour('');
+        setMinorcolour('');
+        setIsMultiColour(false);
         setTexture('');
         setStyletype('');
       }
@@ -85,6 +101,10 @@ export function EditItemModal({ isOpen, item, storages, homes, onClose, onItemUp
     if (!itemtype) errors.itemtype = 'Item type is required';
     if (!itemsize) errors.itemsize = 'Size is required';
     if (!colouroverall) errors.colouroverall = 'Colour is required';
+    if (isMultiColour) {
+      if (!majorcolour) errors.majorcolour = 'Major colour is required for multi-colour items';
+      if (!minorcolour) errors.minorcolour = 'Minor colour is required for multi-colour items';
+    }
     if (!texture) errors.texture = 'Material is required';
     if (!styletype) errors.styletype = 'Style is required';
 
@@ -112,13 +132,33 @@ export function EditItemModal({ isOpen, item, storages, homes, onClose, onItemUp
       });
 
       // Step 2: Handle metadata (colour, material, style)
-      // Check if colour exists
+      // Get current colour info from the item's current info record
+      const currentInfo = infos.find(info => info.dk_itemid === item.id);
+      const currentColourId = currentInfo?.dk_colourid;
+      const currentColourRecord = currentColourId ? colours.find(c => c.id === currentColourId) : null;
+      
+      // Check if colour exists with same colouroverall
       let colourId = colours.find(c => c.colouroverall === colouroverall)?.id;
-      if (!colourId) {
+      
+      // If we have a current colour and it matches, we might want to update it if majorcolour/minorcolour changed
+      if (currentColourRecord && currentColourRecord.colouroverall === colouroverall) {
+        // Check if majorcolour or minorcolour has changed
+        if (currentColourRecord.majorcolour !== (isMultiColour ? majorcolour : colouroverall) ||
+            currentColourRecord.minorcolour !== (isMultiColour ? minorcolour : colouroverall)) {
+          // Update the existing colour record
+          await api.update<any>('colour', currentColourRecord.id, {
+            colouroverall,
+            majorcolour: isMultiColour ? majorcolour : colouroverall,
+            minorcolour: isMultiColour ? minorcolour : colouroverall,
+          });
+        }
+        colourId = currentColourRecord.id;
+      } else if (!colourId) {
+        // Create new colour record
         const colourResponse = await api.create<any>('colour', {
           colouroverall,
-          colourinner: '',
-          colourouter: '',
+          majorcolour: isMultiColour ? majorcolour : colouroverall,
+          minorcolour: isMultiColour ? minorcolour : colouroverall,
         });
         colourId = colourResponse.data?.pk_colourid ?? colourResponse.pk_colourid;
       }
@@ -323,6 +363,64 @@ export function EditItemModal({ isOpen, item, storages, homes, onClose, onItemUp
               )}
             </div>
           </div>
+
+          {/* Colour Mode Toggle */}
+          <div className="flex items-center gap-3 p-3 bg-zinc-50 dark:bg-zinc-800 rounded-lg">
+            <input
+              type="checkbox"
+              id="edit-multicolour"
+              checked={isMultiColour}
+              onChange={(e) => setIsMultiColour(e.target.checked)}
+              className="w-4 h-4 rounded border-zinc-300 cursor-pointer"
+            />
+            <label htmlFor="edit-multicolour" className="text-sm font-medium text-zinc-900 dark:text-zinc-50 cursor-pointer">
+              Multi-colour item (major + minor colours)
+            </label>
+          </div>
+
+          {/* Major and Minor Colour Fields - Show when multi-colour */}
+          {isMultiColour && (
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-semibold text-zinc-900 dark:text-zinc-50 mb-2">
+                  Major Colour <span className="text-red-500">*</span>
+                </label>
+                <input
+                  type="text"
+                  value={majorcolour}
+                  onChange={(e) => setMajorcolour(e.target.value)}
+                  placeholder="e.g., Blue"
+                  className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-zinc-900/5 focus:border-zinc-500 transition-all bg-white dark:bg-zinc-800 text-zinc-900 dark:text-zinc-50 ${
+                    fieldErrors.majorcolour
+                      ? 'border-red-500 dark:border-red-500'
+                      : 'border-zinc-200 dark:border-zinc-700'
+                  }`}
+                />
+                {fieldErrors.majorcolour && (
+                  <p className="text-red-500 text-xs mt-1">{fieldErrors.majorcolour}</p>
+                )}
+              </div>
+              <div>
+                <label className="block text-sm font-semibold text-zinc-900 dark:text-zinc-50 mb-2">
+                  Minor Colour <span className="text-red-500">*</span>
+                </label>
+                <input
+                  type="text"
+                  value={minorcolour}
+                  onChange={(e) => setMinorcolour(e.target.value)}
+                  placeholder="e.g., White"
+                  className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-zinc-900/5 focus:border-zinc-500 transition-all bg-white dark:bg-zinc-800 text-zinc-900 dark:text-zinc-50 ${
+                    fieldErrors.minorcolour
+                      ? 'border-red-500 dark:border-red-500'
+                      : 'border-zinc-200 dark:border-zinc-700'
+                  }`}
+                />
+                {fieldErrors.minorcolour && (
+                  <p className="text-red-500 text-xs mt-1">{fieldErrors.minorcolour}</p>
+                )}
+              </div>
+            </div>
+          )}
 
           {/* Style */}
           <div>

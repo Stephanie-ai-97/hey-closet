@@ -26,6 +26,9 @@ export function ItemModal({ isOpen, storages, homes, onClose, onItemAdded }: Ite
   const [itemcomment, setItemcomment] = useState('');
   const [itemwashmethod, setItemwashmethod] = useState('hand wash');
   const [colouroverall, setColouroverall] = useState('');
+  const [isMultiColour, setIsMultiColour] = useState(false);
+  const [majorcolour, setMajorcolour] = useState('');
+  const [minorcolour, setMinorcolour] = useState('');
   const [texture, setTexture] = useState('');
   const [styletype, setStyletype] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -52,6 +55,10 @@ export function ItemModal({ isOpen, storages, homes, onClose, onItemAdded }: Ite
     if (!itemtype) errors.itemtype = 'Item type is required';
     if (!itemsize) errors.itemsize = 'Size is required';
     if (!colouroverall) errors.colouroverall = 'Colour is required';
+    if (isMultiColour) {
+      if (!majorcolour) errors.majorcolour = 'Major colour is required for multi-colour items';
+      if (!minorcolour) errors.minorcolour = 'Minor colour is required for multi-colour items';
+    }
     if (!texture) errors.texture = 'Material is required';
     if (!styletype) errors.styletype = 'Style is required';
 
@@ -81,11 +88,12 @@ export function ItemModal({ isOpen, storages, homes, onClose, onItemAdded }: Ite
       });
 
       // Step 2: Create colour
-      const colourResponse = await api.create<any>('colour', {
+      const colourData = {
         colouroverall,
-        colourinner: '',
-        colourouter: '',
-      });
+        majorcolour: isMultiColour ? majorcolour : colouroverall,
+        minorcolour: isMultiColour ? minorcolour : colouroverall,
+      };
+      const colourResponse = await api.create<any>('colour', colourData);
 
       // Step 3: Create material
       const materialResponse = await api.create<any>('material', {
@@ -119,6 +127,9 @@ export function ItemModal({ isOpen, storages, homes, onClose, onItemAdded }: Ite
       setItemcomment('');
       setItemwashmethod('hand wash');
       setColouroverall('');
+      setIsMultiColour(false);
+      setMajorcolour('');
+      setMinorcolour('');
       setTexture('');
       setStyletype('');
       setFieldErrors({});
@@ -296,6 +307,64 @@ export function ItemModal({ isOpen, storages, homes, onClose, onItemAdded }: Ite
               )}
             </div>
           </div>
+
+          {/* Colour Mode Toggle */}
+          <div className="flex items-center gap-3 p-3 bg-zinc-50 dark:bg-zinc-800 rounded-lg">
+            <input
+              type="checkbox"
+              id="multicolour"
+              checked={isMultiColour}
+              onChange={(e) => setIsMultiColour(e.target.checked)}
+              className="w-4 h-4 rounded border-zinc-300 cursor-pointer"
+            />
+            <label htmlFor="multicolour" className="text-sm font-medium text-zinc-900 dark:text-zinc-50 cursor-pointer">
+              Multi-colour item (major + minor colours)
+            </label>
+          </div>
+
+          {/* Major and Minor Colour Fields - Show when multi-colour */}
+          {isMultiColour && (
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-semibold text-zinc-900 dark:text-zinc-50 mb-2">
+                  Major Colour <span className="text-red-500">*</span>
+                </label>
+                <input
+                  type="text"
+                  value={majorcolour}
+                  onChange={(e) => setMajorcolour(e.target.value)}
+                  placeholder="e.g., Blue"
+                  className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-zinc-900/5 focus:border-zinc-500 transition-all bg-white dark:bg-zinc-800 text-zinc-900 dark:text-zinc-50 ${
+                    fieldErrors.majorcolour
+                      ? 'border-red-500 dark:border-red-500'
+                      : 'border-zinc-200 dark:border-zinc-700'
+                  }`}
+                />
+                {fieldErrors.majorcolour && (
+                  <p className="text-red-500 text-xs mt-1">{fieldErrors.majorcolour}</p>
+                )}
+              </div>
+              <div>
+                <label className="block text-sm font-semibold text-zinc-900 dark:text-zinc-50 mb-2">
+                  Minor Colour <span className="text-red-500">*</span>
+                </label>
+                <input
+                  type="text"
+                  value={minorcolour}
+                  onChange={(e) => setMinorcolour(e.target.value)}
+                  placeholder="e.g., White"
+                  className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-zinc-900/5 focus:border-zinc-500 transition-all bg-white dark:bg-zinc-800 text-zinc-900 dark:text-zinc-50 ${
+                    fieldErrors.minorcolour
+                      ? 'border-red-500 dark:border-red-500'
+                      : 'border-zinc-200 dark:border-zinc-700'
+                  }`}
+                />
+                {fieldErrors.minorcolour && (
+                  <p className="text-red-500 text-xs mt-1">{fieldErrors.minorcolour}</p>
+                )}
+              </div>
+            </div>
+          )}
 
           {/* Style and Cost */}
           <div className="grid grid-cols-2 gap-4">
