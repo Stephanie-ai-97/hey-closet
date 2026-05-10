@@ -21,12 +21,14 @@ import { ItemSVGIcon } from '../components/ItemSVGIcon';
 
 type DisplayMode = 'tile' | 'card' | 'list' | 'icon';
 
+const normalizeColour = (colour: string) => colour.trim().toLocaleLowerCase();
+
 export default function AdvancedSearch() {
   const { items, storages, homes, loading: itemsLoading } = useDashboardData();
   const { itemsWithColours } = useItemColours(items);
   const { colours, materials, styles, infos, forLocations, loading: metaLoading } = useMetadata();
   
-  const [selectedColours, setSelectedColours] = useState<number[]>([]);
+  const [selectedColours, setSelectedColours] = useState<string[]>([]);
   const [selectedStyles, setSelectedStyles] = useState<number[]>([]);
   const [selectedMaterials, setSelectedMaterials] = useState<number[]>([]);
   const [selectedLocations, setSelectedLocations] = useState<number[]>([]);
@@ -44,7 +46,20 @@ export default function AdvancedSearch() {
     [styles]
   );
   const sortedColours = useMemo(
-    () => [...colours].sort((a, b) => a.colouroverall.localeCompare(b.colouroverall, undefined, { sensitivity: 'base' })),
+    () => {
+      const coloursByOverall = new Map<string, (typeof colours)[number]>();
+
+      colours.forEach(colour => {
+        const key = normalizeColour(colour.colouroverall);
+        if (key && !coloursByOverall.has(key)) {
+          coloursByOverall.set(key, colour);
+        }
+      });
+
+      return [...coloursByOverall.values()].sort((a, b) =>
+        a.colouroverall.localeCompare(b.colouroverall, undefined, { sensitivity: 'base' })
+      );
+    },
     [colours]
   );
   const sortedMaterials = useMemo(
@@ -71,12 +86,12 @@ export default function AdvancedSearch() {
     })),
   });
 
-  const toggleFilter = (list: number[], setList: (l: number[]) => void, id: number) => {
+  const toggleFilter = <T,>(list: T[], setList: (l: T[]) => void, id: T) => {
     if (list.includes(id)) {
-      console.debug('[AdvancedSearch] Removing filter ID:', id);
+      console.debug('[AdvancedSearch] Removing filter:', id);
       setList(list.filter(i => i !== id));
     } else {
-      console.debug('[AdvancedSearch] Adding filter ID:', id);
+      console.debug('[AdvancedSearch] Adding filter:', id);
       setList([...list, id]);
     }
   };
@@ -98,6 +113,12 @@ export default function AdvancedSearch() {
       return [];
     }
 
+    const selectedColourIds = new Set(
+      colours
+        .filter(colour => selectedColours.includes(normalizeColour(colour.colouroverall)))
+        .map(colour => colour.id)
+    );
+
     const result = itemsWithColours.filter(item => {
       const itemInfo = infos.filter(info => {
         const matches = info.dk_itemid === item.id;
@@ -113,7 +134,7 @@ export default function AdvancedSearch() {
         return false;
       }
 
-      const matchesColour = selectedColours.length === 0 || itemInfo.some(info => selectedColours.includes(info.dk_colourid));
+      const matchesColour = selectedColours.length === 0 || itemInfo.some(info => selectedColourIds.has(info.dk_colourid));
       const matchesStyle = selectedStyles.length === 0 || itemInfo.some(info => selectedStyles.includes(info.dk_styleid));
       const matchesMaterial = selectedMaterials.length === 0 || itemInfo.some(info => selectedMaterials.includes(info.dk_material));
       
@@ -131,7 +152,7 @@ export default function AdvancedSearch() {
     
     console.debug('[AdvancedSearch] Filtered result count:', result.length);
     return result;
-  }, [itemsWithColours, infos, selectedColours, selectedStyles, selectedMaterials, selectedLocations, forLocations]);
+  }, [itemsWithColours, infos, colours, selectedColours, selectedStyles, selectedMaterials, selectedLocations, forLocations]);
 
   const resetFilters = () => {
     setSelectedColours([]);
@@ -230,11 +251,11 @@ export default function AdvancedSearch() {
             <div className="flex flex-wrap gap-2">
               {sortedColours.map(c => (
                 <button
-                  key={c.id}
-                  onClick={() => toggleFilter(selectedColours, setSelectedColours, c.id)}
+                  key={normalizeColour(c.colouroverall)}
+                  onClick={() => toggleFilter(selectedColours, setSelectedColours, normalizeColour(c.colouroverall))}
                   className={cn(
                     "px-3 py-1.5 rounded-full text-xs font-medium border transition-all",
-                    selectedColours.includes(c.id)
+                    selectedColours.includes(normalizeColour(c.colouroverall))
                       ? "bg-zinc-900 dark:bg-zinc-100 text-white dark:text-zinc-900 border-zinc-900 dark:border-zinc-100"
                       : "bg-white dark:bg-zinc-900 text-zinc-600 dark:text-zinc-400 border-zinc-200 dark:border-zinc-700 hover:border-zinc-400 dark:hover:border-zinc-500"
                   )}
