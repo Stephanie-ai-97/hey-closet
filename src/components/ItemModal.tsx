@@ -269,43 +269,22 @@ export function ItemModal({ isOpen, storages, homes, onClose, onItemAdded }: Ite
             </div>
           </div>
 
-          {/* Colour and Material Details */}
-          <div className="grid grid-cols-2 gap-4">
-            {/* Colour - Required */}
-            <div>
-              <label className="block text-sm font-semibold text-zinc-900 dark:text-zinc-50 mb-2">
-                Colour <span className="text-red-500">*</span>
-              </label>
-              <ComboboxInput
-                id="item-colour"
-                value={colouroverall}
-                onChange={setColouroverall}
-                options={existingColours}
-                placeholder={existingColours.length ? 'Select or type colour' : 'Type colour'}
-                hasError={Boolean(fieldErrors.colouroverall)}
-              />
-              {fieldErrors.colouroverall && (
-                <p className="text-red-500 text-xs mt-1">{fieldErrors.colouroverall}</p>
-              )}
-            </div>
-
-            {/* Material/Texture - Required */}
-            <div>
-              <label className="block text-sm font-semibold text-zinc-900 dark:text-zinc-50 mb-2">
-                Material <span className="text-red-500">*</span>
-              </label>
-              <ComboboxInput
-                id="item-material"
-                value={texture}
-                onChange={setTexture}
-                options={existingTextures}
-                placeholder={existingTextures.length ? 'Select or type material' : 'Type material'}
-                hasError={Boolean(fieldErrors.texture)}
-              />
-              {fieldErrors.texture && (
-                <p className="text-red-500 text-xs mt-1">{fieldErrors.texture}</p>
-              )}
-            </div>
+          {/* Colour - Required */}
+          <div>
+            <label className="block text-sm font-semibold text-zinc-900 dark:text-zinc-50 mb-2">
+              Colour <span className="text-red-500">*</span>
+            </label>
+            <ComboboxInput
+              id="item-colour"
+              value={colouroverall}
+              onChange={setColouroverall}
+              options={existingColours}
+              placeholder={existingColours.length ? 'Select or type colour' : 'Type colour'}
+              hasError={Boolean(fieldErrors.colouroverall)}
+            />
+            {fieldErrors.colouroverall && (
+              <p className="text-red-500 text-xs mt-1">{fieldErrors.colouroverall}</p>
+            )}
           </div>
 
           {/* Colour Mode Toggle */}
@@ -320,6 +299,68 @@ export function ItemModal({ isOpen, storages, homes, onClose, onItemAdded }: Ite
             <label htmlFor="multicolour" className="text-sm font-medium text-zinc-900 dark:text-zinc-50 cursor-pointer">
               Multi-colour item (major + minor colours)
             </label>
+          </div>
+
+          {/* Major and Minor Colour Fields - Show when multi-colour */}
+          {isMultiColour && (
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-semibold text-zinc-900 dark:text-zinc-50 mb-2">
+                  Major Colour <span className="text-red-500">*</span>
+                </label>
+                <input
+                  type="text"
+                  value={majorcolour}
+                  onChange={(e) => setMajorcolour(e.target.value)}
+                  placeholder="e.g., Blue"
+                  className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-zinc-900/5 focus:border-zinc-500 transition-all bg-white dark:bg-zinc-800 text-zinc-900 dark:text-zinc-50 ${
+                    fieldErrors.majorcolour
+                      ? 'border-red-500 dark:border-red-500'
+                      : 'border-zinc-200 dark:border-zinc-700'
+                  }`}
+                />
+                {fieldErrors.majorcolour && (
+                  <p className="text-red-500 text-xs mt-1">{fieldErrors.majorcolour}</p>
+                )}
+              </div>
+              <div>
+                <label className="block text-sm font-semibold text-zinc-900 dark:text-zinc-50 mb-2">
+                  Minor Colour <span className="text-red-500">*</span>
+                </label>
+                <input
+                  type="text"
+                  value={minorcolour}
+                  onChange={(e) => setMinorcolour(e.target.value)}
+                  placeholder="e.g., White"
+                  className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-zinc-900/5 focus:border-zinc-500 transition-all bg-white dark:bg-zinc-800 text-zinc-900 dark:text-zinc-50 ${
+                    fieldErrors.minorcolour
+                      ? 'border-red-500 dark:border-red-500'
+                      : 'border-zinc-200 dark:border-zinc-700'
+                  }`}
+                />
+                {fieldErrors.minorcolour && (
+                  <p className="text-red-500 text-xs mt-1">{fieldErrors.minorcolour}</p>
+                )}
+              </div>
+            </div>
+          )}
+
+          {/* Material/Texture - Required */}
+          <div>
+            <label className="block text-sm font-semibold text-zinc-900 dark:text-zinc-50 mb-2">
+              Material <span className="text-red-500">*</span>
+            </label>
+            <ComboboxInput
+              id="item-material"
+              value={texture}
+              onChange={setTexture}
+              options={existingTextures}
+              placeholder={existingTextures.length ? 'Select or type material' : 'Type material'}
+              hasError={Boolean(fieldErrors.texture)}
+            />
+            {fieldErrors.texture && (
+              <p className="text-red-500 text-xs mt-1">{fieldErrors.texture}</p>
+            )}
           </div>
 
           {/* Major and Minor Colour Fields - Show when multi-colour */}
