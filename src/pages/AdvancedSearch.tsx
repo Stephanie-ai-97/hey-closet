@@ -32,6 +32,26 @@ export default function AdvancedSearch() {
   const [selectedLocations, setSelectedLocations] = useState<number[]>([]);
   const [displayMode, setDisplayMode] = useState<DisplayMode>('card');
 
+  const sortedForLocations = useMemo(
+    () => [...forLocations].sort((a, b) => a.forlocationtype.localeCompare(b.forlocationtype, undefined, { sensitivity: 'base' })),
+    [forLocations]
+  );
+  const sortedStyles = useMemo(
+    () => [...styles].sort((a, b) => {
+      const typeCompare = a.styletype.localeCompare(b.styletype, undefined, { sensitivity: 'base' });
+      return typeCompare || a.styleyear - b.styleyear;
+    }),
+    [styles]
+  );
+  const sortedColours = useMemo(
+    () => [...colours].sort((a, b) => a.colouroverall.localeCompare(b.colouroverall, undefined, { sensitivity: 'base' })),
+    [colours]
+  );
+  const sortedMaterials = useMemo(
+    () => [...materials].sort((a, b) => a.texture.localeCompare(b.texture, undefined, { sensitivity: 'base' })),
+    [materials]
+  );
+
   console.debug('[AdvancedSearch] Component rendered with:', {
     itemsCount: itemsWithColours.length,
     infosCount: infos.length,
@@ -153,25 +173,25 @@ export default function AdvancedSearch() {
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
         {/* Sidebar Filters */}
         <aside className="lg:col-span-1 space-y-8">
-          {/* Colours */}
+          {/* For Locations */}
           <section>
             <div className="flex items-center gap-2 mb-4 text-zinc-900 dark:text-zinc-50">
-              <Palette size={18} />
-              <h3 className="text-sm font-bold uppercase tracking-wider">Colour Space</h3>
+              <MapPin size={18} />
+              <h3 className="text-sm font-bold uppercase tracking-wider">Location Type</h3>
             </div>
             <div className="flex flex-wrap gap-2">
-              {colours.map(c => (
+              {sortedForLocations.map(loc => (
                 <button
-                  key={c.id}
-                  onClick={() => toggleFilter(selectedColours, setSelectedColours, c.id)}
+                  key={loc.id}
+                  onClick={() => toggleFilter(selectedLocations, setSelectedLocations, loc.id)}
                   className={cn(
                     "px-3 py-1.5 rounded-full text-xs font-medium border transition-all",
-                    selectedColours.includes(c.id)
+                    selectedLocations.includes(loc.id)
                       ? "bg-zinc-900 dark:bg-zinc-100 text-white dark:text-zinc-900 border-zinc-900 dark:border-zinc-100"
                       : "bg-white dark:bg-zinc-900 text-zinc-600 dark:text-zinc-400 border-zinc-200 dark:border-zinc-700 hover:border-zinc-400 dark:hover:border-zinc-500"
                   )}
                 >
-                  {c.colouroverall}
+                  {loc.forlocationtype}
                 </button>
               ))}
             </div>
@@ -184,7 +204,7 @@ export default function AdvancedSearch() {
               <h3 className="text-sm font-bold uppercase tracking-wider">Aesthetic Style</h3>
             </div>
             <div className="flex flex-wrap gap-2">
-              {styles.map(s => (
+              {sortedStyles.map(s => (
                 <button
                   key={s.id}
                   onClick={() => toggleFilter(selectedStyles, setSelectedStyles, s.id)}
@@ -201,6 +221,30 @@ export default function AdvancedSearch() {
             </div>
           </section>
 
+          {/* Colours */}
+          <section>
+            <div className="flex items-center gap-2 mb-4 text-zinc-900 dark:text-zinc-50">
+              <Palette size={18} />
+              <h3 className="text-sm font-bold uppercase tracking-wider">Colour Space</h3>
+            </div>
+            <div className="flex flex-wrap gap-2">
+              {sortedColours.map(c => (
+                <button
+                  key={c.id}
+                  onClick={() => toggleFilter(selectedColours, setSelectedColours, c.id)}
+                  className={cn(
+                    "px-3 py-1.5 rounded-full text-xs font-medium border transition-all",
+                    selectedColours.includes(c.id)
+                      ? "bg-zinc-900 dark:bg-zinc-100 text-white dark:text-zinc-900 border-zinc-900 dark:border-zinc-100"
+                      : "bg-white dark:bg-zinc-900 text-zinc-600 dark:text-zinc-400 border-zinc-200 dark:border-zinc-700 hover:border-zinc-400 dark:hover:border-zinc-500"
+                  )}
+                >
+                  {c.colouroverall}
+                </button>
+              ))}
+            </div>
+          </section>
+
           {/* Materials */}
           <section>
             <div className="flex items-center gap-2 mb-4 text-zinc-900 dark:text-zinc-50">
@@ -208,7 +252,7 @@ export default function AdvancedSearch() {
               <h3 className="text-sm font-bold uppercase tracking-wider">Material Texture</h3>
             </div>
             <div className="flex flex-wrap gap-2">
-              {materials.map(m => (
+              {sortedMaterials.map(m => (
                 <button
                   key={m.id}
                   onClick={() => toggleFilter(selectedMaterials, setSelectedMaterials, m.id)}
@@ -220,30 +264,6 @@ export default function AdvancedSearch() {
                   )}
                 >
                   {m.texture}
-                </button>
-              ))}
-            </div>
-          </section>
-
-          {/* For Locations */}
-          <section>
-            <div className="flex items-center gap-2 mb-4 text-zinc-900 dark:text-zinc-50">
-              <MapPin size={18} />
-              <h3 className="text-sm font-bold uppercase tracking-wider">Location Type</h3>
-            </div>
-            <div className="flex flex-wrap gap-2">
-              {forLocations.map(loc => (
-                <button
-                  key={loc.id}
-                  onClick={() => toggleFilter(selectedLocations, setSelectedLocations, loc.id)}
-                  className={cn(
-                    "px-3 py-1.5 rounded-full text-xs font-medium border transition-all",
-                    selectedLocations.includes(loc.id)
-                      ? "bg-zinc-900 dark:bg-zinc-100 text-white dark:text-zinc-900 border-zinc-900 dark:border-zinc-100"
-                      : "bg-white dark:bg-zinc-900 text-zinc-600 dark:text-zinc-400 border-zinc-200 dark:border-zinc-700 hover:border-zinc-400 dark:hover:border-zinc-500"
-                  )}
-                >
-                  {loc.forlocationtype}
                 </button>
               ))}
             </div>
