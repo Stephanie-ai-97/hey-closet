@@ -179,7 +179,13 @@ export default function ItemDetail() {
         {/* Visual & Core Stats */}
         <div className="lg:col-span-1 space-y-6">
           <div className="aspect-[4/5] bg-zinc-100 dark:bg-zinc-800 rounded-3xl flex items-center justify-center text-zinc-300 dark:text-zinc-600 overflow-hidden shadow-inner border border-zinc-200 dark:border-zinc-700">
-            <ItemSVGIcon itemtype={item.itemtype} size={80} color="#d4d4d8" />
+            <ItemSVGIcon 
+              itemtype={item.itemtype} 
+              size={80} 
+              majorColour={colour?.majorcolour}
+              minorColour={colour?.minorcolour}
+              color={colour?.majorcolour || '#d4d4d8'}
+            />
           </div>
           
           {/* Wash Status */}
@@ -279,6 +285,18 @@ export default function ItemDetail() {
                   <span className="text-sm text-zinc-500 dark:text-zinc-400">Primary Colour</span>
                   <span className="text-sm font-bold">{colour?.colouroverall || 'Neutral'}</span>
                 </div>
+                {colour?.majorcolour && (
+                  <div className="flex justify-between py-2 border-b border-zinc-50 dark:border-zinc-800">
+                    <span className="text-sm text-zinc-500 dark:text-zinc-400">Major Colour</span>
+                    <span className="text-sm font-bold">{colour.majorcolour}</span>
+                  </div>
+                )}
+                {colour?.minorcolour && (
+                  <div className="flex justify-between py-2 border-b border-zinc-50 dark:border-zinc-800">
+                    <span className="text-sm text-zinc-500 dark:text-zinc-400">Minor Colour</span>
+                    <span className="text-sm font-bold">{colour.minorcolour}</span>
+                  </div>
+                )}
                 <div className="flex justify-between py-2 border-b border-zinc-50 dark:border-zinc-800">
                   <span className="text-sm text-zinc-500 dark:text-zinc-400">Material Base</span>
                   <span className="text-sm font-bold">{material?.texture || 'Unknown'}</span>
