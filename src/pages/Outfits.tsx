@@ -3,6 +3,7 @@ import { OutfitModal } from '../components/OutfitModal';
 import { DeleteConfirmModal } from '../components/DeleteConfirmModal';
 import { ItemSVGIcon } from '../components/ItemSVGIcon';
 import { useOutfits } from '../hooks/useOutfits';
+import { useItemColours } from '../hooks/useItemColours';
 import { api } from '../services/api';
 import { useState } from 'react';
 import { Plus, Layers, Tag, Calendar, Trash2 } from 'lucide-react';
@@ -10,6 +11,7 @@ import { cn } from '../lib/utils';
 
 export default function Outfits() {
   const { outfits, allItems, loading, error, refetch } = useOutfits();
+  const { itemsWithColours } = useItemColours(allItems);
   const [modalOpen, setModalOpen] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState<{ id: number; name: string } | null>(null);
 
@@ -62,7 +64,11 @@ export default function Outfits() {
           </div>
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-            {outfits.map(({ outfit, items }) => (
+            {outfits.map(({ outfit, items }) => {
+              // Get colour data for outfit items
+              const itemsWithColourData = items.map(item => 
+                itemsWithColours.find(iwc => iwc.id === item.id) || item
+              );
               <div
                 key={outfit.id}
                 className="bg-white dark:bg-zinc-900 rounded-2xl border border-zinc-200 dark:border-zinc-800 p-5 shadow-sm hover:shadow-md transition-all flex flex-col"
@@ -72,13 +78,19 @@ export default function Outfits() {
                   {items.length === 0 ? (
                     <div className="text-xs text-zinc-400 italic">No items linked</div>
                   ) : (
-                    items.slice(0, 6).map(item => (
+                    itemsWithColourData.slice(0, 6).map(item => (
                       <div
                         key={item.id}
                         className="w-12 h-12 bg-zinc-100 dark:bg-zinc-800 rounded-xl flex items-center justify-center text-zinc-500 dark:text-zinc-400 shrink-0"
                         title={`${item.itemtype} · ${item.itemsize}`}
                       >
-                        <ItemSVGIcon itemtype={item.itemtype} size={26} />
+                        <ItemSVGIcon 
+                          itemtype={item.itemtype} 
+                          size={26}
+                          majorColour={item.colour?.majorcolour}
+                          minorColour={item.colour?.minorcolour}
+                          color={item.colour?.majorcolour}
+                        />
                       </div>
                     ))
                   )}
@@ -118,6 +130,7 @@ export default function Outfits() {
                 </div>
               </div>
             ))}
+            })}
           </div>
         )}
       </PageContainer>

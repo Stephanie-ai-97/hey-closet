@@ -1,5 +1,6 @@
 import { PageContainer } from '../components/PageContainer';
 import { useAnalytics } from '../hooks/useAnalytics';
+import { useItemColours } from '../hooks/useItemColours';
 import { CPWBadge } from '../components/CPWBadge';
 import { ItemSVGIcon } from '../components/ItemSVGIcon';
 import { Link } from 'react-router-dom';
@@ -8,6 +9,7 @@ import { cn } from '../lib/utils';
 
 export default function Analytics() {
   const { data, loading, error } = useAnalytics();
+  const { itemsWithColours } = useItemColours(data?.cpwItems?.map(c => c.item) ?? []);
 
   if (loading) return <div className="p-8 animate-pulse text-center dark:text-zinc-400">Computing fashion ROI...</div>;
   if (error) return <div className="p-8 text-red-500 text-center">{error}</div>;
@@ -51,14 +53,22 @@ export default function Analytics() {
             </div>
           </div>
           <div className="space-y-2 max-h-[400px] overflow-y-auto">
-            {cpwItems.slice(0, 20).map(({ item, wearCount, cpw }) => (
+            {cpwItems.slice(0, 20).map(({ item, wearCount, cpw }) => {
+              const itemWithColour = itemsWithColours.find(iwc => iwc.id === item.id);
+              return (
               <Link
                 to={`/item/${item.id}`}
                 key={item.id}
                 className="flex items-center gap-3 p-3 rounded-xl hover:bg-zinc-50 dark:hover:bg-zinc-800 transition-colors group"
               >
                 <div className="w-8 h-8 bg-zinc-100 dark:bg-zinc-800 rounded-lg flex items-center justify-center text-zinc-500 dark:text-zinc-400 shrink-0">
-                  <ItemSVGIcon itemtype={item.itemtype} size={18} />
+                  <ItemSVGIcon 
+                    itemtype={item.itemtype} 
+                    size={18}
+                    majorColour={itemWithColour?.colour?.majorcolour}
+                    minorColour={itemWithColour?.colour?.minorcolour}
+                    color={itemWithColour?.colour?.majorcolour}
+                  />
                 </div>
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-semibold text-zinc-900 dark:text-zinc-50 truncate">{item.itemtype}</p>
@@ -73,8 +83,8 @@ export default function Analytics() {
                   <span className="text-xs text-zinc-300 dark:text-zinc-600 group-hover:text-zinc-500 dark:group-hover:text-zinc-400">→</span>
                 </div>
               </Link>
-            ))}
-          </div>
+            );
+            })}
         </div>
 
         {/* Spending by Month */}
@@ -173,7 +183,13 @@ export default function Analytics() {
                   className="flex items-center gap-3 p-3 rounded-xl hover:bg-zinc-50 dark:hover:bg-zinc-800 transition-colors group"
                 >
                   <div className="w-8 h-8 bg-zinc-100 dark:bg-zinc-800 rounded-lg flex items-center justify-center text-zinc-500 dark:text-zinc-400 shrink-0">
-                    <ItemSVGIcon itemtype={item.itemtype} size={18} />
+                    <ItemSVGIcon 
+                      itemtype={item.itemtype} 
+                      size={18}
+                      majorColour={itemsWithColours.find(iwc => iwc.id === item.id)?.colour?.majorcolour}
+                      minorColour={itemsWithColours.find(iwc => iwc.id === item.id)?.colour?.minorcolour}
+                      color={itemsWithColours.find(iwc => iwc.id === item.id)?.colour?.majorcolour}
+                    />
                   </div>
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-semibold text-zinc-900 dark:text-zinc-50 truncate">{item.itemtype}</p>

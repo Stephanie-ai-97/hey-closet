@@ -3,6 +3,7 @@ import { X, Search } from 'lucide-react';
 import { Item, Outfit, OutfitItem } from '../types';
 import { api } from '../services/api';
 import { ItemSVGIcon } from './ItemSVGIcon';
+import { useItemColours } from '../hooks/useItemColours';
 import { cn } from '../lib/utils';
 
 interface OutfitModalProps {
@@ -16,6 +17,7 @@ const OCCASIONS = ['Casual', 'Formal', 'Business', 'Sport', 'Evening', 'Beach', 
 const SEASONS = ['All Season', 'Spring', 'Summer', 'Autumn', 'Winter'];
 
 export function OutfitModal({ isOpen, allItems, onClose, onOutfitCreated }: OutfitModalProps) {
+  const { itemsWithColours } = useItemColours(allItems);
   const [outfitname, setOutfitname] = useState('');
   const [occasion, setOccasion] = useState('Casual');
   const [season, setSeason] = useState('All Season');
@@ -25,7 +27,7 @@ export function OutfitModal({ isOpen, allItems, onClose, onOutfitCreated }: Outf
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const filteredItems = allItems.filter(item =>
+  const filteredItems = itemsWithColours.filter(item =>
     item.itemtype.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
@@ -190,7 +192,13 @@ export function OutfitModal({ isOpen, allItems, onClose, onOutfitCreated }: Outf
                     )}
                   >
                     <div className={cn('w-10 h-10 rounded-lg flex items-center justify-center', selected ? 'text-white dark:text-zinc-900' : 'text-zinc-500 bg-zinc-100 dark:bg-zinc-700')}>
-                      <ItemSVGIcon itemtype={item.itemtype} size={24} color={selected ? 'white' : undefined} />
+                      <ItemSVGIcon 
+                        itemtype={item.itemtype} 
+                        size={24} 
+                        color={selected ? 'white' : undefined}
+                        majorColour={item.colour?.majorcolour}
+                        minorColour={item.colour?.minorcolour}
+                      />
                     </div>
                     <span className="text-[10px] font-medium leading-tight truncate w-full">{item.itemtype}</span>
                     <span className="text-[9px] opacity-60">{item.itemsize}</span>

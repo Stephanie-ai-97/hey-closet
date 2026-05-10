@@ -1,6 +1,7 @@
 import { PageContainer } from '../components/PageContainer';
 import { useDashboardData } from '../hooks/useDashboardData';
 import { useMetadata } from '../hooks/useMetadata';
+import { useItemColours } from '../hooks/useItemColours';
 import { useState, useMemo } from 'react';
 import { 
   Search as SearchIcon, 
@@ -22,6 +23,7 @@ type DisplayMode = 'tile' | 'card' | 'list' | 'icon';
 
 export default function AdvancedSearch() {
   const { items, storages, homes, loading: itemsLoading } = useDashboardData();
+  const { itemsWithColours } = useItemColours(items);
   const { colours, materials, styles, infos, forLocations, loading: metaLoading } = useMetadata();
   
   const [selectedColours, setSelectedColours] = useState<number[]>([]);
@@ -304,7 +306,13 @@ export default function AdvancedSearch() {
                         className="group bg-white dark:bg-zinc-900 p-3 rounded-xl border border-zinc-200 dark:border-zinc-800 shadow-sm hover:border-zinc-400 dark:hover:border-zinc-600 transition-all"
                       >
                         <div className="relative aspect-square bg-zinc-50 dark:bg-zinc-800 rounded-lg mb-3 flex items-center justify-center text-zinc-400 dark:text-zinc-500 group-hover:bg-zinc-100 dark:group-hover:bg-zinc-700 transition-colors">
-                          <ItemSVGIcon itemtype={item.itemtype} size={36} />
+                          <ItemSVGIcon 
+                            itemtype={item.itemtype} 
+                            size={36}
+                            majorColour={item.colour?.majorcolour}
+                            minorColour={item.colour?.minorcolour}
+                            color={item.colour?.majorcolour}
+                          />
                           <span className="absolute bottom-1.5 right-1.5 max-w-[70%] truncate rounded bg-white/85 px-1.5 py-0.5 text-[9px] font-bold uppercase text-zinc-700 dark:bg-zinc-900/85 dark:text-zinc-200">
                             {item.itemsize}
                           </span>
@@ -325,7 +333,13 @@ export default function AdvancedSearch() {
                         className="bg-white dark:bg-zinc-900 p-3 rounded-xl border border-zinc-200 dark:border-zinc-800 shadow-sm flex items-center gap-3 hover:border-zinc-400 dark:hover:border-zinc-600 transition-all"
                       >
                         <div className="w-14 h-14 bg-zinc-50 dark:bg-zinc-800 rounded-lg shrink-0 flex items-center justify-center text-zinc-400 dark:text-zinc-500">
-                          <ItemSVGIcon itemtype={item.itemtype} size={30} />
+                          <ItemSVGIcon 
+                            itemtype={item.itemtype} 
+                            size={30}
+                            majorColour={item.colour?.majorcolour}
+                            minorColour={item.colour?.minorcolour}
+                            color={item.colour?.majorcolour}
+                          />
                         </div>
                         <div className="flex-1 min-w-0">
                           <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
@@ -350,7 +364,13 @@ export default function AdvancedSearch() {
                         className="group bg-white dark:bg-zinc-900 p-3 rounded-xl border border-zinc-200 dark:border-zinc-800 shadow-sm min-h-28 flex flex-col items-center justify-center gap-2 text-center hover:border-zinc-400 dark:hover:border-zinc-600 transition-all"
                       >
                         <div className="w-14 h-14 bg-zinc-50 dark:bg-zinc-800 rounded-xl shrink-0 flex items-center justify-center text-zinc-400 dark:text-zinc-500 group-hover:bg-zinc-100 dark:group-hover:bg-zinc-700 transition-colors">
-                          <ItemSVGIcon itemtype={item.itemtype} size={32} />
+                          <ItemSVGIcon 
+                            itemtype={item.itemtype} 
+                            size={32}
+                            majorColour={item.colour?.majorcolour}
+                            minorColour={item.colour?.minorcolour}
+                            color={item.colour?.majorcolour}
+                          />
                         </div>
                         <div className="w-full min-w-0">
                           <h4 className="truncate text-sm font-bold text-zinc-900 dark:text-zinc-50">{item.itemtype}</h4>
@@ -367,7 +387,13 @@ export default function AdvancedSearch() {
                       className="bg-white dark:bg-zinc-900 p-4 rounded-xl border border-zinc-200 dark:border-zinc-800 shadow-sm flex items-center gap-4 hover:border-zinc-400 dark:hover:border-zinc-600 transition-all"
                     >
                       <div className="w-16 h-16 bg-zinc-50 dark:bg-zinc-800 rounded-lg shrink-0 flex items-center justify-center text-zinc-400 dark:text-zinc-500">
-                        <ItemSVGIcon itemtype={item.itemtype} size={32} />
+                        <ItemSVGIcon 
+                          itemtype={item.itemtype} 
+                          size={32}
+                          majorColour={item.colour?.majorcolour}
+                          minorColour={item.colour?.minorcolour}
+                          color={item.colour?.majorcolour}
+                        />
                       </div>
                       <div className="flex-1 min-w-0">
                         <h4 className="font-bold text-zinc-900 dark:text-zinc-50">{item.itemtype}</h4>

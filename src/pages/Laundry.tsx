@@ -2,6 +2,7 @@ import { useState, useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import { PageContainer } from '../components/PageContainer';
 import { ItemSVGIcon } from '../components/ItemSVGIcon';
+import { useItemColours } from '../hooks/useItemColours';
 import { useDashboardData } from '../hooks/useDashboardData';
 import { api } from '../services/api';
 import { Item } from '../types';
@@ -67,16 +68,17 @@ const NEXT_LABEL: Record<WashStatus, string> = {
 
 export default function Laundry() {
   const { items, storages, homes, loading, refetch } = useDashboardData();
+  const { itemsWithColours } = useItemColours(items);
   const [updatingId, setUpdatingId] = useState<number | null>(null);
 
   const itemsByStatus = useMemo<Record<WashStatus, Item[]>>(() => {
     const map: Record<WashStatus, Item[]> = { clean: [], dirty: [], washing: [], drying: [] };
-    for (const item of items) {
+    for (const item of itemsWithColours) {
       const status: WashStatus = item.wash_status ?? 'clean';
       map[status].push(item);
     }
     return map;
-  }, [items]);
+  }, [itemsWithColours]);
 
   const getLocation = (item: Item) => {
     const storage = storages.find(s => s.id === item.dk_closet);
@@ -131,7 +133,13 @@ export default function Laundry() {
                   >
                     <div className="flex items-center gap-3">
                       <div className="w-10 h-10 bg-zinc-100 dark:bg-zinc-800 rounded-lg flex items-center justify-center shrink-0 text-zinc-500 dark:text-zinc-400">
-                        <ItemSVGIcon itemtype={item.itemtype} size={24} />
+                        <ItemSVGIcon 
+                          itemtype={item.itemtype} 
+                          size={24}
+                          majorColour={item.colour?.majorcolour}
+                          minorColour={item.colour?.minorcolour}
+                          color={item.colour?.majorcolour}
+                        />
                       </div>
                       <div className="flex-1 min-w-0">
                         <Link

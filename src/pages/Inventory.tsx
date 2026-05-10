@@ -3,6 +3,7 @@ import { ItemModal } from '../components/ItemModal';
 import { EditItemModal } from '../components/EditItemModal';
 import { DeleteConfirmModal } from '../components/DeleteConfirmModal';
 import { useDashboardData } from '../hooks/useDashboardData';
+import { useItemColours } from '../hooks/useItemColours';
 import { 
   Search, 
   Filter,
@@ -31,6 +32,7 @@ type SortField = 'created_at' | 'updated_at' | 'itemcost' | 'itemlikerating';
 
 export default function Inventory() {
   const { items, loading, homes, storages, refetch } = useDashboardData();
+  const { itemsWithColours } = useItemColours(items);
   const [searchTerm, setSearchTerm] = useState('');
   const [sortField, setSortField] = useState<SortField>('created_at');
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
@@ -45,7 +47,7 @@ export default function Inventory() {
   const [deletingItem, setDeletingItem] = useState<Item | null>(null);
   const [displayMode, setDisplayMode] = useState<DisplayMode>('tile');
 
-  const itemTypes = useMemo(() => Array.from(new Set(items.map(i => i.itemtype))).sort(), [items]);
+  const itemTypes = useMemo(() => Array.from(new Set(itemsWithColours.map(i => i.itemtype))).sort(), [itemsWithColours]);
   const uniqueStorages = useMemo(() => {
     const storageMap = new Map<number, typeof storages[0]>();
     storages.forEach(s => storageMap.set(s.id, s));
@@ -53,7 +55,7 @@ export default function Inventory() {
   }, [storages]);
 
   const filteredItems = useMemo(() => {
-    return items
+    return itemsWithColours
       .filter(item => {
         const matchesSearch =
           item.itemtype.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -77,7 +79,7 @@ export default function Inventory() {
         if (a[sortField] > b[sortField]) return 1 * factor;
         return 0;
       });
-  }, [items, searchTerm, sortField, sortOrder, filterHome, filterStorage, filterType, filterRating, filterStatus, storages]);
+  }, [itemsWithColours, searchTerm, sortField, sortOrder, filterHome, filterStorage, filterType, filterRating, filterStatus, storages]);
 
   if (loading) return <div className="p-8 animate-pulse dark:text-zinc-400">Accessing inventory database...</div>;
 
@@ -348,7 +350,13 @@ export default function Inventory() {
                 <div className="absolute right-2 top-2 z-10">{actionButtons}</div>
                 <Link to={`/item/${item.id}`} className="block">
                   <div className="relative aspect-square bg-zinc-100 dark:bg-zinc-800 rounded-lg mb-3 overflow-hidden flex items-center justify-center text-zinc-400 group-hover:bg-zinc-200 dark:group-hover:bg-zinc-700 transition-colors">
-                    <ItemSVGIcon itemtype={item.itemtype} size={36} />
+                    <ItemSVGIcon 
+                      itemtype={item.itemtype} 
+                      size={36}
+                      majorColour={item.colour?.majorcolour}
+                      minorColour={item.colour?.minorcolour}
+                      color={item.colour?.majorcolour}
+                    />
                     <div className="absolute bottom-1.5 right-1.5 max-w-[70%] truncate px-1.5 py-0.5 bg-white/85 dark:bg-zinc-900/85 backdrop-blur rounded text-[9px] font-bold uppercase dark:text-zinc-50">
                       {item.itemsize}
                     </div>
@@ -377,7 +385,13 @@ export default function Inventory() {
                 <div className="flex items-center gap-3">
                   <Link to={`/item/${item.id}`} className="flex min-w-0 flex-1 items-center gap-3">
                     <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-lg bg-zinc-100 text-zinc-400 transition-colors group-hover:bg-zinc-200 dark:bg-zinc-800 dark:group-hover:bg-zinc-700">
-                      <ItemSVGIcon itemtype={item.itemtype} size={30} />
+                      <ItemSVGIcon 
+                        itemtype={item.itemtype} 
+                        size={30}
+                        majorColour={item.colour?.majorcolour}
+                        minorColour={item.colour?.minorcolour}
+                        color={item.colour?.majorcolour}
+                      />
                     </div>
                     <div className="min-w-0 flex-1">
                       <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
@@ -413,7 +427,13 @@ export default function Inventory() {
                 <div className="absolute right-2 top-2 z-10">{actionButtons}</div>
                 <Link to={`/item/${item.id}`} className="flex min-h-28 flex-col items-center justify-center gap-2 text-center">
                   <div className="flex h-14 w-14 items-center justify-center rounded-xl bg-zinc-100 text-zinc-400 transition-colors group-hover:bg-zinc-200 dark:bg-zinc-800 dark:group-hover:bg-zinc-700">
-                    <ItemSVGIcon itemtype={item.itemtype} size={32} />
+                    <ItemSVGIcon 
+                      itemtype={item.itemtype} 
+                      size={32}
+                      majorColour={item.colour?.majorcolour}
+                      minorColour={item.colour?.minorcolour}
+                      color={item.colour?.majorcolour}
+                    />
                   </div>
                   <div className="w-full min-w-0">
                     <h3 className="truncate text-sm font-bold text-zinc-900 dark:text-zinc-50">{item.itemtype}</h3>
@@ -433,7 +453,13 @@ export default function Inventory() {
               <div className="absolute top-3 right-3 z-10">{actionButtons}</div>
               <Link to={`/item/${item.id}`} className="flex flex-col flex-1">
               <div className="relative aspect-square bg-zinc-100 dark:bg-zinc-800 rounded-xl mb-4 overflow-hidden flex items-center justify-center text-zinc-400 group-hover:bg-zinc-200 dark:group-hover:bg-zinc-700 transition-colors">
-                <ItemSVGIcon itemtype={item.itemtype} size={48} />
+                <ItemSVGIcon 
+                  itemtype={item.itemtype} 
+                  size={48}
+                  majorColour={item.colour?.majorcolour}
+                  minorColour={item.colour?.minorcolour}
+                  color={item.colour?.majorcolour}
+                />
                 <div className="absolute top-2 right-2 px-2 py-1 bg-white/80 dark:bg-zinc-900/80 backdrop-blur rounded-lg text-[10px] font-bold uppercase tracking-tight dark:text-zinc-50">
                   {item.itemsize}
                 </div>
