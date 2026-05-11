@@ -29,13 +29,16 @@ export default function AdvancedSearch() {
   const { colours, materials, styles, infos, forLocations, loading: metaLoading } = useMetadata();
   
   const [selectedColours, setSelectedColours] = useState<string[]>([]);
+  const [selectedMajorColours, setSelectedMajorColours] = useState<string[]>([]);
+  const [selectedMinorColours, setSelectedMinorColours] = useState<string[]>([]);
+  const [expandColourSubFilters, setExpandColourSubFilters] = useState(false);
   const [selectedStyleTypes, setSelectedStyleTypes] = useState<string[]>([]);
   const [selectedStyleYears, setSelectedStyleYears] = useState<number[]>([]);
   const [selectedStyleFitSizes, setSelectedStyleFitSizes] = useState<string[]>([]);
+  const [expandStyleSubFilters, setExpandStyleSubFilters] = useState(false);
   const [selectedMaterials, setSelectedMaterials] = useState<number[]>([]);
   const [selectedLocations, setSelectedLocations] = useState<number[]>([]);
   const [displayMode, setDisplayMode] = useState<DisplayMode>('card');
-  const [expandStyleSubFilters, setExpandStyleSubFilters] = useState(false);
 
   const sortedForLocations = useMemo(
     () => [...forLocations].sort((a, b) => a.forlocationtype.localeCompare(b.forlocationtype, undefined, { sensitivity: 'base' })),
@@ -98,6 +101,40 @@ export default function AdvancedSearch() {
     },
     [colours]
   );
+  // Unique colour overalls for main filter
+  const uniqueColourOveralls = useMemo(
+    () => {
+      const overallSet = new Set(colours.map(c => normalizeColour(c.colouroverall)).filter(Boolean));
+      return Array.from(overallSet).sort((a, b) => a.localeCompare(b, undefined, { sensitivity: 'base' }));
+    },
+    [colours]
+  );
+  // Available major colours for selected colour overalls (sub-filter)
+  const availableMajorColours = useMemo(
+    () => {
+      const majorSet = new Set(
+        colours
+          .filter(c => selectedColours.includes(normalizeColour(c.colouroverall)))
+          .map(c => c.majorcolour)
+          .filter(Boolean)
+      );
+      return Array.from(majorSet).sort((a, b) => a.localeCompare(b, undefined, { sensitivity: 'base' }));
+    },
+    [colours, selectedColours]
+  );
+  // Available minor colours for selected colour overalls (sub-filter)
+  const availableMinorColours = useMemo(
+    () => {
+      const minorSet = new Set(
+        colours
+          .filter(c => selectedColours.includes(normalizeColour(c.colouroverall)))
+          .map(c => c.minorcolour)
+          .filter(Boolean)
+      );
+      return Array.from(minorSet).sort((a, b) => a.localeCompare(b, undefined, { sensitivity: 'base' }));
+    },
+    [colours, selectedColours]
+  );
   const sortedMaterials = useMemo(
     () => [...materials].sort((a, b) => a.texture.localeCompare(b.texture, undefined, { sensitivity: 'base' })),
     [materials]
@@ -135,6 +172,8 @@ export default function AdvancedSearch() {
   const filteredItems = useMemo(() => {
     console.debug('[AdvancedSearch] Filtering with:', {
       selectedColours,
+      selectedMajorColours,
+      selectedMinorColours,
       selectedStyleTypes,
       selectedStyleYears,
       selectedStyleFitSizes,
@@ -151,12 +190,6 @@ export default function AdvancedSearch() {
       return [];
     }
 
-    const selectedColourIds = new Set(
-      colours
-        .filter(colour => selectedColours.includes(normalizeColour(colour.colouroverall)))
-        .map(colour => colour.id)
-    );
-
     const result = itemsWithColours.filter(item => {
       const itemInfo = infos.filter(info => {
         const matches = info.dk_itemid === item.id;
@@ -172,7 +205,25 @@ export default function AdvancedSearch() {
         return false;
       }
 
-      const matchesColour = selectedColours.length === 0 || itemInfo.some(info => selectedColourIds.has(info.dk_colourid));
+      // Colour matching: check if any of item's colours have a selected colouroverall
+      // If sub-filters (major/minor) are active, further narrow down
+      const matchesColour = selectedColours.length === 0 || itemInfo.some(info => {
+        const itemColour = colours.find(c => c.id === info.dk_colourid);
+        if (!itemColour) return false;
+        
+        const hasSelectedOverall = selectedColours.includes(normalizeColour(itemColour.colouroverall));
+        if (!hasSelectedOverall) return false;
+        
+        // If sub-filters are selected, apply them
+        if (selectedMajorColours.length > 0 && !selectedMajorColours.includes(itemColour.majorcolour)) {
+          return false;
+        }
+        if (selectedMinorColours.length > 0 && !selectedMinorColours.includes(itemColour.minorcolour)) {
+          return false;
+        }
+        
+        return true;
+      });
       
       // Style matching: check if any of item's styles have a selected styletype
       // If sub-filters (year/fitsize) are active, further narrow down
@@ -210,16 +261,19 @@ export default function AdvancedSearch() {
     
     console.debug('[AdvancedSearch] Filtered result count:', result.length);
     return result;
-  }, [itemsWithColours, infos, colours, selectedColours, styles, selectedStyleTypes, selectedStyleYears, selectedStyleFitSizes, selectedMaterials, selectedLocations, forLocations]);
+  }, [itemsWithColours, infos, colours, selectedColours, selectedMajorColours, selectedMinorColours, styles, selectedStyleTypes, selectedStyleYears, selectedStyleFitSizes, selectedMaterials, selectedLocations, forLocations]);
 
   const resetFilters = () => {
     setSelectedColours([]);
+    setSelectedMajorColours([]);
+    setSelectedMinorColours([]);
+    setExpandColourSubFilters(false);
     setSelectedStyleTypes([]);
     setSelectedStyleYears([]);
     setSelectedStyleFitSizes([]);
+    setExpandStyleSubFilters(false);
     setSelectedMaterials([]);
     setSelectedLocations([]);
-    setExpandStyleSubFilters(false);
   };
 
   const displayOptions: Array<{ mode: DisplayMode; label: string; icon: typeof LayoutGrid }> = [
@@ -371,7 +425,7 @@ export default function AdvancedSearch() {
               <Palette size={18} />
               <h3 className="text-sm font-bold uppercase tracking-wider">Colour Space</h3>
             </div>
-            <div className="flex flex-wrap gap-2">
+            <div className="flex flex-wrap gap-2 mb-4">
               {sortedColours.map(c => (
                 <button
                   key={normalizeColour(c.colouroverall)}
@@ -387,6 +441,68 @@ export default function AdvancedSearch() {
                 </button>
               ))}
             </div>
+
+            {/* Sub-filters: Major & Minor Colours */}
+            {selectedColours.length > 0 && (
+              <div className="space-y-3">
+                <button
+                  onClick={() => setExpandColourSubFilters(!expandColourSubFilters)}
+                  className="text-xs font-semibold text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-200 transition-colors flex items-center gap-1"
+                >
+                  {expandColourSubFilters ? '▼' : '▶'} Refine by Major & Minor
+                </button>
+
+                {expandColourSubFilters && (
+                  <div className="space-y-3 pl-2 border-l-2 border-zinc-300 dark:border-zinc-600">
+                    {/* Major Colour Sub-filter */}
+                    {availableMajorColours.length > 0 && (
+                      <div>
+                        <p className="text-xs font-semibold text-zinc-700 dark:text-zinc-300 mb-2">Major Colour</p>
+                        <div className="flex flex-wrap gap-2">
+                          {availableMajorColours.map(major => (
+                            <button
+                              key={major}
+                              onClick={() => toggleFilter(selectedMajorColours, setSelectedMajorColours, major)}
+                              className={cn(
+                                "px-2 py-1 rounded text-xs font-medium border transition-all",
+                                selectedMajorColours.includes(major)
+                                  ? "bg-zinc-700 dark:bg-zinc-300 text-white dark:text-zinc-900 border-zinc-700 dark:border-zinc-300"
+                                  : "bg-white dark:bg-zinc-800 text-zinc-600 dark:text-zinc-400 border-zinc-200 dark:border-zinc-700 hover:border-zinc-400 dark:hover:border-zinc-500"
+                              )}
+                            >
+                              {major}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Minor Colour Sub-filter */}
+                    {availableMinorColours.length > 0 && (
+                      <div>
+                        <p className="text-xs font-semibold text-zinc-700 dark:text-zinc-300 mb-2">Minor Colour</p>
+                        <div className="flex flex-wrap gap-2">
+                          {availableMinorColours.map(minor => (
+                            <button
+                              key={minor}
+                              onClick={() => toggleFilter(selectedMinorColours, setSelectedMinorColours, minor)}
+                              className={cn(
+                                "px-2 py-1 rounded text-xs font-medium border transition-all",
+                                selectedMinorColours.includes(minor)
+                                  ? "bg-zinc-700 dark:bg-zinc-300 text-white dark:text-zinc-900 border-zinc-700 dark:border-zinc-300"
+                                  : "bg-white dark:bg-zinc-800 text-zinc-600 dark:text-zinc-400 border-zinc-200 dark:border-zinc-700 hover:border-zinc-400 dark:hover:border-zinc-500"
+                              )}
+                            >
+                              {minor}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+            )}
           </section>
 
           {/* Materials */}
