@@ -29,10 +29,13 @@ export default function AdvancedSearch() {
   const { colours, materials, styles, infos, forLocations, loading: metaLoading } = useMetadata();
   
   const [selectedColours, setSelectedColours] = useState<string[]>([]);
-  const [selectedStyles, setSelectedStyles] = useState<number[]>([]);
+  const [selectedStyleTypes, setSelectedStyleTypes] = useState<string[]>([]);
+  const [selectedStyleYears, setSelectedStyleYears] = useState<number[]>([]);
+  const [selectedStyleFitSizes, setSelectedStyleFitSizes] = useState<string[]>([]);
   const [selectedMaterials, setSelectedMaterials] = useState<number[]>([]);
   const [selectedLocations, setSelectedLocations] = useState<number[]>([]);
   const [displayMode, setDisplayMode] = useState<DisplayMode>('card');
+  const [expandStyleSubFilters, setExpandStyleSubFilters] = useState(false);
 
   const sortedForLocations = useMemo(
     () => [...forLocations].sort((a, b) => a.forlocationtype.localeCompare(b.forlocationtype, undefined, { sensitivity: 'base' })),
@@ -44,6 +47,39 @@ export default function AdvancedSearch() {
       return typeCompare || a.styleyear - b.styleyear;
     }),
     [styles]
+  );
+  // Unique style types for main filter
+  const uniqueStyleTypes = useMemo(
+    () => {
+      const typeSet = new Set(styles.map(s => s.styletype));
+      return Array.from(typeSet).sort((a, b) => a.localeCompare(b, undefined, { sensitivity: 'base' }));
+    },
+    [styles]
+  );
+  // Available years for selected style types (sub-filter)
+  const availableStyleYears = useMemo(
+    () => {
+      const yearsSet = new Set(
+        styles
+          .filter(s => selectedStyleTypes.includes(s.styletype))
+          .map(s => s.styleyear)
+      );
+      return Array.from(yearsSet).sort((a, b) => b - a); // Descending order
+    },
+    [styles, selectedStyleTypes]
+  );
+  // Available fit sizes for selected style types (sub-filter)
+  const availableStyleFitSizes = useMemo(
+    () => {
+      const fitSizesSet = new Set(
+        styles
+          .filter(s => selectedStyleTypes.includes(s.styletype))
+          .map(s => s.stylefitsize)
+          .filter(Boolean)
+      );
+      return Array.from(fitSizesSet).sort((a, b) => a.localeCompare(b, undefined, { sensitivity: 'base' }));
+    },
+    [styles, selectedStyleTypes]
   );
   const sortedColours = useMemo(
     () => {
@@ -99,7 +135,9 @@ export default function AdvancedSearch() {
   const filteredItems = useMemo(() => {
     console.debug('[AdvancedSearch] Filtering with:', {
       selectedColours,
-      selectedStyles,
+      selectedStyleTypes,
+      selectedStyleYears,
+      selectedStyleFitSizes,
       selectedMaterials,
       selectedLocations,
       totalItems: itemsWithColours.length,
@@ -108,7 +146,7 @@ export default function AdvancedSearch() {
       infoRecords: infos.slice(0, 3), // Log first 3 info records
     });
 
-    if (selectedColours.length === 0 && selectedStyles.length === 0 && selectedMaterials.length === 0 && selectedLocations.length === 0) {
+    if (selectedColours.length === 0 && selectedStyleTypes.length === 0 && selectedMaterials.length === 0 && selectedLocations.length === 0) {
       console.debug('[AdvancedSearch] No filters selected, returning empty array');
       return [];
     }
@@ -135,7 +173,27 @@ export default function AdvancedSearch() {
       }
 
       const matchesColour = selectedColours.length === 0 || itemInfo.some(info => selectedColourIds.has(info.dk_colourid));
-      const matchesStyle = selectedStyles.length === 0 || itemInfo.some(info => selectedStyles.includes(info.dk_styleid));
+      
+      // Style matching: check if any of item's styles have a selected styletype
+      // If sub-filters (year/fitsize) are active, further narrow down
+      const matchesStyle = selectedStyleTypes.length === 0 || itemInfo.some(info => {
+        const itemStyle = styles.find(s => s.id === info.dk_styleid);
+        if (!itemStyle) return false;
+        
+        const hasSelectedType = selectedStyleTypes.includes(itemStyle.styletype);
+        if (!hasSelectedType) return false;
+        
+        // If sub-filters are selected, apply them
+        if (selectedStyleYears.length > 0 && !selectedStyleYears.includes(itemStyle.styleyear)) {
+          return false;
+        }
+        if (selectedStyleFitSizes.length > 0 && !selectedStyleFitSizes.includes(itemStyle.stylefitsize)) {
+          return false;
+        }
+        
+        return true;
+      });
+      
       const matchesMaterial = selectedMaterials.length === 0 || itemInfo.some(info => selectedMaterials.includes(info.dk_material));
       
       // For locations: check if any of the item's styles are linked to selected locations
@@ -152,13 +210,16 @@ export default function AdvancedSearch() {
     
     console.debug('[AdvancedSearch] Filtered result count:', result.length);
     return result;
-  }, [itemsWithColours, infos, colours, selectedColours, selectedStyles, selectedMaterials, selectedLocations, forLocations]);
+  }, [itemsWithColours, infos, colours, selectedColours, styles, selectedStyleTypes, selectedStyleYears, selectedStyleFitSizes, selectedMaterials, selectedLocations, forLocations]);
 
   const resetFilters = () => {
     setSelectedColours([]);
-    setSelectedStyles([]);
+    setSelectedStyleTypes([]);
+    setSelectedStyleYears([]);
+    setSelectedStyleFitSizes([]);
     setSelectedMaterials([]);
     setSelectedLocations([]);
+    setExpandStyleSubFilters(false);
   };
 
   const displayOptions: Array<{ mode: DisplayMode; label: string; icon: typeof LayoutGrid }> = [
@@ -224,22 +285,84 @@ export default function AdvancedSearch() {
               <Zap size={18} />
               <h3 className="text-sm font-bold uppercase tracking-wider">Aesthetic Style</h3>
             </div>
-            <div className="flex flex-wrap gap-2">
-              {sortedStyles.map(s => (
+            <div className="flex flex-wrap gap-2 mb-4">
+              {uniqueStyleTypes.map(styleType => (
                 <button
-                  key={s.id}
-                  onClick={() => toggleFilter(selectedStyles, setSelectedStyles, s.id)}
+                  key={styleType}
+                  onClick={() => toggleFilter(selectedStyleTypes, setSelectedStyleTypes, styleType)}
                   className={cn(
                     "px-3 py-1.5 rounded-full text-xs font-medium border transition-all",
-                    selectedStyles.includes(s.id)
+                    selectedStyleTypes.includes(styleType)
                       ? "bg-zinc-900 dark:bg-zinc-100 text-white dark:text-zinc-900 border-zinc-900 dark:border-zinc-100"
                       : "bg-white dark:bg-zinc-900 text-zinc-600 dark:text-zinc-400 border-zinc-200 dark:border-zinc-700 hover:border-zinc-400 dark:hover:border-zinc-500"
                   )}
                 >
-                  {s.styletype} ({s.styleyear})
+                  {styleType}
                 </button>
               ))}
             </div>
+
+            {/* Sub-filters: Year & Fit Size */}
+            {selectedStyleTypes.length > 0 && (
+              <div className="space-y-3">
+                <button
+                  onClick={() => setExpandStyleSubFilters(!expandStyleSubFilters)}
+                  className="text-xs font-semibold text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-200 transition-colors flex items-center gap-1"
+                >
+                  {expandStyleSubFilters ? '▼' : '▶'} Refine by Year & Fit
+                </button>
+
+                {expandStyleSubFilters && (
+                  <div className="space-y-3 pl-2 border-l-2 border-zinc-300 dark:border-zinc-600">
+                    {/* Year Sub-filter */}
+                    {availableStyleYears.length > 0 && (
+                      <div>
+                        <p className="text-xs font-semibold text-zinc-700 dark:text-zinc-300 mb-2">Year</p>
+                        <div className="flex flex-wrap gap-2">
+                          {availableStyleYears.map(year => (
+                            <button
+                              key={year}
+                              onClick={() => toggleFilter(selectedStyleYears, setSelectedStyleYears, year)}
+                              className={cn(
+                                "px-2 py-1 rounded text-xs font-medium border transition-all",
+                                selectedStyleYears.includes(year)
+                                  ? "bg-zinc-700 dark:bg-zinc-300 text-white dark:text-zinc-900 border-zinc-700 dark:border-zinc-300"
+                                  : "bg-white dark:bg-zinc-800 text-zinc-600 dark:text-zinc-400 border-zinc-200 dark:border-zinc-700 hover:border-zinc-400 dark:hover:border-zinc-500"
+                              )}
+                            >
+                              {year}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Fit Size Sub-filter */}
+                    {availableStyleFitSizes.length > 0 && (
+                      <div>
+                        <p className="text-xs font-semibold text-zinc-700 dark:text-zinc-300 mb-2">Fit Size</p>
+                        <div className="flex flex-wrap gap-2">
+                          {availableStyleFitSizes.map(fitSize => (
+                            <button
+                              key={fitSize}
+                              onClick={() => toggleFilter(selectedStyleFitSizes, setSelectedStyleFitSizes, fitSize)}
+                              className={cn(
+                                "px-2 py-1 rounded text-xs font-medium border transition-all",
+                                selectedStyleFitSizes.includes(fitSize)
+                                  ? "bg-zinc-700 dark:bg-zinc-300 text-white dark:text-zinc-900 border-zinc-700 dark:border-zinc-300"
+                                  : "bg-white dark:bg-zinc-800 text-zinc-600 dark:text-zinc-400 border-zinc-200 dark:border-zinc-700 hover:border-zinc-400 dark:hover:border-zinc-500"
+                              )}
+                            >
+                              {fitSize}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+            )}
           </section>
 
           {/* Colours */}
