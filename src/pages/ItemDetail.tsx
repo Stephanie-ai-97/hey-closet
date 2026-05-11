@@ -2,7 +2,7 @@ import { PageContainer } from '../components/PageContainer';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { useState, useEffect, useCallback } from 'react';
 import { api } from '../services/api';
-import { Item, Info, Style, Colour, Material, Wash, Storage, Home } from '../types';
+import { Item, Info, Style, Colour, Material, Wash, Storage, Home, ForLocation } from '../types';
 import { 
   ArrowLeft, 
   Tag, 
@@ -33,6 +33,7 @@ export default function ItemDetail() {
     item: Item;
     info?: Info;
     style?: Style;
+    forLocation?: ForLocation;
     colour?: Colour;
     material?: Material;
     washes: Wash[];
@@ -60,7 +61,7 @@ export default function ItemDetail() {
           api.list<Wash>('wash', { dk_itemid: id }),
         ]);
 
-        let info, style, colour, material, home;
+        let info, style, colour, material, home, forLocation;
         if (infos.length > 0) {
           info = infos[0];
           [style, colour, material] = await Promise.all([
@@ -68,13 +69,21 @@ export default function ItemDetail() {
             info.dk_colourid ? api.get<Colour>('colour', info.dk_colourid) : Promise.resolve(undefined),
             info.dk_material ? api.get<Material>('material', info.dk_material) : Promise.resolve(undefined),
           ]);
+          
+          // Fetch for_location if style exists
+          if (style) {
+            const forLocations = await api.list<ForLocation>('for_location', { dk_styleid: style.id });
+            if (forLocations.length > 0) {
+              forLocation = forLocations[0];
+            }
+          }
         }
 
         if (storage) {
           home = await api.get<Home>('home', storage.dk_homelocation);
         }
 
-        setData({ item, info, style, colour, material, washes, storage, home });
+        setData({ item, info, style, forLocation, colour, material, washes, storage, home });
       } catch (err) {
         console.error(err);
       } finally {
@@ -98,7 +107,7 @@ export default function ItemDetail() {
         api.list<Info>('info', { dk_itemid: id }),
         api.list<Wash>('wash', { dk_itemid: id }),
       ]);
-      let info, style, colour, material, home;
+      let info, style, colour, material, home, forLocation;
       if (infos.length > 0) {
         info = infos[0];
         [style, colour, material] = await Promise.all([
@@ -106,9 +115,17 @@ export default function ItemDetail() {
           info.dk_colourid ? api.get<Colour>('colour', info.dk_colourid) : Promise.resolve(undefined),
           info.dk_material ? api.get<Material>('material', info.dk_material) : Promise.resolve(undefined),
         ]);
+        
+        // Fetch for_location if style exists
+        if (style) {
+          const forLocations = await api.list<ForLocation>('for_location', { dk_styleid: style.id });
+          if (forLocations.length > 0) {
+            forLocation = forLocations[0];
+          }
+        }
       }
       if (storage) home = await api.get<Home>('home', storage.dk_homelocation);
-      setData({ item, info, style, colour, material, washes, storage, home });
+      setData({ item, info, style, forLocation, colour, material, washes, storage, home });
     } catch (err) {
       console.error(err);
     } finally {
@@ -131,7 +148,7 @@ export default function ItemDetail() {
   if (loading) return <div className="p-8 animate-pulse text-center dark:text-zinc-400">Decrypting item metadata...</div>;
   if (!data) return <div className="p-8 text-center">Item not found in archive.</div>;
 
-  const { item, style, colour, material, washes, storage, home } = data;
+  const { item, style, forLocation, colour, material, washes, storage, home } = data;
   const washStatusConfig: Record<Item['wash_status'], { label: string; color: string; icon: React.ReactNode }> = {
     clean: { label: 'Clean', color: 'text-emerald-600 bg-emerald-50 border-emerald-200', icon: <CheckCircle2 size={14} /> },
     dirty: { label: 'Dirty', color: 'text-red-600 bg-red-50 border-red-200', icon: <AlertCircle size={14} /> },
@@ -267,7 +284,7 @@ export default function ItemDetail() {
                 Dimensional Tags
               </h3>
               <div className="space-y-4">
-                <div className="flex justify-between py-2 border-b border-zinc-50 dark:border-zinc-800">
+              <div className="flex justify-between py-2 border-b border-zinc-50 dark:border-zinc-800">
                   <span className="text-sm text-zinc-500 dark:text-zinc-400">Style Category</span>
                   <div className="flex items-center gap-2">
                     <span className="text-sm font-bold">{style?.styletype || 'Default'}</span>
@@ -281,6 +298,22 @@ export default function ItemDetail() {
                     )}
                   </div>
                 </div>
+                {forLocation && (
+                  <>
+                    <div className="flex justify-between py-2 border-b border-zinc-50 dark:border-zinc-800">
+                      <span className="text-sm text-zinc-500 dark:text-zinc-400">Location Type</span>
+                      <span className="text-sm font-bold">{forLocation.forlocationtype || 'N/A'}</span>
+                    </div>
+                    <div className="flex justify-between py-2 border-b border-zinc-50 dark:border-zinc-800">
+                      <span className="text-sm text-zinc-500 dark:text-zinc-400">Location Address</span>
+                      <span className="text-sm font-bold">{forLocation.forlocationaddress || 'N/A'}</span>
+                    </div>
+                    <div className="flex justify-between py-2 border-b border-zinc-50 dark:border-zinc-800">
+                      <span className="text-sm text-zinc-500 dark:text-zinc-400">Indoor/Outdoor</span>
+                      <span className="text-sm font-bold">{forLocation.isforlocationindoor ? 'Indoor' : 'Outdoor'}</span>
+                    </div>
+                  </>
+                )}
                 <div className="flex justify-between py-2 border-b border-zinc-50 dark:border-zinc-800">
                   <span className="text-sm text-zinc-500 dark:text-zinc-400">Primary Colour</span>
                   <span className="text-sm font-bold">{colour?.colouroverall || 'Neutral'}</span>
