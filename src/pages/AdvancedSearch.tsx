@@ -54,8 +54,8 @@ export default function AdvancedSearch() {
   // Unique style types for main filter
   const uniqueStyleTypes = useMemo(
     () => {
-      const typeSet = new Set(styles.map(s => s.styletype));
-      return Array.from(typeSet).sort((a, b) => a.localeCompare(b, undefined, { sensitivity: 'base' }));
+      const typeSet = new Set(styles.map((s: typeof styles[number]) => s.styletype));
+      return Array.from(typeSet).sort((a: unknown, b: unknown) => (a as string).localeCompare(b as string, undefined, { sensitivity: 'base' }));
     },
     [styles]
   );
@@ -64,10 +64,10 @@ export default function AdvancedSearch() {
     () => {
       const yearsSet = new Set(
         styles
-          .filter(s => selectedStyleTypes.includes(s.styletype))
-          .map(s => s.styleyear)
+          .filter((s: typeof styles[number]) => selectedStyleTypes.includes(s.styletype))
+          .map((s: typeof styles[number]) => s.styleyear)
       );
-      return Array.from(yearsSet).sort((a, b) => b - a); // Descending order
+      return Array.from(yearsSet).sort((a: unknown, b: unknown) => (b as number) - (a as number)); // Descending order
     },
     [styles, selectedStyleTypes]
   );
@@ -76,11 +76,11 @@ export default function AdvancedSearch() {
     () => {
       const fitSizesSet = new Set(
         styles
-          .filter(s => selectedStyleTypes.includes(s.styletype))
-          .map(s => s.stylefitsize)
+          .filter((s: typeof styles[number]) => selectedStyleTypes.includes(s.styletype))
+          .map((s: typeof styles[number]) => s.stylefitsize)
           .filter(Boolean)
       );
-      return Array.from(fitSizesSet).sort((a, b) => a.localeCompare(b, undefined, { sensitivity: 'base' }));
+      return Array.from(fitSizesSet).sort((a: unknown, b: unknown) => (a as string).localeCompare(b as string, undefined, { sensitivity: 'base' }));
     },
     [styles, selectedStyleTypes]
   );
@@ -88,7 +88,7 @@ export default function AdvancedSearch() {
     () => {
       const coloursByOverall = new Map<string, (typeof colours)[number]>();
 
-      colours.forEach(colour => {
+      colours.forEach((colour: typeof colours[number]) => {
         const key = normalizeColour(colour.colouroverall);
         if (key && !coloursByOverall.has(key)) {
           coloursByOverall.set(key, colour);
@@ -104,8 +104,8 @@ export default function AdvancedSearch() {
   // Unique colour overalls for main filter
   const uniqueColourOveralls = useMemo(
     () => {
-      const overallSet = new Set(colours.map(c => normalizeColour(c.colouroverall)).filter(Boolean));
-      return Array.from(overallSet).sort((a, b) => a.localeCompare(b, undefined, { sensitivity: 'base' }));
+      const overallSet = new Set(colours.map((c: typeof colours[number]) => normalizeColour(c.colouroverall)).filter(Boolean));
+      return Array.from(overallSet).sort((a: unknown, b: unknown) => (a as string).localeCompare(b as string, undefined, { sensitivity: 'base' }));
     },
     [colours]
   );
@@ -114,11 +114,11 @@ export default function AdvancedSearch() {
     () => {
       const majorSet = new Set(
         colours
-          .filter(c => selectedColours.includes(normalizeColour(c.colouroverall)))
-          .map(c => c.majorcolour)
+          .filter((c: typeof colours[number]) => selectedColours.includes(normalizeColour(c.colouroverall)))
+          .map((c: typeof colours[number]) => c.majorcolour)
           .filter(Boolean)
       );
-      return Array.from(majorSet).sort((a, b) => a.localeCompare(b, undefined, { sensitivity: 'base' }));
+      return Array.from(majorSet).sort((a: unknown, b: unknown) => (a as string).localeCompare(b as string, undefined, { sensitivity: 'base' }));
     },
     [colours, selectedColours]
   );
@@ -127,11 +127,11 @@ export default function AdvancedSearch() {
     () => {
       const minorSet = new Set(
         colours
-          .filter(c => selectedColours.includes(normalizeColour(c.colouroverall)))
-          .map(c => c.minorcolour)
+          .filter((c: typeof colours[number]) => selectedColours.includes(normalizeColour(c.colouroverall)))
+          .map((c: typeof colours[number]) => c.minorcolour)
           .filter(Boolean)
       );
-      return Array.from(minorSet).sort((a, b) => a.localeCompare(b, undefined, { sensitivity: 'base' }));
+      return Array.from(minorSet).sort((a: unknown, b: unknown) => (a as string).localeCompare(b as string, undefined, { sensitivity: 'base' }));
     },
     [colours, selectedColours]
   );
@@ -148,7 +148,7 @@ export default function AdvancedSearch() {
     materialsCount: materials.length,
     forLocationsCount: forLocations.length,
     sampleInfos: infos.slice(0, 3),
-    sampleItems: itemsWithColours.slice(0, 3).map(i => ({
+    sampleItems: itemsWithColours.slice(0, 3).map((i: typeof itemsWithColours[number]) => ({
       id: i.id,
       itemtype: i.itemtype,
       // Check if metadata might be stored differently on item
@@ -181,7 +181,7 @@ export default function AdvancedSearch() {
       selectedLocations,
       totalItems: itemsWithColours.length,
       totalInfos: infos.length,
-      itemIds: itemsWithColours.map(i => i.id),
+      itemIds: itemsWithColours.map((i: typeof itemsWithColours[number]) => i.id),
       infoRecords: infos.slice(0, 3), // Log first 3 info records
     });
 
@@ -190,8 +190,8 @@ export default function AdvancedSearch() {
       return [];
     }
 
-    const result = itemsWithColours.filter(item => {
-      const itemInfo = infos.filter(info => {
+    const result = itemsWithColours.filter((item: typeof itemsWithColours[number]) => {
+      const itemInfo = infos.filter((info: typeof infos[number]) => {
         const matches = info.dk_itemid === item.id;
         if (!matches) {
           console.debug(`[AdvancedSearch] Info dk_itemid=${info.dk_itemid} doesn't match item.id=${item.id}`);
@@ -207,8 +207,8 @@ export default function AdvancedSearch() {
 
       // Colour matching: check if any of item's colours have a selected colouroverall
       // If sub-filters (major/minor) are active, further narrow down
-      const matchesColour = selectedColours.length === 0 || itemInfo.some(info => {
-        const itemColour = colours.find(c => c.id === info.dk_colourid);
+      const matchesColour = selectedColours.length === 0 || itemInfo.some((info: typeof infos[number]) => {
+        const itemColour = colours.find((c: typeof colours[number]) => c.id === info.dk_colourid);
         if (!itemColour) return false;
         
         const hasSelectedOverall = selectedColours.includes(normalizeColour(itemColour.colouroverall));
@@ -227,8 +227,8 @@ export default function AdvancedSearch() {
       
       // Style matching: check if any of item's styles have a selected styletype
       // If sub-filters (year/fitsize) are active, further narrow down
-      const matchesStyle = selectedStyleTypes.length === 0 || itemInfo.some(info => {
-        const itemStyle = styles.find(s => s.id === info.dk_styleid);
+      const matchesStyle = selectedStyleTypes.length === 0 || itemInfo.some((info: typeof infos[number]) => {
+        const itemStyle = styles.find((s: typeof styles[number]) => s.id === info.dk_styleid);
         if (!itemStyle) return false;
         
         const hasSelectedType = selectedStyleTypes.includes(itemStyle.styletype);
@@ -245,11 +245,11 @@ export default function AdvancedSearch() {
         return true;
       });
       
-      const matchesMaterial = selectedMaterials.length === 0 || itemInfo.some(info => selectedMaterials.includes(info.dk_material));
+      const matchesMaterial = selectedMaterials.length === 0 || itemInfo.some((info: typeof infos[number]) => selectedMaterials.includes(info.dk_material));
       
       // For locations: check if any of the item's styles are linked to selected locations
-      const matchesLocation = selectedLocations.length === 0 || itemInfo.some(info => {
-        return forLocations.some(loc => loc.dk_styleid === info.dk_styleid && selectedLocations.includes(loc.id));
+      const matchesLocation = selectedLocations.length === 0 || itemInfo.some((info: typeof infos[number]) => {
+        return forLocations.some((loc: typeof forLocations[number]) => loc.dk_styleid === info.dk_styleid && selectedLocations.includes(loc.id));
       });
 
       const matches = matchesColour && matchesStyle && matchesMaterial && matchesLocation;
@@ -286,8 +286,8 @@ export default function AdvancedSearch() {
   if (itemsLoading || metaLoading) return <div className="p-8 animate-pulse dark:text-zinc-400">Initializing neural search...</div>;
 
   const getLocationPath = (dk_closet: number) => {
-    const storage = storages.find(s => s.id === dk_closet);
-    const home = homes.find(h => h.id === storage?.dk_homelocation);
+    const storage = storages.find((s: typeof storages[number]) => s.id === dk_closet);
+    const home = homes.find((h: typeof homes[number]) => h.id === storage?.dk_homelocation);
     if (!storage) return 'Unknown';
     return `${home?.homename ?? '?'} → ${storage.closet} → ${storage.closetpartition}`;
   };
@@ -316,7 +316,7 @@ export default function AdvancedSearch() {
               <h3 className="text-sm font-bold uppercase tracking-wider">Location Type</h3>
             </div>
             <div className="flex flex-wrap gap-2">
-              {sortedForLocations.map(loc => (
+              {sortedForLocations.map((loc: typeof forLocations[number]) => (
                 <button
                   key={loc.id}
                   onClick={() => toggleFilter(selectedLocations, setSelectedLocations, loc.id)}
@@ -340,7 +340,7 @@ export default function AdvancedSearch() {
               <h3 className="text-sm font-bold uppercase tracking-wider">Aesthetic Style</h3>
             </div>
             <div className="flex flex-wrap gap-2 mb-4">
-              {uniqueStyleTypes.map(styleType => (
+              {uniqueStyleTypes.map((styleType: string) => (
                 <button
                   key={styleType}
                   onClick={() => toggleFilter(selectedStyleTypes, setSelectedStyleTypes, styleType)}
@@ -373,7 +373,7 @@ export default function AdvancedSearch() {
                       <div>
                         <p className="text-xs font-semibold text-zinc-700 dark:text-zinc-300 mb-2">Year</p>
                         <div className="flex flex-wrap gap-2">
-                          {availableStyleYears.map(year => (
+                          {availableStyleYears.map((year: number) => (
                             <button
                               key={year}
                               onClick={() => toggleFilter(selectedStyleYears, setSelectedStyleYears, year)}
@@ -396,7 +396,7 @@ export default function AdvancedSearch() {
                       <div>
                         <p className="text-xs font-semibold text-zinc-700 dark:text-zinc-300 mb-2">Fit Size</p>
                         <div className="flex flex-wrap gap-2">
-                          {availableStyleFitSizes.map(fitSize => (
+                          {availableStyleFitSizes.map((fitSize: string) => (
                             <button
                               key={fitSize}
                               onClick={() => toggleFilter(selectedStyleFitSizes, setSelectedStyleFitSizes, fitSize)}
@@ -426,7 +426,7 @@ export default function AdvancedSearch() {
               <h3 className="text-sm font-bold uppercase tracking-wider">Colour Space</h3>
             </div>
             <div className="flex flex-wrap gap-2 mb-4">
-              {sortedColours.map(c => (
+              {sortedColours.map((c: typeof colours[number]) => (
                 <button
                   key={normalizeColour(c.colouroverall)}
                   onClick={() => toggleFilter(selectedColours, setSelectedColours, normalizeColour(c.colouroverall))}
@@ -459,7 +459,7 @@ export default function AdvancedSearch() {
                       <div>
                         <p className="text-xs font-semibold text-zinc-700 dark:text-zinc-300 mb-2">Major Colour</p>
                         <div className="flex flex-wrap gap-2">
-                          {availableMajorColours.map(major => (
+                          {availableMajorColours.map((major: string) => (
                             <button
                               key={major}
                               onClick={() => toggleFilter(selectedMajorColours, setSelectedMajorColours, major)}
@@ -482,7 +482,7 @@ export default function AdvancedSearch() {
                       <div>
                         <p className="text-xs font-semibold text-zinc-700 dark:text-zinc-300 mb-2">Minor Colour</p>
                         <div className="flex flex-wrap gap-2">
-                          {availableMinorColours.map(minor => (
+                          {availableMinorColours.map((minor: string) => (
                             <button
                               key={minor}
                               onClick={() => toggleFilter(selectedMinorColours, setSelectedMinorColours, minor)}
@@ -512,7 +512,7 @@ export default function AdvancedSearch() {
               <h3 className="text-sm font-bold uppercase tracking-wider">Material Texture</h3>
             </div>
             <div className="flex flex-wrap gap-2">
-              {sortedMaterials.map(m => (
+              {sortedMaterials.map((m: typeof materials[number]) => (
                 <button
                   key={m.id}
                   onClick={() => toggleFilter(selectedMaterials, setSelectedMaterials, m.id)}
@@ -564,12 +564,12 @@ export default function AdvancedSearch() {
                   displayMode === 'icon' && 'grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 xl:grid-cols-6 gap-3'
                 )}
               >
-                {filteredItems.map(item => {
-                  const itemInfos = infos.filter(info => info.dk_itemid === item.id);
+                {filteredItems.map((item: typeof itemsWithColours[number]) => {
+                  const itemInfos = infos.filter((info: typeof infos[number]) => info.dk_itemid === item.id);
                   const colourDots = (
                     <div className="flex gap-1">
-                      {itemInfos.map(info => {
-                        const c = colours.find(col => col.id === info.dk_colourid);
+                      {itemInfos.map((info: typeof infos[number]) => {
+                        const c = colours.find((col: typeof colours[number]) => col.id === info.dk_colourid);
                         return c ? (
                           <span key={info.id} className="w-3 h-3 rounded-full border border-zinc-200 dark:border-zinc-700" title={c.colouroverall} style={{ backgroundColor: c.colouroverall.toLowerCase() }} />
                         ) : null;
