@@ -295,20 +295,10 @@ export default function ItemDetail() {
                   </div>
                 </div>
                 {forLocation && (
-                  <>
-                    <div className="flex justify-between py-2 border-b border-zinc-50 dark:border-zinc-800">
-                      <span className="text-sm text-zinc-500 dark:text-zinc-400">Location Type</span>
-                      <span className="text-sm font-bold">{forLocation.forlocationtype || 'N/A'}</span>
-                    </div>
-                    <div className="flex justify-between py-2 border-b border-zinc-50 dark:border-zinc-800">
-                      <span className="text-sm text-zinc-500 dark:text-zinc-400">Location Address</span>
-                      <span className="text-sm font-bold">{forLocation.forlocationaddress || 'N/A'}</span>
-                    </div>
-                    <div className="flex justify-between py-2 border-b border-zinc-50 dark:border-zinc-800">
-                      <span className="text-sm text-zinc-500 dark:text-zinc-400">Indoor/Outdoor</span>
-                      <span className="text-sm font-bold">{forLocation.isforlocationindoor ? 'Indoor' : 'Outdoor'}</span>
-                    </div>
-                  </>
+                  <div className="flex justify-between py-2 border-b border-zinc-50 dark:border-zinc-800">
+                    <span className="text-sm text-zinc-500 dark:text-zinc-400">For Location</span>
+                    <span className="text-sm font-bold">{forLocation.forlocationtype || 'N/A'}</span>
+                  </div>
                 )}
                 <div className="flex justify-between py-2 border-b border-zinc-50 dark:border-zinc-800">
                   <span className="text-sm text-zinc-500 dark:text-zinc-400">Primary Colour</span>
