@@ -70,12 +70,10 @@ export default function ItemDetail() {
             info.dk_material ? api.get<Material>('material', info.dk_material) : Promise.resolve(undefined),
           ]);
           
-          // Fetch for_location if style exists
-          if (style) {
-            const forLocations = await api.list<ForLocation>('for_location', { dk_styleid: style.id });
-            if (forLocations.length > 0) {
-              forLocation = forLocations[0];
-            }
+          // for_location is keyed to style.pk_styleid via info.dk_styleid.
+          const forLocations = await api.list<ForLocation>('for_location', { dk_styleid: info.dk_styleid });
+          if (forLocations.length > 0) {
+            forLocation = forLocations[0];
           }
         }
 
@@ -116,12 +114,10 @@ export default function ItemDetail() {
           info.dk_material ? api.get<Material>('material', info.dk_material) : Promise.resolve(undefined),
         ]);
         
-        // Fetch for_location if style exists
-        if (style) {
-          const forLocations = await api.list<ForLocation>('for_location', { dk_styleid: style.id });
-          if (forLocations.length > 0) {
-            forLocation = forLocations[0];
-          }
+        // for_location is keyed to style.pk_styleid via info.dk_styleid.
+        const forLocations = await api.list<ForLocation>('for_location', { dk_styleid: info.dk_styleid });
+        if (forLocations.length > 0) {
+          forLocation = forLocations[0];
         }
       }
       if (storage) home = await api.get<Home>('home', storage.dk_homelocation);

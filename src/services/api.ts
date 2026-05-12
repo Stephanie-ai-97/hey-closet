@@ -3,6 +3,46 @@ import { TableName } from '../types';
 const BASE_URL = 'https://nuqpcxgonlqlxtujxmhx.supabase.co/functions/v1/storage';
 const API_KEY = (import.meta as any).env.VITE_SUPABASE_API_KEY || (process.env as any).VITE_SUPABASE_API_KEY;
 
+const ID_FIELDS = [
+  'pk_homelocation',
+  'pk_closet',
+  'pk_itemid',
+  'pk_colourid',
+  'pk_material',
+  'pk_styleid',
+  'pk_infoid',
+  'pk_wash',
+  'pk_forlocationid',
+  'pk_wearlogid',
+  'pk_outfitid',
+  'pk_outfititemid',
+  'pk_itemphotoid',
+] as const;
+
+function normalizeIds<T>(value: T): T {
+  if (Array.isArray(value)) {
+    return value.map((item) => normalizeIds(item)) as T;
+  }
+
+  if (!value || typeof value !== 'object') {
+    return value;
+  }
+
+  const record = value as Record<string, unknown>;
+  const normalized: Record<string, unknown> = {};
+
+  for (const [key, itemValue] of Object.entries(record)) {
+    normalized[key] = normalizeIds(itemValue);
+  }
+
+  if (normalized.id === undefined) {
+    const pkField = ID_FIELDS.find((field) => normalized[field] !== undefined);
+    if (pkField) normalized.id = normalized[pkField];
+  }
+
+  return normalized as T;
+}
+
 async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
   const headers = {
     'apikey': API_KEY,
@@ -48,7 +88,7 @@ async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
       return {} as T;
     }
 
-    const data = await response.json();
+    const data = normalizeIds(await response.json());
     console.debug('[API] Response data:', data);
     return data;
   } catch (err) {
@@ -62,8 +102,11 @@ async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
 }
 
 export const api = {
-  list: async <T>(table: TableName, query?: Record<string, string>): Promise<T[]> => {
-    const queryString = query ? '?' + new URLSearchParams(query).toString() : '';
+  list: async <T>(table: TableName, query?: Record<string, string | number | boolean>): Promise<T[]> => {
+    const queryParams = query
+      ? Object.fromEntries(Object.entries(query).map(([key, value]) => [key, String(value)]))
+      : undefined;
+    const queryString = queryParams ? '?' + new URLSearchParams(queryParams).toString() : '';
     const result = await request<any>(`/${table}${queryString}`);
     const unwrapped = result?.data ?? result;
     return Array.isArray(unwrapped) ? unwrapped : [];
