@@ -273,6 +273,8 @@ export default function ItemDetail() {
               </button>
             </div>
           </div>
+
+          <div className="bg-white dark:bg-zinc-900 rounded-2xl border border-zinc-200 dark:border-zinc-800 p-6 shadow-sm">
             <h3 className="font-bold text-zinc-900 dark:text-zinc-50 mb-4 flex items-center gap-2">
               <Star size={18} className="text-amber-400 fill-amber-400" />
               Preference Details
