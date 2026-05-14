@@ -2,6 +2,7 @@ import { PageContainer } from '../components/PageContainer';
 import { ItemModal } from '../components/ItemModal';
 import { EditItemModal } from '../components/EditItemModal';
 import { DeleteConfirmModal } from '../components/DeleteConfirmModal';
+import { TempModal } from '../components/TempModal';
 import { useDashboardData } from '../hooks/useDashboardData';
 import { useItemColours } from '../hooks/useItemColours';
 import { 
@@ -18,6 +19,7 @@ import {
   Tag,
   ArrowUp,
   ArrowDown,
+  Inbox,
 } from 'lucide-react';
 import { useState, useMemo } from 'react';
 import { cn } from '../lib/utils';
@@ -45,6 +47,7 @@ export default function Inventory() {
   const [filterStatus, setFilterStatus] = useState<WashStatus | null>(null);
   const [editingItem, setEditingItem] = useState<Item | null>(null);
   const [deletingItem, setDeletingItem] = useState<Item | null>(null);
+  const [tempItem, setTempItem] = useState<Item | null>(null);
   const [displayMode, setDisplayMode] = useState<DisplayMode>('tile');
 
   const itemTypes = useMemo(() => Array.from(new Set(itemsWithColours.map(i => i.itemtype))).sort(), [itemsWithColours]);
@@ -136,6 +139,15 @@ export default function Inventory() {
             setDeletingItem(null);
             refetch();
           }}
+        />
+      )}
+      {tempItem && (
+        <TempModal
+          isOpen={!!tempItem}
+          item={tempItem}
+          storage={storages.find(s => s.id === tempItem.dk_closet)}
+          onClose={() => setTempItem(null)}
+          onTempToggled={() => { refetch(); }}
         />
       )}
       <PageContainer 
@@ -324,6 +336,21 @@ export default function Inventory() {
 
           const actionButtons = (
             <div className="flex gap-1 opacity-100 transition-opacity sm:opacity-0 sm:group-hover:opacity-100">
+              <button
+                onClick={(e) => { e.preventDefault(); setTempItem(item); }}
+                className={cn(
+                  "p-1.5 rounded-lg border transition-colors",
+                  item.in_temp
+                    ? "bg-blue-50 dark:bg-blue-950 border-blue-200 dark:border-blue-800 hover:bg-blue-100 dark:hover:bg-blue-900"
+                    : "bg-white dark:bg-zinc-800 border-zinc-200 dark:border-zinc-700 hover:bg-blue-50 dark:hover:bg-blue-950"
+                )}
+                title={item.in_temp ? "Return from temp basket" : "Move to temp basket"}
+              >
+                <Inbox size={13} className={cn(
+                  "transition-colors",
+                  item.in_temp ? "text-blue-600 dark:text-blue-400" : "text-zinc-500 dark:text-zinc-400"
+                )} />
+              </button>
               <button
                 onClick={(e) => { e.preventDefault(); setEditingItem(item); }}
                 className="p-1.5 rounded-lg bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 hover:bg-zinc-100 dark:hover:bg-zinc-700 transition-colors"

@@ -24,6 +24,7 @@ export interface Item {
   itemcomment: string;
   itemwashmethod: string;
   wash_status: 'clean' | 'washing' | 'drying' | 'dirty';
+  in_temp: boolean;
   created_at?: string;
   updated_at?: string;
 }

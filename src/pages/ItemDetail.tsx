@@ -17,11 +17,13 @@ import {
   WashingMachine,
   Wind,
   AlertCircle,
+  Inbox,
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { cn } from '../lib/utils';
 import { EditItemModal } from '../components/EditItemModal';
 import { DeleteConfirmModal } from '../components/DeleteConfirmModal';
+import { TempModal } from '../components/TempModal';
 import { ItemSVGIcon } from '../components/ItemSVGIcon';
 import { useDashboardData } from '../hooks/useDashboardData';
 
@@ -43,6 +45,7 @@ export default function ItemDetail() {
   const [loading, setLoading] = useState(true);
   const [editOpen, setEditOpen] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
+  const [tempOpen, setTempOpen] = useState(false);
 
   useEffect(() => {
     async function loadItemData() {
@@ -169,11 +172,32 @@ export default function ItemDetail() {
         onClose={() => setDeleteOpen(false)}
         onConfirm={handleDelete}
       />
+      {data && (
+        <TempModal
+          isOpen={tempOpen}
+          item={data.item}
+          storage={data.storage}
+          onClose={() => setTempOpen(false)}
+          onTempToggled={() => { reload(); }}
+        />
+      )}
     <PageContainer 
       title={item.itemtype} 
       subtitle={`ID: #${item.id}`}
       actions={
         <div className="flex gap-2">
+          <button 
+            onClick={() => setTempOpen(true)} 
+            className={cn(
+              "p-2 transition-colors",
+              item.in_temp 
+                ? "text-blue-600 hover:text-blue-700"
+                : "text-zinc-500 hover:text-zinc-900"
+            )}
+            title={item.in_temp ? "Return from temp basket" : "Move to temp basket"}
+          >
+            <Inbox size={20} />
+          </button>
           <button onClick={() => setEditOpen(true)} className="p-2 text-zinc-500 hover:text-zinc-900 transition-colors">
             <Edit size={20} />
           </button>
@@ -224,7 +248,31 @@ export default function ItemDetail() {
             </div>
           </div>
 
+          {/* Temp Status */}
           <div className="bg-white dark:bg-zinc-900 rounded-2xl border border-zinc-200 dark:border-zinc-800 p-6 shadow-sm">
+            <h3 className="font-bold text-zinc-900 dark:text-zinc-50 mb-3 text-sm uppercase tracking-wider flex items-center gap-2">
+              <Inbox size={16} className={item.in_temp ? "text-blue-600" : "text-zinc-400"} />
+              Temp Basket
+            </h3>
+            <div className="flex items-center justify-between">
+              <span className="text-sm text-zinc-500 dark:text-zinc-400">
+                {item.in_temp 
+                  ? "Item is temporarily placed in basket" 
+                  : "Item is in permanent storage"}
+              </span>
+              <button
+                onClick={() => setTempOpen(true)}
+                className={cn(
+                  "px-3 py-1.5 rounded-full text-xs font-semibold border transition-all",
+                  item.in_temp
+                    ? "bg-blue-50 dark:bg-blue-950 text-blue-600 dark:text-blue-400 border-blue-200 dark:border-blue-800 hover:bg-blue-100 dark:hover:bg-blue-900"
+                    : "bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-400 border-zinc-200 dark:border-zinc-700 hover:bg-zinc-200 dark:hover:bg-zinc-700"
+                )}
+              >
+                {item.in_temp ? "Return to Storage" : "Move to Basket"}
+              </button>
+            </div>
+          </div>
             <h3 className="font-bold text-zinc-900 dark:text-zinc-50 mb-4 flex items-center gap-2">
               <Star size={18} className="text-amber-400 fill-amber-400" />
               Preference Details
@@ -250,11 +298,23 @@ export default function ItemDetail() {
               <div className="p-3 bg-zinc-900 dark:bg-zinc-100 text-white dark:text-zinc-900 rounded-2xl">
                 <MapPin size={24} />
               </div>
-              <div>
+              <div className="flex-1">
                 <h2 className="text-lg font-bold">Physical Location</h2>
-                <p className="text-sm text-zinc-500 dark:text-zinc-400">Warehouse coordinates in your infrastructure.</p>
+                <p className="text-sm text-zinc-500 dark:text-zinc-400">
+                  {item.in_temp 
+                    ? "Currently in temp basket — original location shown below"
+                    : "Warehouse coordinates in your infrastructure."}
+                </p>
               </div>
             </div>
+            
+            {item.in_temp && (
+              <div className="mb-6 p-3 bg-blue-50 dark:bg-blue-950 border border-blue-200 dark:border-blue-800 rounded-lg">
+                <p className="text-sm text-blue-700 dark:text-blue-300">
+                  <strong>Temp Status:</strong> This item is temporarily placed in the basket. The storage location below shows its permanent location.
+                </p>
+              </div>
+            )}
             
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
               <div>
