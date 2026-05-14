@@ -372,11 +372,21 @@ export default function Inventory() {
             return (
               <div
                 key={item.id}
-                className="group relative bg-white dark:bg-zinc-900 rounded-xl border border-zinc-200 dark:border-zinc-800 p-3 hover:border-zinc-400 dark:hover:border-zinc-600 hover:shadow-md transition-all"
+                className={cn(
+                  "group relative rounded-xl border p-3 hover:shadow-md transition-all",
+                  item.in_temp
+                    ? "bg-blue-50 dark:bg-blue-950 border-blue-200 dark:border-blue-800 hover:border-blue-400 dark:hover:border-blue-600"
+                    : "bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800 hover:border-zinc-400 dark:hover:border-zinc-600"
+                )}
               >
                 <div className="absolute right-2 top-2 z-10">{actionButtons}</div>
                 <Link to={`/item/${item.id}`} className="block">
-                  <div className="relative aspect-square bg-zinc-100 dark:bg-zinc-800 rounded-lg mb-3 overflow-hidden flex items-center justify-center text-zinc-400 group-hover:bg-zinc-200 dark:group-hover:bg-zinc-700 transition-colors">
+                  <div className={cn(
+                    "relative aspect-square rounded-lg mb-3 overflow-hidden flex items-center justify-center transition-colors",
+                    item.in_temp
+                      ? "bg-blue-100 dark:bg-blue-900 text-blue-600 group-hover:bg-blue-200 dark:group-hover:bg-blue-800"
+                      : "bg-zinc-100 dark:bg-zinc-800 text-zinc-400 group-hover:bg-zinc-200 dark:group-hover:bg-zinc-700"
+                  )}>
                     <ItemSVGIcon 
                       itemtype={item.itemtype} 
                       size={36}
@@ -407,11 +417,21 @@ export default function Inventory() {
             return (
               <div
                 key={item.id}
-                className="group bg-white dark:bg-zinc-900 rounded-xl border border-zinc-200 dark:border-zinc-800 p-3 hover:border-zinc-400 dark:hover:border-zinc-600 hover:shadow-md transition-all"
+                className={cn(
+                  "group rounded-xl border p-3 hover:shadow-md transition-all",
+                  item.in_temp
+                    ? "bg-blue-50 dark:bg-blue-950 border-blue-200 dark:border-blue-800 hover:border-blue-400 dark:hover:border-blue-600"
+                    : "bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800 hover:border-zinc-400 dark:hover:border-zinc-600"
+                )}
               >
                 <div className="flex items-center gap-3">
                   <Link to={`/item/${item.id}`} className="flex min-w-0 flex-1 items-center gap-3">
-                    <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-lg bg-zinc-100 text-zinc-400 transition-colors group-hover:bg-zinc-200 dark:bg-zinc-800 dark:group-hover:bg-zinc-700">
+                    <div className={cn(
+                      "flex h-14 w-14 shrink-0 items-center justify-center rounded-lg transition-colors",
+                      item.in_temp
+                        ? "bg-blue-100 dark:bg-blue-900 text-blue-600 group-hover:bg-blue-200 dark:group-hover:bg-blue-800"
+                        : "bg-zinc-100 dark:bg-zinc-800 text-zinc-400 group-hover:bg-zinc-200 dark:group-hover:bg-zinc-700"
+                    )}>
                       <ItemSVGIcon 
                         itemtype={item.itemtype} 
                         size={30}
@@ -449,11 +469,21 @@ export default function Inventory() {
             return (
               <div
                 key={item.id}
-                className="group relative bg-white dark:bg-zinc-900 rounded-xl border border-zinc-200 dark:border-zinc-800 p-3 hover:border-zinc-400 dark:hover:border-zinc-600 hover:shadow-md transition-all"
+                className={cn(
+                  "group relative rounded-xl border p-3 hover:shadow-md transition-all",
+                  item.in_temp
+                    ? "bg-blue-50 dark:bg-blue-950 border-blue-200 dark:border-blue-800 hover:border-blue-400 dark:hover:border-blue-600"
+                    : "bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800 hover:border-zinc-400 dark:hover:border-zinc-600"
+                )}
               >
                 <div className="absolute right-2 top-2 z-10">{actionButtons}</div>
                 <Link to={`/item/${item.id}`} className="flex min-h-28 flex-col items-center justify-center gap-2 text-center">
-                  <div className="flex h-14 w-14 items-center justify-center rounded-xl bg-zinc-100 text-zinc-400 transition-colors group-hover:bg-zinc-200 dark:bg-zinc-800 dark:group-hover:bg-zinc-700">
+                  <div className={cn(
+                    "flex h-14 w-14 items-center justify-center rounded-xl transition-colors",
+                    item.in_temp
+                      ? "bg-blue-100 dark:bg-blue-900 text-blue-600 group-hover:bg-blue-200 dark:group-hover:bg-blue-800"
+                      : "bg-zinc-100 dark:bg-zinc-800 text-zinc-400 group-hover:bg-zinc-200 dark:group-hover:bg-zinc-700"
+                  )}>
                     <ItemSVGIcon 
                       itemtype={item.itemtype} 
                       size={32}
@@ -474,7 +504,12 @@ export default function Inventory() {
           return (
             <div
               key={item.id}
-              className="group relative bg-white dark:bg-zinc-900 rounded-2xl border border-zinc-200 dark:border-zinc-800 p-4 hover:border-zinc-400 dark:hover:border-zinc-600 hover:shadow-lg transition-all flex flex-col"
+              className={cn(
+                "group relative rounded-2xl border p-4 hover:shadow-lg transition-all flex flex-col",
+                item.in_temp
+                  ? "bg-blue-50 dark:bg-blue-950 border-blue-200 dark:border-blue-800 hover:border-blue-400 dark:hover:border-blue-600"
+                  : "bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800 hover:border-zinc-400 dark:hover:border-zinc-600"
+              )}
             >
               {/* Edit/Delete action buttons */}
               <div className="absolute top-3 right-3 z-10">{actionButtons}</div>

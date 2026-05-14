@@ -61,9 +61,19 @@ export default function Dashboard() {
           </div>
           <div className="divide-y divide-zinc-50 dark:divide-zinc-800">
             {itemsWithColours.slice(-5).reverse().map((item) => (
-              <div key={item.id} className="p-4 flex items-center justify-between hover:bg-zinc-50 dark:hover:bg-zinc-800 transition-colors">
+              <div key={item.id} className={cn(
+                "p-4 flex items-center justify-between transition-colors",
+                item.in_temp
+                  ? "bg-blue-50 dark:bg-blue-950 hover:bg-blue-50 dark:hover:bg-blue-950"
+                  : "hover:bg-zinc-50 dark:hover:bg-zinc-800"
+              )}>
                 <div className="flex items-center gap-4">
-                  <div className="w-12 h-12 bg-zinc-100 dark:bg-zinc-800 rounded-lg flex items-center justify-center text-zinc-400 group-hover:text-zinc-600 transition-colors">
+                  <div className={cn(
+                    "w-12 h-12 rounded-lg flex items-center justify-center transition-colors",
+                    item.in_temp
+                      ? "bg-blue-100 dark:bg-blue-900 text-blue-600"
+                      : "bg-zinc-100 dark:bg-zinc-800 text-zinc-400 group-hover:text-zinc-600"
+                  )}>
                     <ItemSVGIcon
                       itemtype={item.itemtype}
                       size={28}

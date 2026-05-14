@@ -80,7 +80,12 @@ export default function Outfits() {
                     itemsWithColourData.slice(0, 6).map(item => (
                       <div
                         key={item.id}
-                        className="w-12 h-12 bg-zinc-100 dark:bg-zinc-800 rounded-xl flex items-center justify-center text-zinc-500 dark:text-zinc-400 shrink-0"
+                        className={cn(
+                          "w-12 h-12 rounded-xl flex items-center justify-center shrink-0",
+                          item.in_temp
+                            ? "bg-blue-100 dark:bg-blue-900 text-blue-600"
+                            : "bg-zinc-100 dark:bg-zinc-800 text-zinc-500 dark:text-zinc-400"
+                        )}
                         title={`${item.itemtype} · ${item.itemsize}`}
                       >
                         <ItemSVGIcon 

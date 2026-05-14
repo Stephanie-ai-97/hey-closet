@@ -477,7 +477,12 @@ export default function Warehouse() {
                 </thead>
                 <tbody className="divide-y divide-zinc-50 dark:divide-zinc-800">
                   {itemsForPartition.map(item => (
-                    <tr key={item.id} className="hover:bg-zinc-50/50 dark:hover:bg-zinc-800/50 transition-colors">
+                    <tr key={item.id} className={cn(
+                      "transition-colors",
+                      item.in_temp
+                        ? "bg-blue-50/50 dark:bg-blue-950/50 hover:bg-blue-50 dark:hover:bg-blue-950"
+                        : "hover:bg-zinc-50/50 dark:hover:bg-zinc-800/50"
+                    )}>
                       <td className="px-6 py-4">
                         <div className="flex items-center gap-3">
                           <div className="w-10 h-10 bg-zinc-100 dark:bg-zinc-800 rounded flex items-center justify-center text-zinc-400 dark:text-zinc-500">

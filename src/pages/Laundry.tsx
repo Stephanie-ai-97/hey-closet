@@ -129,10 +129,20 @@ export default function Laundry() {
                 {colItems.map(item => (
                   <div
                     key={item.id}
-                    className="bg-white dark:bg-zinc-900 rounded-xl border border-zinc-200 dark:border-zinc-800 p-3 shadow-sm hover:shadow-md transition-shadow"
+                    className={cn(
+                      "rounded-xl border p-3 shadow-sm hover:shadow-md transition-shadow",
+                      item.in_temp
+                        ? "bg-blue-50 dark:bg-blue-950 border-blue-200 dark:border-blue-800"
+                        : "bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800"
+                    )}
                   >
                     <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 bg-zinc-100 dark:bg-zinc-800 rounded-lg flex items-center justify-center shrink-0 text-zinc-500 dark:text-zinc-400">
+                      <div className={cn(
+                        "w-10 h-10 rounded-lg flex items-center justify-center shrink-0",
+                        item.in_temp
+                          ? "bg-blue-100 dark:bg-blue-900 text-blue-600"
+                          : "bg-zinc-100 dark:bg-zinc-800 text-zinc-500 dark:text-zinc-400"
+                      )}>
                         <ItemSVGIcon 
                           itemtype={item.itemtype} 
                           size={24}

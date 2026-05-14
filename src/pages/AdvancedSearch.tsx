@@ -583,9 +583,19 @@ export default function AdvancedSearch() {
                       <Link
                         to={`/item/${item.id}`}
                         key={item.id}
-                        className="group bg-white dark:bg-zinc-900 p-3 rounded-xl border border-zinc-200 dark:border-zinc-800 shadow-sm hover:border-zinc-400 dark:hover:border-zinc-600 transition-all"
+                        className={cn(
+                          "group p-3 rounded-xl border shadow-sm transition-all",
+                          item.in_temp
+                            ? "bg-blue-50 dark:bg-blue-950 border-blue-200 dark:border-blue-800 hover:border-blue-400 dark:hover:border-blue-600"
+                            : "bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800 hover:border-zinc-400 dark:hover:border-zinc-600"
+                        )}
                       >
-                        <div className="relative aspect-square bg-zinc-50 dark:bg-zinc-800 rounded-lg mb-3 flex items-center justify-center text-zinc-400 dark:text-zinc-500 group-hover:bg-zinc-100 dark:group-hover:bg-zinc-700 transition-colors">
+                        <div className={cn(
+                        "relative aspect-square rounded-lg mb-3 flex items-center justify-center transition-colors",
+                        item.in_temp
+                          ? "bg-blue-100 dark:bg-blue-900 text-blue-600 group-hover:bg-blue-200 dark:group-hover:bg-blue-800"
+                          : "bg-zinc-50 dark:bg-zinc-800 text-zinc-400 dark:text-zinc-500 group-hover:bg-zinc-100 dark:group-hover:bg-zinc-700"
+                      )}>
                           <ItemSVGIcon 
                             itemtype={item.itemtype} 
                             size={36}
@@ -610,9 +620,19 @@ export default function AdvancedSearch() {
                       <Link
                         to={`/item/${item.id}`}
                         key={item.id}
-                        className="bg-white dark:bg-zinc-900 p-3 rounded-xl border border-zinc-200 dark:border-zinc-800 shadow-sm flex items-center gap-3 hover:border-zinc-400 dark:hover:border-zinc-600 transition-all"
+                        className={cn(
+                          "p-3 rounded-xl border shadow-sm flex items-center gap-3 transition-all",
+                          item.in_temp
+                            ? "bg-blue-50 dark:bg-blue-950 border-blue-200 dark:border-blue-800 hover:border-blue-400 dark:hover:border-blue-600"
+                            : "bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800 hover:border-zinc-400 dark:hover:border-zinc-600"
+                        )}
                       >
-                        <div className="w-14 h-14 bg-zinc-50 dark:bg-zinc-800 rounded-lg shrink-0 flex items-center justify-center text-zinc-400 dark:text-zinc-500">
+                        <div className={cn(
+                          "w-14 h-14 rounded-lg shrink-0 flex items-center justify-center",
+                          item.in_temp
+                            ? "bg-blue-100 dark:bg-blue-900 text-blue-600"
+                            : "bg-zinc-50 dark:bg-zinc-800 text-zinc-400 dark:text-zinc-500"
+                        )}>
                           <ItemSVGIcon 
                             itemtype={item.itemtype} 
                             size={30}
@@ -641,9 +661,19 @@ export default function AdvancedSearch() {
                       <Link
                         to={`/item/${item.id}`}
                         key={item.id}
-                        className="group bg-white dark:bg-zinc-900 p-3 rounded-xl border border-zinc-200 dark:border-zinc-800 shadow-sm min-h-28 flex flex-col items-center justify-center gap-2 text-center hover:border-zinc-400 dark:hover:border-zinc-600 transition-all"
+                        className={cn(
+                          "group p-3 rounded-xl border shadow-sm min-h-28 flex flex-col items-center justify-center gap-2 text-center transition-all",
+                          item.in_temp
+                            ? "bg-blue-50 dark:bg-blue-950 border-blue-200 dark:border-blue-800 hover:border-blue-400 dark:hover:border-blue-600"
+                            : "bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800 hover:border-zinc-400 dark:hover:border-zinc-600"
+                        )}
                       >
-                        <div className="w-14 h-14 bg-zinc-50 dark:bg-zinc-800 rounded-xl shrink-0 flex items-center justify-center text-zinc-400 dark:text-zinc-500 group-hover:bg-zinc-100 dark:group-hover:bg-zinc-700 transition-colors">
+                        <div className={cn(
+                          "w-14 h-14 rounded-xl shrink-0 flex items-center justify-center transition-colors",
+                          item.in_temp
+                            ? "bg-blue-100 dark:bg-blue-900 text-blue-600 group-hover:bg-blue-200 dark:group-hover:bg-blue-800"
+                            : "bg-zinc-50 dark:bg-zinc-800 text-zinc-400 dark:text-zinc-500 group-hover:bg-zinc-100 dark:group-hover:bg-zinc-700"
+                        )}>
                           <ItemSVGIcon 
                             itemtype={item.itemtype} 
                             size={32}
@@ -664,9 +694,19 @@ export default function AdvancedSearch() {
                     <Link
                       to={`/item/${item.id}`}
                       key={item.id}
-                      className="bg-white dark:bg-zinc-900 p-4 rounded-xl border border-zinc-200 dark:border-zinc-800 shadow-sm flex items-center gap-4 hover:border-zinc-400 dark:hover:border-zinc-600 transition-all"
+                      className={cn(
+                        "p-4 rounded-xl border shadow-sm flex items-center gap-4 transition-all",
+                        item.in_temp
+                          ? "bg-blue-50 dark:bg-blue-950 border-blue-200 dark:border-blue-800 hover:border-blue-400 dark:hover:border-blue-600"
+                          : "bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800 hover:border-zinc-400 dark:hover:border-zinc-600"
+                      )
                     >
-                      <div className="w-16 h-16 bg-zinc-50 dark:bg-zinc-800 rounded-lg shrink-0 flex items-center justify-center text-zinc-400 dark:text-zinc-500">
+                      <div className={cn(
+                        "w-16 h-16 rounded-lg shrink-0 flex items-center justify-center",
+                        item.in_temp
+                          ? "bg-blue-100 dark:bg-blue-900 text-blue-600"
+                          : "bg-zinc-50 dark:bg-zinc-800 text-zinc-400 dark:text-zinc-500"
+                      )}>
                         <ItemSVGIcon 
                           itemtype={item.itemtype} 
                           size={32}

@@ -185,9 +185,19 @@ export default function Analytics() {
                 <Link
                   to={`/item/${item.id}`}
                   key={item.id}
-                  className="flex items-center gap-3 p-3 rounded-xl hover:bg-zinc-50 dark:hover:bg-zinc-800 transition-colors group"
+                  className={cn(
+                    "flex items-center gap-3 p-3 rounded-xl transition-colors group",
+                    item.in_temp
+                      ? "bg-blue-50 dark:bg-blue-950 hover:bg-blue-100 dark:hover:bg-blue-900"
+                      : "hover:bg-zinc-50 dark:hover:bg-zinc-800"
+                  )}
                 >
-                  <div className="w-8 h-8 bg-zinc-100 dark:bg-zinc-800 rounded-lg flex items-center justify-center text-zinc-500 dark:text-zinc-400 shrink-0">
+                  <div className={cn(
+                    "w-8 h-8 rounded-lg flex items-center justify-center shrink-0",
+                    item.in_temp
+                      ? "bg-blue-100 dark:bg-blue-900 text-blue-600"
+                      : "bg-zinc-100 dark:bg-zinc-800 text-zinc-500 dark:text-zinc-400"
+                  )}>
                     <ItemSVGIcon 
                       itemtype={item.itemtype} 
                       size={18}

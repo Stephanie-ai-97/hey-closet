@@ -121,12 +121,19 @@ export default function WashTracker() {
           </thead>
           <tbody className="divide-y divide-zinc-50 dark:divide-zinc-800">
             {itemsWithStatus.sort((a, b) => b.daysSince - a.daysSince).map(item => (
-              <tr key={item.id} className="hover:bg-zinc-50/50 dark:hover:bg-zinc-800/50 transition-colors">
+              <tr key={item.id} className={cn(
+                "transition-colors",
+                item.in_temp
+                  ? "bg-blue-50/50 dark:bg-blue-950/50 hover:bg-blue-50 dark:hover:bg-blue-950"
+                  : "hover:bg-zinc-50/50 dark:hover:bg-zinc-800/50"
+              )}>
                 <td className="px-6 py-4">
                   <div className="flex items-center gap-3">
                     <div className={cn(
                       "w-10 h-10 rounded-lg flex items-center justify-center",
-                      item.isCritical ? "bg-red-50 dark:bg-red-950 text-red-500" : "bg-zinc-50 dark:bg-zinc-800 text-zinc-400"
+                      item.in_temp 
+                        ? "bg-blue-100 dark:bg-blue-900 text-blue-600"
+                        : item.isCritical ? "bg-red-50 dark:bg-red-950 text-red-500" : "bg-zinc-50 dark:bg-zinc-800 text-zinc-400"
                     )}>
                       <ItemSVGIcon
                         itemtype={item.itemtype}
@@ -182,12 +189,17 @@ export default function WashTracker() {
         {/* Mobile Card View */}
         <div className="md:hidden divide-y divide-zinc-100 dark:divide-zinc-800">
           {itemsWithStatus.sort((a, b) => b.daysSince - a.daysSince).map(item => (
-            <div key={item.id} className="p-4 space-y-4">
+            <div key={item.id} className={cn(
+              "p-4 space-y-4",
+              item.in_temp && "bg-blue-50/50 dark:bg-blue-950/50"
+            )}>
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
                   <div className={cn(
                     "w-10 h-10 rounded-lg flex items-center justify-center",
-                    item.isCritical ? "bg-red-50 dark:bg-red-950 text-red-500" : "bg-zinc-50 dark:bg-zinc-800 text-zinc-400"
+                    item.in_temp 
+                      ? "bg-blue-100 dark:bg-blue-900 text-blue-600"
+                      : item.isCritical ? "bg-red-50 dark:bg-red-950 text-red-500" : "bg-zinc-50 dark:bg-zinc-800 text-zinc-400"
                   )}>
                     <ItemSVGIcon
                       itemtype={item.itemtype}
@@ -249,7 +261,12 @@ export default function WashTracker() {
               .map((wash) => {
                 const item = itemsWithColours.find(i => i.id === wash.dk_itemid);
                 return (
-                  <div key={wash.id} className="bg-white dark:bg-zinc-900 rounded-2xl border border-zinc-200 dark:border-zinc-800 p-4 hover:shadow-md transition-shadow">
+                  <div key={wash.id} className={cn(
+                    "rounded-2xl border p-4 hover:shadow-md transition-shadow",
+                    item?.in_temp
+                      ? "bg-blue-50 dark:bg-blue-950 border-blue-200 dark:border-blue-800"
+                      : "bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800"
+                  )}>
                     <div className="flex items-start gap-3">
                       <div className="w-10 h-10 rounded-lg bg-indigo-50 dark:bg-indigo-950 flex items-center justify-center text-indigo-600 shrink-0">
                         {item ? (
