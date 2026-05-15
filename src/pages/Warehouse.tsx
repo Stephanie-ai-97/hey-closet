@@ -485,7 +485,12 @@ export default function Warehouse() {
                     )}>
                       <td className="px-6 py-4">
                         <div className="flex items-center gap-3">
-                          <div className="w-10 h-10 bg-zinc-100 dark:bg-zinc-800 rounded flex items-center justify-center text-zinc-400 dark:text-zinc-500">
+                          <div className={cn(
+                            "w-10 h-10 rounded flex items-center justify-center",
+                            item.in_temp
+                              ? "bg-blue-100 dark:bg-blue-900 text-blue-600"
+                              : "bg-zinc-100 dark:bg-zinc-800 text-zinc-400 dark:text-zinc-500"
+                          )}>
                             <ItemSVGIcon
                               itemtype={item.itemtype}
                               size={24}

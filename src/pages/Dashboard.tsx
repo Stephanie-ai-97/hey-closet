@@ -72,7 +72,7 @@ export default function Dashboard() {
                     "w-12 h-12 rounded-lg flex items-center justify-center transition-colors",
                     item.in_temp
                       ? "bg-blue-100 dark:bg-blue-900 text-blue-600"
-                      : "bg-zinc-100 dark:bg-zinc-800 text-zinc-400 group-hover:text-zinc-600"
+                      : "bg-zinc-100 dark:bg-zinc-800 text-zinc-400"
                   )}>
                     <ItemSVGIcon
                       itemtype={item.itemtype}

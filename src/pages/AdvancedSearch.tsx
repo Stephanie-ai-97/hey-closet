@@ -699,7 +699,7 @@ export default function AdvancedSearch() {
                         item.in_temp
                           ? "bg-blue-50 dark:bg-blue-950 border-blue-200 dark:border-blue-800 hover:border-blue-400 dark:hover:border-blue-600"
                           : "bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800 hover:border-zinc-400 dark:hover:border-zinc-600"
-                      )
+                      )}
                     >
                       <div className={cn(
                         "w-16 h-16 rounded-lg shrink-0 flex items-center justify-center",

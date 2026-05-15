@@ -514,7 +514,12 @@ export default function Inventory() {
               {/* Edit/Delete action buttons */}
               <div className="absolute top-3 right-3 z-10">{actionButtons}</div>
               <Link to={`/item/${item.id}`} className="flex flex-col flex-1">
-              <div className="relative aspect-square bg-zinc-100 dark:bg-zinc-800 rounded-xl mb-4 overflow-hidden flex items-center justify-center text-zinc-400 group-hover:bg-zinc-200 dark:group-hover:bg-zinc-700 transition-colors">
+              <div className={cn(
+                "relative aspect-square rounded-xl mb-4 overflow-hidden flex items-center justify-center transition-colors",
+                item.in_temp
+                  ? "bg-blue-100 dark:bg-blue-900 text-blue-600 group-hover:bg-blue-200 dark:group-hover:bg-blue-800"
+                  : "bg-zinc-100 dark:bg-zinc-800 text-zinc-400 group-hover:bg-zinc-200 dark:group-hover:bg-zinc-700"
+              )}>
                 <ItemSVGIcon 
                   itemtype={item.itemtype} 
                   size={48}
