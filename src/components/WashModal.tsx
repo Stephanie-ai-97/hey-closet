@@ -33,6 +33,11 @@ export function WashModal({ isOpen, item, onClose, onWashLogged }: WashModalProp
         lastwashdate: washDateTime.toISOString(),
       });
 
+      // Clear in_temp flag after wash is logged
+      await api.update<Item>('item', item.id, {
+        in_temp: false,
+      });
+
       setWashDate(format(new Date(), 'yyyy-MM-dd'));
       setNotes('');
       onWashLogged();
