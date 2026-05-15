@@ -1,5 +1,6 @@
 import { PageContainer } from '../components/PageContainer';
 import { WashModal } from '../components/WashModal';
+import { BulkWashModal } from '../components/BulkWashModal';
 import { useDashboardData } from '../hooks/useDashboardData';
 import { useItemColours } from '../hooks/useItemColours';
 import { ItemSVGIcon } from '../components/ItemSVGIcon';
@@ -13,7 +14,8 @@ import {
   CheckCircle2,
   Plus,
   Clock,
-  History
+  History,
+  Zap
 } from 'lucide-react';
 import { format, differenceInDays } from 'date-fns';
 import { cn } from '../lib/utils';
@@ -26,6 +28,7 @@ export default function WashTracker() {
   const [loadingWashes, setLoadingWashes] = useState(true);
   const [selectedItem, setSelectedItem] = useState<Item | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isBulkWashModalOpen, setIsBulkWashModalOpen] = useState(false);
 
   const loadWashes = async () => {
     try {
@@ -85,6 +88,13 @@ export default function WashTracker() {
         onWashLogged={handleWashLogged}
       />
 
+      <BulkWashModal
+        isOpen={isBulkWashModalOpen}
+        items={itemsWithColours}
+        onClose={() => setIsBulkWashModalOpen(false)}
+        onWashLogged={handleWashLogged}
+      />
+
       <PageContainer 
         title="Wash Health Protocol" 
         subtitle="Monitoring the hygiene state of your archived collection."
@@ -102,9 +112,20 @@ export default function WashTracker() {
             <p className="text-indigo-500 text-xs font-bold uppercase tracking-widest mb-1">Total Washes</p>
             <p className="text-3xl font-bold text-indigo-900 dark:text-indigo-300">{washes.length}</p>
          </div>
-         <div className="bg-amber-50 dark:bg-amber-950 border border-amber-100 dark:border-amber-900 p-6 rounded-2xl">
-            <p className="text-amber-500 text-xs font-bold uppercase tracking-widest mb-1">Never Washed</p>
-            <p className="text-3xl font-bold text-amber-900 dark:text-amber-300">{itemsWithStatus.filter(i => !i.lastWash).length}</p>
+         <div className={cn("p-6 rounded-2xl border", itemsWithStatus.filter(i => i.in_temp).length > 0 ? "bg-blue-50 dark:bg-blue-950 border-blue-100 dark:border-blue-900" : "bg-amber-50 dark:bg-amber-950 border-amber-100 dark:border-amber-900")}>
+            <p className={cn("text-xs font-bold uppercase tracking-widest mb-1", itemsWithStatus.filter(i => i.in_temp).length > 0 ? "text-blue-500" : "text-amber-500")}>Temporary Storage</p>
+            <div className="flex items-end justify-between">
+              <p className={cn("text-3xl font-bold", itemsWithStatus.filter(i => i.in_temp).length > 0 ? "text-blue-900 dark:text-blue-300" : "text-amber-900 dark:text-amber-300")}>{itemsWithStatus.filter(i => i.in_temp).length}</p>
+              {itemsWithStatus.filter(i => i.in_temp).length > 0 && (
+                <button
+                  onClick={() => setIsBulkWashModalOpen(true)}
+                  className="px-3 py-1 bg-blue-600 text-white text-xs font-bold rounded-lg hover:bg-blue-700 transition-colors flex items-center gap-1"
+                >
+                  <Zap size={12} />
+                  Bulk Wash
+                </button>
+              )}
+            </div>
          </div>
       </div>
 
