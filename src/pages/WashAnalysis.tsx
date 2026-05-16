@@ -132,10 +132,8 @@ export default function WashAnalysis() {
         };
       });
 
-    // Calculate totals based on mode
-    const totalWashes = analysisMode === 'bulk' 
-      ? new Set(washes.map(w => w.created_at?.split('T')[0] || 'unknown')).size
-      : washes.length;
+    // Calculate totals - totalWashes always shows unique bulks
+    const totalWashes = new Set(washes.map(w => w.created_at?.split('T')[0] || 'unknown')).size;
     const uniqueItemsWashed = uniqueItemIds.size;
     const avgWashesPerItem = uniqueItemsWashed > 0 ? (washes.length / uniqueItemsWashed).toFixed(2) : '0';
 
@@ -174,7 +172,7 @@ export default function WashAnalysis() {
                 : 'text-zinc-700 dark:text-zinc-300 hover:text-zinc-900 dark:hover:text-zinc-100'
             )}
           >
-            Bulk Wash (Unique)
+            Bulk Wash
           </button>
           <button
             onClick={() => setAnalysisMode('item')}
@@ -185,7 +183,7 @@ export default function WashAnalysis() {
                 : 'text-zinc-700 dark:text-zinc-300 hover:text-zinc-900 dark:hover:text-zinc-100'
             )}
           >
-            Washes (Count Each)
+            Item Wash
           </button>
         </div>
       </div>
@@ -193,13 +191,9 @@ export default function WashAnalysis() {
       {/* Summary Stats */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-10">
         <div className="bg-white dark:bg-zinc-900 rounded-2xl border border-zinc-200 dark:border-zinc-800 p-6 shadow-sm">
-          <p className="text-xs text-zinc-500 dark:text-zinc-400 uppercase font-bold tracking-wider mb-1">
-            {analysisMode === 'bulk' ? 'Total Wash Bulk' : 'Total Washes'}
-          </p>
+          <p className="text-xs text-zinc-500 dark:text-zinc-400 uppercase font-bold tracking-wider mb-1">Total Wash Bulk</p>
           <p className="text-4xl font-bold text-indigo-600 dark:text-indigo-400">{analytics.totalWashes}</p>
-          <p className="text-xs text-zinc-500 dark:text-zinc-400 mt-2">
-            {analysisMode === 'bulk' ? 'Total wash operations performed' : 'Total item washes'}
-          </p>
+          <p className="text-xs text-zinc-500 dark:text-zinc-400 mt-2">Total wash operations performed</p>
         </div>
 
         <div className="bg-white dark:bg-zinc-900 rounded-2xl border border-zinc-200 dark:border-zinc-800 p-6 shadow-sm">
@@ -213,59 +207,6 @@ export default function WashAnalysis() {
           <p className="text-4xl font-bold text-purple-600 dark:text-purple-400">{analytics.avgWashesPerItem}</p>
           <p className="text-xs text-zinc-500 dark:text-zinc-400 mt-2">Average washes per item</p>
         </div>
-      </div>
-
-      {/* Items by Wash Frequency */}
-      <div className="bg-white dark:bg-zinc-900 rounded-3xl border border-zinc-200 dark:border-zinc-800 p-8 shadow-sm mb-10">
-        <div className="flex items-center gap-3 mb-6">
-          <div className="p-2.5 bg-indigo-100 dark:bg-indigo-950 rounded-xl">
-            <BarChart2 size={20} className="text-indigo-600" />
-          </div>
-          <div>
-            <h2 className="font-bold text-zinc-900 dark:text-zinc-50">Items by Wash Frequency</h2>
-            <p className="text-xs text-zinc-500 dark:text-zinc-400">Items ranked by number of washes</p>
-          </div>
-        </div>
-
-        {analytics.itemWashStats.length === 0 ? (
-          <div className="text-center py-8">
-            <Droplets size={32} className="mx-auto text-zinc-300 dark:text-zinc-600 mb-2" />
-            <p className="text-zinc-500 dark:text-zinc-400">No wash data available</p>
-          </div>
-        ) : (
-          <div className="space-y-3">
-            {analytics.itemWashStats.slice(0, 20).map(({ item, washCount }) => (
-              <Link
-                key={item.id}
-                to={`/item/${item.id}`}
-                className="group flex items-center gap-3 p-3 rounded-xl hover:bg-zinc-50 dark:hover:bg-zinc-800 transition-colors"
-              >
-                <div className="w-10 h-10 rounded-lg bg-zinc-100 dark:bg-zinc-800 flex items-center justify-center text-zinc-500 dark:text-zinc-400 shrink-0">
-                  <ItemSVGIcon
-                    itemtype={item.itemtype}
-                    size={20}
-                    majorColour={item.colour?.majorcolour}
-                    minorColour={item.colour?.minorcolour}
-                    color={item.colour?.majorcolour}
-                  />
-                </div>
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-semibold text-zinc-900 dark:text-zinc-50 truncate">{item.itemtype}</p>
-                  <p className="text-xs text-zinc-400 dark:text-zinc-500">ID: {item.id}</p>
-                </div>
-                <div className="flex items-center gap-3 shrink-0">
-                  <div className="flex-1 bg-zinc-100 dark:bg-zinc-800 rounded-full h-3 w-24 overflow-hidden">
-                    <div
-                      className="h-full bg-indigo-500 rounded-full transition-all"
-                      style={{ width: `${(washCount / maxItemWashCount) * 100}%` }}
-                    />
-                  </div>
-                  <span className="text-sm font-bold text-indigo-600 dark:text-indigo-400 w-8 text-right">{washCount}</span>
-                </div>
-              </Link>
-            ))}
-          </div>
-        )}
       </div>
 
       {/* Two Column Layout for Time-based Analytics */}
