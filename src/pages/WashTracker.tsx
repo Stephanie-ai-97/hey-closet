@@ -16,7 +16,8 @@ import {
   Clock,
   History,
   Zap,
-  ChevronDown
+  ChevronDown,
+  BarChart2
 } from 'lucide-react';
 import { format, differenceInDays } from 'date-fns';
 import { cn } from '../lib/utils';
@@ -73,6 +74,9 @@ export default function WashTracker() {
     return acc;
   }, {} as Record<number, Wash>);
 
+  // Calculate unique items washed
+  const uniqueItemsWashed = new Set(washes.map(w => w.dk_itemid)).size;
+
   const itemsWithStatus = itemsWithColours.map(item => {
     const lastWash = latestWashes[item.id];
     const daysSince = lastWash ? differenceInDays(new Date(), new Date(lastWash.lastwashdate)) : Infinity;
@@ -101,6 +105,41 @@ export default function WashTracker() {
         title="Wash Health Protocol" 
         subtitle="Monitoring the hygiene state of your archived collection."
       >
+      {/* Wash Analysis Breakdown */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
+        <div className="bg-indigo-50 dark:bg-indigo-950 border border-indigo-100 dark:border-indigo-900 rounded-2xl p-6 hover:shadow-md transition-shadow cursor-pointer group">
+          <div className="flex items-start justify-between">
+            <div>
+              <p className="text-indigo-500 text-xs font-bold uppercase tracking-widest mb-2">Total Wash Bulk</p>
+              <p className="text-4xl font-bold text-indigo-900 dark:text-indigo-300 mb-1">{washes.length}</p>
+              <p className="text-xs text-indigo-700 dark:text-indigo-400">Total wash operations</p>
+            </div>
+            <BarChart2 size={24} className="text-indigo-400 group-hover:scale-110 transition-transform" />
+          </div>
+        </div>
+        <div className="bg-emerald-50 dark:bg-emerald-950 border border-emerald-100 dark:border-emerald-900 rounded-2xl p-6 hover:shadow-md transition-shadow cursor-pointer group">
+          <div className="flex items-start justify-between">
+            <div>
+              <p className="text-emerald-500 text-xs font-bold uppercase tracking-widest mb-2">Total Wash Items</p>
+              <p className="text-4xl font-bold text-emerald-900 dark:text-emerald-300 mb-1">{uniqueItemsWashed}</p>
+              <p className="text-xs text-emerald-700 dark:text-emerald-400">Unique items washed</p>
+            </div>
+            <Droplets size={24} className="text-emerald-400 group-hover:scale-110 transition-transform" />
+          </div>
+        </div>
+      </div>
+
+      {/* Link to Analysis Page */}
+      <div className="mb-8">
+        <Link
+          to="/wash-analysis"
+          className="inline-flex items-center gap-2 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-bold rounded-lg transition-colors"
+        >
+          <BarChart2 size={16} />
+          View Detailed Analysis
+        </Link>
+      </div>
+
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
          <div className="bg-red-50 dark:bg-red-950 border border-red-100 dark:border-red-900 p-6 rounded-2xl">
             <p className="text-red-500 text-xs font-bold uppercase tracking-widest mb-1">Critical (30d+)</p>

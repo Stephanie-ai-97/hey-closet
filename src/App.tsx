@@ -29,6 +29,7 @@ import WarehouseView from './pages/Warehouse';
 import Inventory from './pages/Inventory';
 import AdvancedSearch from './pages/AdvancedSearch';
 import WashTracker from './pages/WashTracker';
+import WashAnalysis from './pages/WashAnalysis';
 import ItemDetail from './pages/ItemDetail';
 import Analytics from './pages/Analytics';
 import Outfits from './pages/Outfits';
@@ -175,6 +176,7 @@ export default function App() {
               <Route path="/outfits" element={<Outfits />} />
               <Route path="/search" element={<AdvancedSearch />} />
               <Route path="/washes" element={<WashTracker />} />
+              <Route path="/wash-analysis" element={<WashAnalysis />} />
               <Route path="/analytics" element={<Analytics />} />
               <Route path="/item/:id" element={<ItemDetail />} />
             </Routes>
