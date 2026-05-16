@@ -189,23 +189,23 @@ export default function WashAnalysis() {
       </div>
 
       {/* Summary Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-10">
-        <div className="bg-white dark:bg-zinc-900 rounded-2xl border border-zinc-200 dark:border-zinc-800 p-6 shadow-sm">
-          <p className="text-xs text-zinc-500 dark:text-zinc-400 uppercase font-bold tracking-wider mb-1">Total Wash Bulk</p>
-          <p className="text-4xl font-bold text-indigo-600 dark:text-indigo-400">{analytics.totalWashes}</p>
-          <p className="text-xs text-zinc-500 dark:text-zinc-400 mt-2">Total wash operations performed</p>
+      <div className="grid grid-cols-3 gap-2 md:gap-4 mb-10">
+        <div className="bg-white dark:bg-zinc-900 rounded-xl md:rounded-2xl border border-zinc-200 dark:border-zinc-800 p-3 md:p-6 shadow-sm min-w-0">
+          <p className="text-[9px] md:text-xs text-zinc-500 dark:text-zinc-400 uppercase font-bold tracking-wide md:tracking-wider mb-1 leading-tight">Total Wash Bulk</p>
+          <p className="text-2xl md:text-4xl font-bold text-indigo-600 dark:text-indigo-400">{analytics.totalWashes}</p>
+          <p className="hidden sm:block text-xs text-zinc-500 dark:text-zinc-400 mt-2">Total wash operations performed</p>
         </div>
 
-        <div className="bg-white dark:bg-zinc-900 rounded-2xl border border-zinc-200 dark:border-zinc-800 p-6 shadow-sm">
-          <p className="text-xs text-zinc-500 dark:text-zinc-400 uppercase font-bold tracking-wider mb-1">Total Wash Items</p>
-          <p className="text-4xl font-bold text-emerald-600 dark:text-emerald-400">{analytics.uniqueItemsWashed}</p>
-          <p className="text-xs text-zinc-500 dark:text-zinc-400 mt-2">Unique items washed</p>
+        <div className="bg-white dark:bg-zinc-900 rounded-xl md:rounded-2xl border border-zinc-200 dark:border-zinc-800 p-3 md:p-6 shadow-sm min-w-0">
+          <p className="text-[9px] md:text-xs text-zinc-500 dark:text-zinc-400 uppercase font-bold tracking-wide md:tracking-wider mb-1 leading-tight">Total Wash Items</p>
+          <p className="text-2xl md:text-4xl font-bold text-emerald-600 dark:text-emerald-400">{analytics.uniqueItemsWashed}</p>
+          <p className="hidden sm:block text-xs text-zinc-500 dark:text-zinc-400 mt-2">Unique items washed</p>
         </div>
 
-        <div className="bg-white dark:bg-zinc-900 rounded-2xl border border-zinc-200 dark:border-zinc-800 p-6 shadow-sm">
-          <p className="text-xs text-zinc-500 dark:text-zinc-400 uppercase font-bold tracking-wider mb-1">Avg Per Item</p>
-          <p className="text-4xl font-bold text-purple-600 dark:text-purple-400">{analytics.avgWashesPerItem}</p>
-          <p className="text-xs text-zinc-500 dark:text-zinc-400 mt-2">Average washes per item</p>
+        <div className="bg-white dark:bg-zinc-900 rounded-xl md:rounded-2xl border border-zinc-200 dark:border-zinc-800 p-3 md:p-6 shadow-sm min-w-0">
+          <p className="text-[9px] md:text-xs text-zinc-500 dark:text-zinc-400 uppercase font-bold tracking-wide md:tracking-wider mb-1 leading-tight">Avg Per Item</p>
+          <p className="text-2xl md:text-4xl font-bold text-purple-600 dark:text-purple-400">{analytics.avgWashesPerItem}</p>
+          <p className="hidden sm:block text-xs text-zinc-500 dark:text-zinc-400 mt-2">Average washes per item</p>
         </div>
       </div>
 
