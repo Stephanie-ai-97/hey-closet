@@ -82,6 +82,7 @@ function ThemeToggle({ collapsed }: { collapsed: boolean }) {
           title={label}
           className={cn(
             "flex items-center justify-center p-1.5 transition-colors text-xs gap-1",
+            m === 'system' && collapsed && "flex-1",
             mode === m
               ? "bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-900"
               : "text-zinc-400 hover:text-zinc-700 hover:bg-zinc-50 dark:hover:bg-zinc-800 dark:hover:text-zinc-200"
@@ -128,6 +129,7 @@ export default function App() {
             <NavItem to="/inventory" icon={Package} label="Inventory" collapsed={isSidebarCollapsed} />
             <NavItem to="/search" icon={Search} label="Search" collapsed={isSidebarCollapsed} />
             <NavItem to="/washes" icon={Droplets} label="Wash Tracker" collapsed={isSidebarCollapsed} />
+            <NavItem to="/wash-analysis" icon={BarChart2} label="Wash Analysis" collapsed={isSidebarCollapsed} />
           </nav>
 
           <div className="p-3 border-t border-zinc-100 dark:border-zinc-800 space-y-3">
@@ -156,6 +158,7 @@ export default function App() {
           <Link to="/inventory" className="p-2 text-zinc-500 dark:text-zinc-400"><Package size={24} /></Link>
           <Link to="/search" className="p-2 text-zinc-500 dark:text-zinc-400"><Search size={24} /></Link>
           <Link to="/washes" className="p-2 text-zinc-500 dark:text-zinc-400"><Droplets size={24} /></Link>
+          <Link to="/wash-analysis" className="p-2 text-zinc-500 dark:text-zinc-400"><BarChart2 size={24} /></Link>
         </div>
 
         {/* Mobile Header */}
