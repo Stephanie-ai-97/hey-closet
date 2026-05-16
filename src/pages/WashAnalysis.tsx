@@ -97,10 +97,11 @@ export default function WashAnalysis() {
     // Calculate averages
     const totalWashes = washes.length;
     const uniqueItemsWashed = uniqueItemIds.size;
+    const uniqueWashBulks = new Set(washes.map(w => w.created_at?.split('T')[0] || 'unknown')).size;
     const avgWashesPerItem = uniqueItemsWashed > 0 ? (totalWashes / uniqueItemsWashed).toFixed(2) : '0';
 
     return {
-      totalWashes,
+      totalWashes: uniqueWashBulks,
       uniqueItemsWashed,
       avgWashesPerItem,
       itemWashStats,

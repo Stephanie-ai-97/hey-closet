@@ -77,6 +77,9 @@ export default function WashTracker() {
   // Calculate unique items washed
   const uniqueItemsWashed = new Set(washes.map(w => w.dk_itemid)).size;
 
+  // Calculate unique wash bulks (by created_at datetime)
+  const uniqueWashBulks = new Set(washes.map(w => w.created_at?.split('T')[0] || 'unknown')).size;
+
   const itemsWithStatus = itemsWithColours.map(item => {
     const lastWash = latestWashes[item.id];
     const daysSince = lastWash ? differenceInDays(new Date(), new Date(lastWash.lastwashdate)) : Infinity;
@@ -111,7 +114,7 @@ export default function WashTracker() {
           <div className="flex items-start justify-between">
             <div>
               <p className="text-indigo-500 text-xs font-bold uppercase tracking-widest mb-2">Total Wash Bulk</p>
-              <p className="text-4xl font-bold text-indigo-900 dark:text-indigo-300 mb-1">{washes.length}</p>
+              <p className="text-4xl font-bold text-indigo-900 dark:text-indigo-300 mb-1">{uniqueWashBulks}</p>
               <p className="text-xs text-indigo-700 dark:text-indigo-400">Total wash operations</p>
             </div>
             <BarChart2 size={24} className="text-indigo-400 group-hover:scale-110 transition-transform" />
