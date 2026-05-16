@@ -16,8 +16,7 @@ import {
   Clock,
   History,
   Zap,
-  ChevronDown,
-  BarChart2
+  ChevronDown
 } from 'lucide-react';
 import { format, differenceInDays } from 'date-fns';
 import { cn } from '../lib/utils';
@@ -74,9 +73,6 @@ export default function WashTracker() {
     return acc;
   }, {} as Record<number, Wash>);
 
-  // Calculate unique items washed
-  const uniqueItemsWashed = new Set(washes.map(w => w.dk_itemid)).size;
-
   // Calculate unique wash bulks (by created_at datetime)
   const uniqueWashBulks = new Set(washes.map(w => w.created_at?.split('T')[0] || 'unknown')).size;
 
@@ -108,65 +104,30 @@ export default function WashTracker() {
         title="Wash Health Protocol" 
         subtitle="Monitoring the hygiene state of your archived collection."
       >
-      {/* Wash Analysis Breakdown */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
-        <div className="bg-indigo-50 dark:bg-indigo-950 border border-indigo-100 dark:border-indigo-900 rounded-2xl p-6 hover:shadow-md transition-shadow cursor-pointer group">
-          <div className="flex items-start justify-between">
-            <div>
-              <p className="text-indigo-500 text-xs font-bold uppercase tracking-widest mb-2">Total Wash Bulk</p>
-              <p className="text-4xl font-bold text-indigo-900 dark:text-indigo-300 mb-1">{uniqueWashBulks}</p>
-              <p className="text-xs text-indigo-700 dark:text-indigo-400">Total wash operations</p>
-            </div>
-            <BarChart2 size={24} className="text-indigo-400 group-hover:scale-110 transition-transform" />
-          </div>
-        </div>
-        <div className="bg-emerald-50 dark:bg-emerald-950 border border-emerald-100 dark:border-emerald-900 rounded-2xl p-6 hover:shadow-md transition-shadow cursor-pointer group">
-          <div className="flex items-start justify-between">
-            <div>
-              <p className="text-emerald-500 text-xs font-bold uppercase tracking-widest mb-2">Total Wash Items</p>
-              <p className="text-4xl font-bold text-emerald-900 dark:text-emerald-300 mb-1">{uniqueItemsWashed}</p>
-              <p className="text-xs text-emerald-700 dark:text-emerald-400">Unique items washed</p>
-            </div>
-            <Droplets size={24} className="text-emerald-400 group-hover:scale-110 transition-transform" />
-          </div>
-        </div>
-      </div>
-
-      {/* Link to Analysis Page */}
-      <div className="mb-8">
-        <Link
-          to="/wash-analysis"
-          className="inline-flex items-center gap-2 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-bold rounded-lg transition-colors"
-        >
-          <BarChart2 size={16} />
-          View Detailed Analysis
-        </Link>
-      </div>
-
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-         <div className="bg-red-50 dark:bg-red-950 border border-red-100 dark:border-red-900 p-6 rounded-2xl">
-            <p className="text-red-500 text-xs font-bold uppercase tracking-widest mb-1">Critical (30d+)</p>
-            <p className="text-3xl font-bold text-red-900 dark:text-red-300">{itemsWithStatus.filter(i => i.isCritical).length}</p>
+      <div className="grid grid-cols-4 gap-2 md:gap-4 mb-8">
+         <div className="bg-red-50 dark:bg-red-950 border border-red-100 dark:border-red-900 p-3 md:p-6 rounded-2xl min-w-0">
+            <p className="text-red-500 text-[9px] md:text-xs font-bold uppercase tracking-wide md:tracking-widest mb-1 leading-tight">Critical (30d+)</p>
+            <p className="text-2xl md:text-3xl font-bold text-red-900 dark:text-red-300">{itemsWithStatus.filter(i => i.isCritical).length}</p>
          </div>
-         <div className="bg-green-50 dark:bg-green-950 border border-green-100 dark:border-green-900 p-6 rounded-2xl">
-            <p className="text-green-500 text-xs font-bold uppercase tracking-widest mb-1">Clean Items</p>
-            <p className="text-3xl font-bold text-green-900 dark:text-green-300">{itemsWithStatus.filter(i => !i.isCritical && i.lastWash).length}</p>
+         <div className="bg-green-50 dark:bg-green-950 border border-green-100 dark:border-green-900 p-3 md:p-6 rounded-2xl min-w-0">
+            <p className="text-green-500 text-[9px] md:text-xs font-bold uppercase tracking-wide md:tracking-widest mb-1 leading-tight">Clean Items</p>
+            <p className="text-2xl md:text-3xl font-bold text-green-900 dark:text-green-300">{itemsWithStatus.filter(i => !i.isCritical && i.lastWash).length}</p>
          </div>
-         <div className="bg-indigo-50 dark:bg-indigo-950 border border-indigo-100 dark:border-indigo-900 p-6 rounded-2xl">
-            <p className="text-indigo-500 text-xs font-bold uppercase tracking-widest mb-1">Total Washes</p>
-            <p className="text-3xl font-bold text-indigo-900 dark:text-indigo-300">{washes.length}</p>
+         <div className="bg-indigo-50 dark:bg-indigo-950 border border-indigo-100 dark:border-indigo-900 p-3 md:p-6 rounded-2xl min-w-0">
+            <p className="text-indigo-500 text-[9px] md:text-xs font-bold uppercase tracking-wide md:tracking-widest mb-1 leading-tight">Total Wash Bulk</p>
+            <p className="text-2xl md:text-3xl font-bold text-indigo-900 dark:text-indigo-300">{uniqueWashBulks}</p>
          </div>
-         <div className={cn("p-6 rounded-2xl border", itemsWithStatus.filter(i => i.in_temp).length > 0 ? "bg-blue-50 dark:bg-blue-950 border-blue-100 dark:border-blue-900" : "bg-amber-50 dark:bg-amber-950 border-amber-100 dark:border-amber-900")}>
-            <p className={cn("text-xs font-bold uppercase tracking-widest mb-1", itemsWithStatus.filter(i => i.in_temp).length > 0 ? "text-blue-500" : "text-amber-500")}>Temporary Storage</p>
-            <div className="flex items-end justify-between">
-              <p className={cn("text-3xl font-bold", itemsWithStatus.filter(i => i.in_temp).length > 0 ? "text-blue-900 dark:text-blue-300" : "text-amber-900 dark:text-amber-300")}>{itemsWithStatus.filter(i => i.in_temp).length}</p>
+         <div className={cn("p-3 md:p-6 rounded-2xl border min-w-0", itemsWithStatus.filter(i => i.in_temp).length > 0 ? "bg-blue-50 dark:bg-blue-950 border-blue-100 dark:border-blue-900" : "bg-amber-50 dark:bg-amber-950 border-amber-100 dark:border-amber-900")}>
+            <p className={cn("text-[9px] md:text-xs font-bold uppercase tracking-wide md:tracking-widest mb-1 leading-tight", itemsWithStatus.filter(i => i.in_temp).length > 0 ? "text-blue-500" : "text-amber-500")}>Temporary Storage</p>
+            <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-2">
+              <p className={cn("text-2xl md:text-3xl font-bold", itemsWithStatus.filter(i => i.in_temp).length > 0 ? "text-blue-900 dark:text-blue-300" : "text-amber-900 dark:text-amber-300")}>{itemsWithStatus.filter(i => i.in_temp).length}</p>
               {itemsWithStatus.filter(i => i.in_temp).length > 0 && (
                 <button
                   onClick={() => setIsBulkWashModalOpen(true)}
-                  className="px-3 py-1 bg-blue-600 text-white text-xs font-bold rounded-lg hover:bg-blue-700 transition-colors flex items-center gap-1"
+                  className="px-2 md:px-3 py-1 bg-blue-600 text-white text-[9px] md:text-xs font-bold rounded-lg hover:bg-blue-700 transition-colors flex items-center justify-center gap-1"
                 >
                   <Zap size={12} />
-                  Bulk Wash
+                  <span className="hidden sm:inline">Bulk Wash</span>
                 </button>
               )}
             </div>
@@ -332,7 +293,7 @@ export default function WashTracker() {
               }, {} as Record<string, Wash[]>);
 
               // Sort lots by date (most recent first)
-              const sortedLots = Object.entries(washLots)
+              const sortedLots = (Object.entries(washLots) as [string, Wash[]][])
                 .sort((a, b) => {
                   const dateA = new Date(a[0]);
                   const dateB = new Date(b[0]);
