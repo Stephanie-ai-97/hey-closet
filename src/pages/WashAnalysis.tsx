@@ -21,6 +21,7 @@ export default function WashAnalysis() {
   const { itemsWithColours } = useItemColours(items);
   const [washes, setWashes] = useState<Wash[]>([]);
   const [loadingWashes, setLoadingWashes] = useState(true);
+  const [analysisMode, setAnalysisMode] = useState<'bulk' | 'item'>('bulk');
 
   const loadWashes = async () => {
     try {
@@ -56,14 +57,31 @@ export default function WashAnalysis() {
       washCount: washCountByItem[item.id] || 0,
     })).sort((a, b) => b.washCount - a.washCount);
 
-    // Wash by day of week
+    // Wash by day of week - different logic based on mode
     const washByDayOfWeek: Record<number, number> = {};
     const dayNames = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
-    washes.forEach(wash => {
-      const date = new Date(wash.lastwashdate);
-      const dayOfWeek = date.getDay();
-      washByDayOfWeek[dayOfWeek] = (washByDayOfWeek[dayOfWeek] || 0) + 1;
-    });
+    
+    if (analysisMode === 'bulk') {
+      // Count unique wash operations per day (unique created_at dates)
+      const uniqueBulksByDay: Record<number, Set<string>> = {};
+      washes.forEach(wash => {
+        const createdDate = wash.created_at?.split('T')[0] || 'unknown';
+        const date = new Date(wash.created_at || new Date());
+        const dayOfWeek = date.getDay();
+        if (!uniqueBulksByDay[dayOfWeek]) uniqueBulksByDay[dayOfWeek] = new Set();
+        uniqueBulksByDay[dayOfWeek].add(createdDate);
+      });
+      dayNames.forEach((_, index) => {
+        washByDayOfWeek[index] = uniqueBulksByDay[index]?.size || 0;
+      });
+    } else {
+      // Count all wash entries per day (based on lastwashdate)
+      washes.forEach(wash => {
+        const date = new Date(wash.lastwashdate);
+        const dayOfWeek = date.getDay();
+        washByDayOfWeek[dayOfWeek] = (washByDayOfWeek[dayOfWeek] || 0) + 1;
+      });
+    }
 
     const dayOfWeekStats = dayNames.map((name, index) => ({
       day: name,
@@ -71,17 +89,37 @@ export default function WashAnalysis() {
       count: washByDayOfWeek[index] || 0,
     }));
 
-    // Wash by month
+    // Wash by month - different logic based on mode
     const washByMonth: Record<string, number> = {};
     const monthsOrder: string[] = [];
-    washes.forEach(wash => {
-      const date = new Date(wash.lastwashdate);
-      const monthKey = format(date, 'yyyy-MM');
-      if (!washByMonth[monthKey]) {
-        monthsOrder.push(monthKey);
-      }
-      washByMonth[monthKey] = (washByMonth[monthKey] || 0) + 1;
-    });
+    
+    if (analysisMode === 'bulk') {
+      // Count unique wash operations per month (unique created_at dates)
+      const uniqueBulksByMonth: Record<string, Set<string>> = {};
+      washes.forEach(wash => {
+        const createdDate = wash.created_at?.split('T')[0] || 'unknown';
+        const date = new Date(wash.created_at || new Date());
+        const monthKey = format(date, 'yyyy-MM');
+        if (!uniqueBulksByMonth[monthKey]) {
+          uniqueBulksByMonth[monthKey] = new Set();
+          monthsOrder.push(monthKey);
+        }
+        uniqueBulksByMonth[monthKey].add(createdDate);
+      });
+      monthsOrder.forEach(monthKey => {
+        washByMonth[monthKey] = uniqueBulksByMonth[monthKey]?.size || 0;
+      });
+    } else {
+      // Count all wash entries per month (based on lastwashdate)
+      washes.forEach(wash => {
+        const date = new Date(wash.lastwashdate);
+        const monthKey = format(date, 'yyyy-MM');
+        if (!washByMonth[monthKey]) {
+          monthsOrder.push(monthKey);
+        }
+        washByMonth[monthKey] = (washByMonth[monthKey] || 0) + 1;
+      });
+    }
 
     const monthStats = monthsOrder
       .sort()
@@ -94,21 +132,22 @@ export default function WashAnalysis() {
         };
       });
 
-    // Calculate averages
-    const totalWashes = washes.length;
+    // Calculate totals based on mode
+    const totalWashes = analysisMode === 'bulk' 
+      ? new Set(washes.map(w => w.created_at?.split('T')[0] || 'unknown')).size
+      : washes.length;
     const uniqueItemsWashed = uniqueItemIds.size;
-    const uniqueWashBulks = new Set(washes.map(w => w.created_at?.split('T')[0] || 'unknown')).size;
-    const avgWashesPerItem = uniqueItemsWashed > 0 ? (totalWashes / uniqueItemsWashed).toFixed(2) : '0';
+    const avgWashesPerItem = uniqueItemsWashed > 0 ? (washes.length / uniqueItemsWashed).toFixed(2) : '0';
 
     return {
-      totalWashes: uniqueWashBulks,
+      totalWashes,
       uniqueItemsWashed,
       avgWashesPerItem,
       itemWashStats,
       dayOfWeekStats,
       monthStats,
     };
-  }, [washes, itemsWithColours]);
+  }, [washes, itemsWithColours, analysisMode]);
 
   if (itemsLoading || loadingWashes) {
     return <div className="p-8 animate-pulse text-center dark:text-zinc-400">Computing wash analytics...</div>;
@@ -123,12 +162,44 @@ export default function WashAnalysis() {
       title="Wash Analysis"
       subtitle="Deep dive into your washing patterns and item care metrics."
     >
+      {/* Analysis Mode Toggle */}
+      <div className="mb-8 flex justify-end">
+        <div className="inline-flex bg-zinc-100 dark:bg-zinc-800 rounded-full p-1 gap-1">
+          <button
+            onClick={() => setAnalysisMode('bulk')}
+            className={cn(
+              'px-4 py-2 rounded-full text-sm font-semibold transition-all',
+              analysisMode === 'bulk'
+                ? 'bg-indigo-600 text-white shadow-md'
+                : 'text-zinc-700 dark:text-zinc-300 hover:text-zinc-900 dark:hover:text-zinc-100'
+            )}
+          >
+            Bulk Wash (Unique)
+          </button>
+          <button
+            onClick={() => setAnalysisMode('item')}
+            className={cn(
+              'px-4 py-2 rounded-full text-sm font-semibold transition-all',
+              analysisMode === 'item'
+                ? 'bg-indigo-600 text-white shadow-md'
+                : 'text-zinc-700 dark:text-zinc-300 hover:text-zinc-900 dark:hover:text-zinc-100'
+            )}
+          >
+            Washes (Count Each)
+          </button>
+        </div>
+      </div>
+
       {/* Summary Stats */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-10">
         <div className="bg-white dark:bg-zinc-900 rounded-2xl border border-zinc-200 dark:border-zinc-800 p-6 shadow-sm">
-          <p className="text-xs text-zinc-500 dark:text-zinc-400 uppercase font-bold tracking-wider mb-1">Total Wash Bulk</p>
+          <p className="text-xs text-zinc-500 dark:text-zinc-400 uppercase font-bold tracking-wider mb-1">
+            {analysisMode === 'bulk' ? 'Total Wash Bulk' : 'Total Washes'}
+          </p>
           <p className="text-4xl font-bold text-indigo-600 dark:text-indigo-400">{analytics.totalWashes}</p>
-          <p className="text-xs text-zinc-500 dark:text-zinc-400 mt-2">Total wash operations performed</p>
+          <p className="text-xs text-zinc-500 dark:text-zinc-400 mt-2">
+            {analysisMode === 'bulk' ? 'Total wash operations performed' : 'Total item washes'}
+          </p>
         </div>
 
         <div className="bg-white dark:bg-zinc-900 rounded-2xl border border-zinc-200 dark:border-zinc-800 p-6 shadow-sm">
@@ -207,7 +278,9 @@ export default function WashAnalysis() {
             </div>
             <div>
               <h2 className="font-bold text-zinc-900 dark:text-zinc-50">Washes by Day of Week</h2>
-              <p className="text-xs text-zinc-500 dark:text-zinc-400">Distribution across week</p>
+              <p className="text-xs text-zinc-500 dark:text-zinc-400">
+                {analysisMode === 'bulk' ? 'Unique wash operations distribution' : 'Item washes distribution'}
+              </p>
             </div>
           </div>
 
@@ -237,7 +310,9 @@ export default function WashAnalysis() {
             </div>
             <div>
               <h2 className="font-bold text-zinc-900 dark:text-zinc-50">Washes by Month</h2>
-              <p className="text-xs text-zinc-500 dark:text-zinc-400">Historical trends</p>
+              <p className="text-xs text-zinc-500 dark:text-zinc-400">
+                {analysisMode === 'bulk' ? 'Unique wash operations trends' : 'Item washes trends'}
+              </p>
             </div>
           </div>
 
