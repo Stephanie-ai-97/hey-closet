@@ -15,7 +15,8 @@ import {
   Plus,
   Clock,
   History,
-  Zap
+  Zap,
+  ChevronDown
 } from 'lucide-react';
 import { format, differenceInDays } from 'date-fns';
 import { cn } from '../lib/utils';
@@ -29,6 +30,7 @@ export default function WashTracker() {
   const [selectedItem, setSelectedItem] = useState<Item | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isBulkWashModalOpen, setIsBulkWashModalOpen] = useState(false);
+  const [expandedLots, setExpandedLots] = useState<Set<string>>(new Set());
 
   const loadWashes = async () => {
     try {
@@ -275,51 +277,127 @@ export default function WashTracker() {
             <p className="text-zinc-400 dark:text-zinc-500 text-sm">Start logging washes to track your items' cleaning history</p>
           </div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {washes
-              .sort((a, b) => new Date(b.lastwashdate).getTime() - new Date(a.lastwashdate).getTime())
-              .slice(0, 6)
-              .map((wash) => {
-                const item = itemsWithColours.find(i => i.id === wash.dk_itemid);
+          <div className="space-y-4">
+            {(() => {
+              // Group washes by created_at to create wash lots
+              const washLots = washes.reduce((acc, wash) => {
+                const lotKey = wash.created_at ? new Date(wash.created_at).toISOString().split('T')[0] : 'unknown';
+                if (!acc[lotKey]) {
+                  acc[lotKey] = [];
+                }
+                acc[lotKey].push(wash);
+                return acc;
+              }, {} as Record<string, Wash[]>);
+
+              // Sort lots by date (most recent first)
+              const sortedLots = Object.entries(washLots)
+                .sort((a, b) => {
+                  const dateA = new Date(a[0]);
+                  const dateB = new Date(b[0]);
+                  return dateB.getTime() - dateA.getTime();
+                })
+                .slice(0, 10); // Show top 10 lots
+
+              return sortedLots.map(([lotDate, lotWashes], lotIndex) => {
+                const lotId = lotDate;
+                const isExpanded = expandedLots.has(lotId);
+                const firstWash = lotWashes[0];
+                const lotCreatedTime = firstWash.created_at ? new Date(firstWash.created_at) : null;
+
                 return (
-                  <div key={wash.id} className={cn(
-                    "rounded-2xl border p-4 hover:shadow-md transition-shadow",
-                    item?.in_temp
-                      ? "bg-blue-50 dark:bg-blue-950 border-blue-200 dark:border-blue-800"
-                      : "bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800"
-                  )}>
-                    <div className="flex items-start gap-3">
-                      <div className="w-10 h-10 rounded-lg bg-indigo-50 dark:bg-indigo-950 flex items-center justify-center text-indigo-600 shrink-0">
-                        {item ? (
-                          <ItemSVGIcon
-                            itemtype={item.itemtype}
-                            size={24}
-                            majorColour={item.colour?.majorcolour}
-                            minorColour={item.colour?.minorcolour}
-                            color={item.colour?.majorcolour}
-                          />
-                        ) : (
-                          <Droplets size={18} />
-                        )}
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <p className="font-bold text-sm text-zinc-900 dark:text-zinc-50 truncate">
-                          {item?.itemtype || `Item #${wash.dk_itemid}`}
-                        </p>
-                        <div className="flex items-center gap-1 text-xs text-zinc-500 dark:text-zinc-400 mt-1">
-                          <Clock size={12} />
-                          <span>{format(new Date(wash.lastwashdate), 'MMM dd, yyyy')}</span>
-                        </div>
-                        {item && (
-                          <p className="text-xs text-zinc-400 dark:text-zinc-500 mt-2">
-                            Size: {item.itemsize} • Method: {item.itemwashmethod || 'Not specified'}
+                  <div key={lotId} className="bg-white dark:bg-zinc-900 rounded-2xl border border-zinc-200 dark:border-zinc-800 overflow-hidden hover:shadow-md transition-shadow">
+                    {/* Lot Header - Clickable to expand */}
+                    <button
+                      onClick={() => {
+                        const newExpanded = new Set(expandedLots);
+                        if (newExpanded.has(lotId)) {
+                          newExpanded.delete(lotId);
+                        } else {
+                          newExpanded.add(lotId);
+                        }
+                        setExpandedLots(newExpanded);
+                      }}
+                      className="w-full p-4 flex items-center justify-between hover:bg-zinc-50 dark:hover:bg-zinc-800 transition-colors"
+                    >
+                      <div className="flex items-center gap-4 flex-1 text-left">
+                        {/* Lot Number and Date */}
+                        <div className="flex-1">
+                          <div className="flex items-center gap-2 mb-1">
+                            <span className="text-xs font-bold uppercase tracking-widest text-zinc-500 dark:text-zinc-400">Wash Lot #{10 - lotIndex}</span>
+                            <span className="text-xs px-2 py-1 bg-indigo-100 dark:bg-indigo-950 text-indigo-700 dark:text-indigo-300 rounded-full font-medium">
+                              {lotWashes.length} item{lotWashes.length !== 1 ? 's' : ''}
+                            </span>
+                          </div>
+                          <p className="text-sm font-semibold text-zinc-900 dark:text-zinc-50">
+                            {format(new Date(lotDate), 'EEEE, MMMM dd, yyyy')}
                           </p>
-                        )}
+                          {lotCreatedTime && (
+                            <p className="text-xs text-zinc-500 dark:text-zinc-400 mt-0.5">
+                              Logged at {format(lotCreatedTime, 'hh:mm a')}
+                            </p>
+                          )}
+                        </div>
                       </div>
-                    </div>
+
+                      {/* Expand/Collapse Icon */}
+                      <ChevronDown 
+                        size={20} 
+                        className={cn(
+                          "text-zinc-400 transition-transform shrink-0",
+                          isExpanded && "rotate-180"
+                        )}
+                      />
+                    </button>
+
+                    {/* Expanded Items List */}
+                    {isExpanded && (
+                      <div className="border-t border-zinc-200 dark:border-zinc-800">
+                        <div className="divide-y divide-zinc-100 dark:divide-zinc-800">
+                          {lotWashes
+                            .sort((a, b) => new Date(b.lastwashdate).getTime() - new Date(a.lastwashdate).getTime())
+                            .map((wash) => {
+                              const item = itemsWithColours.find(i => i.id === wash.dk_itemid);
+                              return (
+                                <div key={wash.id} className="p-4 hover:bg-zinc-50 dark:hover:bg-zinc-800 transition-colors">
+                                  <div className="flex items-start gap-3">
+                                    <div className="w-10 h-10 rounded-lg bg-indigo-50 dark:bg-indigo-950 flex items-center justify-center text-indigo-600 shrink-0">
+                                      {item ? (
+                                        <ItemSVGIcon
+                                          itemtype={item.itemtype}
+                                          size={24}
+                                          majorColour={item.colour?.majorcolour}
+                                          minorColour={item.colour?.minorcolour}
+                                          color={item.colour?.majorcolour}
+                                        />
+                                      ) : (
+                                        <Droplets size={18} />
+                                      )}
+                                    </div>
+                                    <div className="flex-1 min-w-0">
+                                      <Link to={`/item/${wash.dk_itemid}`} className="font-bold text-sm text-zinc-900 dark:text-zinc-50 hover:underline truncate block">
+                                        {item?.itemtype || `Item #${wash.dk_itemid}`}
+                                      </Link>
+                                      <div className="flex items-center gap-1 text-xs text-zinc-500 dark:text-zinc-400 mt-1">
+                                        <Clock size={12} />
+                                        <span>Washed on {format(new Date(wash.lastwashdate), 'MMM dd, yyyy')}</span>
+                                      </div>
+                                      {item && (
+                                        <p className="text-xs text-zinc-400 dark:text-zinc-500 mt-2">
+                                          Size: {item.itemsize} • Method: {item.itemwashmethod || 'Not specified'}
+                                        </p>
+                                      )}
+                                    </div>
+                                  </div>
+                                </div>
+                              );
+                            })}
+                        </div>
+                      </div>
+                    )}
                   </div>
                 );
-              })}
+              });
+            })()}
           </div>
         )}
       </div>

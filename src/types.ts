@@ -63,6 +63,8 @@ export interface Wash {
   id: number;
   dk_itemid: number;
   lastwashdate: string;
+  created_at?: string;
+  updated_at?: string;
 }
 
 export interface ForLocation {
