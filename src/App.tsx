@@ -61,6 +61,27 @@ const NavItem = ({ to, icon: Icon, label, collapsed }: { to: string, icon: any, 
   );
 };
 
+const MobileNavItem = ({ to, icon: Icon, label }: { to: string, icon: any, label: string }) => {
+  const location = useLocation();
+  const isActive = location.pathname === to || (to !== '/' && location.pathname.startsWith(to));
+
+  return (
+    <Link
+      to={to}
+      aria-label={label}
+      aria-current={isActive ? 'page' : undefined}
+      className={cn(
+        "p-2 rounded-lg transition-colors",
+        isActive
+          ? "bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-900"
+          : "text-zinc-500 hover:text-zinc-900 hover:bg-zinc-100 dark:text-zinc-400 dark:hover:text-zinc-50 dark:hover:bg-zinc-800"
+      )}
+    >
+      <Icon size={24} />
+    </Link>
+  );
+};
+
 const themeOptions: { mode: ThemeMode; icon: any; label: string }[] = [
   { mode: 'light', icon: Sun, label: 'Light' },
   { mode: 'system', icon: Monitor, label: 'System' },
@@ -153,12 +174,12 @@ export default function App() {
 
         {/* Mobile Nav Bar */}
         <div className="md:hidden fixed bottom-0 left-0 right-0 bg-white dark:bg-zinc-900 border-t border-zinc-200 dark:border-zinc-800 flex justify-around p-2 z-50">
-          <Link to="/" className="p-2 text-zinc-500 dark:text-zinc-400"><LayoutDashboard size={24} /></Link>
-          <Link to="/warehouse" className="p-2 text-zinc-500 dark:text-zinc-400"><Warehouse size={24} /></Link>
-          <Link to="/inventory" className="p-2 text-zinc-500 dark:text-zinc-400"><Package size={24} /></Link>
-          <Link to="/search" className="p-2 text-zinc-500 dark:text-zinc-400"><Search size={24} /></Link>
-          <Link to="/washes" className="p-2 text-zinc-500 dark:text-zinc-400"><Droplets size={24} /></Link>
-          <Link to="/wash-analysis" className="p-2 text-zinc-500 dark:text-zinc-400"><BarChart2 size={24} /></Link>
+          <MobileNavItem to="/" icon={LayoutDashboard} label="Dashboard" />
+          <MobileNavItem to="/warehouse" icon={Warehouse} label="Warehouse" />
+          <MobileNavItem to="/inventory" icon={Package} label="Inventory" />
+          <MobileNavItem to="/search" icon={Search} label="Search" />
+          <MobileNavItem to="/washes" icon={Droplets} label="Wash Tracker" />
+          <MobileNavItem to="/wash-analysis" icon={BarChart2} label="Wash Analysis" />
         </div>
 
         {/* Mobile Header */}
