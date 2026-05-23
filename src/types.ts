@@ -107,4 +107,19 @@ export interface ItemPhoto {
   created_at?: string;
 }
 
+export interface Weather {
+  city: string;
+  temperature: number;
+  condition: string;
+  icon: string;
+  lat: number;
+  lon: number;
+  timestamp: number;
+}
+
+export interface GeolocationCoordinates {
+  latitude: number;
+  longitude: number;
+}
+
 export type TableName = 'home' | 'storage' | 'item' | 'colour' | 'material' | 'style' | 'info' | 'wash' | 'for_location' | 'wearlog' | 'outfit' | 'outfititem' | 'itemphoto';

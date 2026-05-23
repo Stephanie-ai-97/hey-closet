@@ -1,5 +1,6 @@
 import { PageContainer } from '../components/PageContainer';
 import { useDashboardData } from '../hooks/useDashboardData';
+import { WeatherWidget } from '../components/WeatherWidget';
 import { 
   Package, 
   Home as HomeIcon, 
@@ -50,7 +51,10 @@ export default function Dashboard() {
         ))}
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        {/* Weather Widget */}
+        <WeatherWidget />
+
         {/* Recently Added Section */}
         <section className="bg-white dark:bg-zinc-900 rounded-2xl border border-zinc-200 dark:border-zinc-800 shadow-sm overflow-hidden">
           <div className="p-6 border-b border-zinc-100 dark:border-zinc-800 flex items-center justify-between">
