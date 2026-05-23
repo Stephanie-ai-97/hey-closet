@@ -1,6 +1,6 @@
 import { Weather, GeolocationCoordinates } from '../types';
 
-const API_KEY = (import.meta as any).env.VITE_OPENWEATHERMAP_API_KEY;
+const API_KEY = (import.meta as any).env.VITE_OPENWEATHERMAP_API_KEY || (process.env as any).VITE_OPENWEATHERMAP_API_KEY;
 const CACHE_DURATION = 15 * 60 * 1000; // 15 minutes in milliseconds
 
 // Cache key
