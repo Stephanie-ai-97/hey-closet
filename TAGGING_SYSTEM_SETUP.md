@@ -1,1 +1,71 @@
-# HeyCloset Tagging System - Setup & Integration Guide\n\n## Quick Start\n\nThis guide walks you through integrating the new scalable tagging system into your HeyCloset application.\n\n## 📋 What's Included\n\n### Database\n- ✅ 4 new tables: `season`, `occasion`, `itemtag`, `customtag`\n- ✅ 7 new fields in `item` table\n- ✅ Comprehensive indexes for performance\n- ✅ Migration scripts with rollback\n- ✅ `item_with_tags` view for complex queries\n\n### Frontend Components\n- ✅ `TagSelector` - Multi-select tag picker\n- ✅ `CategorySelector` - Hierarchical category/subcategory picker\n- ✅ `MultiSelect` - Generic multi-select component\n- ✅ `ColorPicker` - Visual color selector\n- ✅ `ItemModalWithTags` - Full item creation/edit form\n\n### Hooks & Utilities\n- ✅ `useTagMetadata()` - Fetch and cache tag metadata\n- ✅ `useItemTags()` - Manage item tags CRUD\n- ✅ `useTagFilter()` - Filter state management\n- ✅ `useTagSuggestions()` - AI-ready tag generation\n- ✅ `filterItemsByTags()` - Advanced filtering\n- ✅ `sortItems()`, `searchItems()`, `getTagStatistics()`\n\n### Constants\n- ✅ 20+ color options with hex codes\n- ✅ All clothing categories and subcategories\n- ✅ Seasons, styles, occasions, warmth levels, fit types\n- ✅ Helper formatting functions\n\n## 🚀 Installation Steps\n\n### Step 1: Database Migration\n\n1. **Run the main migration** to add schema:\n   ```bash\n   # Connect to your PostgreSQL database\n   psql -U postgres -d heycloset < data/migration_001_tagging_system.sql\n   ```\n\n2. **Populate existing data**:\n   ```bash\n   psql -U postgres -d heycloset < data/migration_002_populate_tags.sql\n   ```\n\n3. **Verify migration**:\n   ```sql\n   SELECT COUNT(*) FROM season;\n   SELECT COUNT(*) FROM occasion;\n   SELECT COUNT(*) FROM item WHERE category IS NOT NULL;\n   ```\n\n### Step 2: Update API Service\n\nThe `src/services/api.ts` has been updated with new table IDs. No additional changes needed.\n\n### Step 3: Import Components in Your App\n\n#### Option A: Use the Enhanced ItemModal\n```tsx\nimport { ItemModalWithTags } from '@/components/ItemModalWithTags';\n\n<ItemModalWithTags\n  closetId={selectedClosetId}\n  onClose={() => setShowModal(false)}\n  onSave={handleItemSaved}\n  existingItem={itemToEdit}\n/>\n```\n\n#### Option B: Use Individual Components\n```tsx\nimport { CategorySelector } from '@/components/CategorySelector';\nimport { TagSelector } from '@/components/TagSelector';\nimport { MultiSelect, ColorPicker } from '@/components/MultiSelect';\n\n// In your form:\n<CategorySelector\n  selectedCategory={category}\n  selectedSubcategory={subcategory}\n  onCategoryChange={setCategory}\n  onSubcategoryChange={setSubcategory}\n/>\n\n<ColorPicker\n  label=\"Color\"\n  selectedColor={color}\n  colors={COLOR_OPTIONS}\n  onColorChange={setColor}\n  allowCustom={true}\n/>\n```\n\n### Step 4: Update Your Pages\n\n#### Dashboard/Inventory Page\n```tsx\nimport { useDashboardData } from '@/hooks/useDashboardData';\nimport { useTagFilter } from '@/hooks/useTagManagement';\nimport { filterItemsByTags, sortItems } from '@/lib/tagFiltering';\n\nfunction InventoryPage() {\n  const { items } = useDashboardData();\n  const filter = useTagFilter();\n\n  const filtered = filterItemsByTags(items, {\n    categories: filter.categoryFilter ? [filter.categoryFilter] : undefined,\n    warmthLevels: filter.warmthFilter ? [filter.warmthFilter] : undefined,\n  });\n\n  const sorted = sortItems(filtered, 'newest');\n\n  return (\n    <div>\n      {/* Filter UI */}\n      {sorted.map(item => <ItemCard item={item} />)}\n    </div>\n  );\n}\n```\n\n#### Advanced Search Page\n```tsx\nimport { useTagMetadata, useTagFilter } from '@/hooks/useTagManagement';\nimport { filterItemsByTags, searchItems } from '@/lib/tagFiltering';\n\nfunction AdvancedSearchPage() {\n  const { seasons, styles, occasions } = useTagMetadata();\n  const filter = useTagFilter();\n  const [searchQuery, setSearchQuery] = useState('');\n\n  const seasonOptions = seasons.map(s => ({\n    id: s.id.toString(),\n    label: s.season_name\n  }));\n\n  let results = filterItemsByTags(items, {\n    seasonIds: filter.seasonIds,\n    styleIds: filter.styleIds,\n    occasionIds: filter.occasionIds,\n  });\n\n  results = searchItems(results, searchQuery);\n\n  return (\n    <div>\n      <input\n        value={searchQuery}\n        onChange={(e) => setSearchQuery(e.target.value)}\n        placeholder=\"Search items...\"\n      />\n      <MultiSelect\n        label=\"Seasons\"\n        options={seasonOptions}\n        selectedIds={filter.seasonIds.map(String)}\n        onSelectionChange={(ids) => filter.setSeasonIds(ids.map(Number))}\n      />\n      {/* Results */}\n    </div>\n  );\n}\n```\n\n## 📁 File Structure\n\n```\nsrc/\n├── components/\n│   ├── TagSelector.tsx          ✨ New\n│   ├── CategorySelector.tsx     ✨ New\n│   ├── MultiSelect.tsx          ✨ New\n│   └── ItemModalWithTags.tsx    ✨ New\n├── hooks/\n│   ├── useTagManagement.ts      ✨ New\n│   └── useDashboardData.ts      (updated)\n├── lib/\n│   ├── tagConstants.ts          ✨ New\n│   ├── tagFiltering.ts          ✨ New\n│   └── utils.ts                 (existing)\n├── types.ts                     (updated)\n└── services/\n    └── api.ts                   (updated)\ndata/\n├── migration_001_tagging_system.sql      ✨ New\n├── migration_002_populate_tags.sql       ✨ New\n└── migration_rollback_tagging_system.sql ✨ New\n```\n\n## 🎨 Component Examples\n\n### Basic Category Selection\n```tsx\nconst [category, setCategory] = useState('');\nconst [subcategory, setSubcategory] = useState('');\n\n<CategorySelector\n  selectedCategory={category}\n  selectedSubcategory={subcategory}\n  onCategoryChange={setCategory}\n  onSubcategoryChange={setSubcategory}\n/>\n```\n\n### Multi-Season Selector\n```tsx\nconst { seasons, loading } = useTagMetadata();\nconst [selectedSeasons, setSelectedSeasons] = useState<number[]>([]);\n\nconst seasonOptions = seasons.map(s => ({\n  id: s.id.toString(),\n  label: formatTagLabel(s.season_name)\n}));\n\n<MultiSelect\n  label=\"Seasons\"\n  options={seasonOptions}\n  selectedIds={selectedSeasons.map(String)}\n  onSelectionChange={(ids) => setSelectedSeasons(ids.map(Number))}\n  maxSelections={4}\n/>\n```\n\n### Color Picker with Custom Colors\n```tsx\nconst [color, setColor] = useState('');\n\n<ColorPicker\n  label=\"Primary Color\"\n  selectedColor={color}\n  colors={COLOR_OPTIONS}\n  onColorChange={setColor}\n  allowCustom={true}  // Allows user to pick any color\n/>\n```\n\n### Item Filtering\n```tsx\nconst [items] = useItems();\nconst filter = useTagFilter();\n\nconst filtered = filterItemsByTags(items, {\n  categories: filter.categoryFilter ? [filter.categoryFilter] : undefined,\n  primaryColors: filter.colorFilter ? [filter.colorFilter] : undefined,\n  warmthLevels: filter.warmthFilter ? [filter.warmthFilter] : undefined,\n});\n\nconst sorted = sortItems(filtered, 'newest');\n```\n\n## 🔍 Type Safety\n\nAll components and hooks are fully typed with TypeScript:\n\n```tsx\nimport {\n  ClothingCategory,\n  Season,\n  Style,\n  Occasion,\n  WarmthLevel,\n  FitType,\n  ColorOption,\n  ItemTag,\n  CustomTag,\n} from '@/types';\n\nimport {\n  CLOTHING_CATEGORIES,\n  COLOR_OPTIONS,\n  SEASONS,\n  STYLES,\n  OCCASIONS,\n  WARMTH_LEVELS,\n  FIT_TYPES,\n} from '@/lib/tagConstants';\n```\n\n## 🚨 Troubleshooting\n\n### Issue: \"Table does not exist\" errors\n**Solution:** Ensure migration has run:\n```bash\npsql -U postgres -d heycloset < data/migration_001_tagging_system.sql\n```\n\n### Issue: Types not found\n**Solution:** Clear node_modules and rebuild:\n```bash\nrm -rf node_modules\nnpm install\nnpm run dev\n```\n\n### Issue: Tags not showing in filters\n**Solution:** Ensure data migration ran:\n```bash\npsql -U postgres -d heycloset < data/migration_002_populate_tags.sql\n```\n\n### Issue: Hook returns empty arrays\n**Solution:** Check loading state and wait for data:\n```tsx\nconst { seasons, loading } = useTagMetadata();\nif (loading) return <div>Loading...</div>;\n```\n\n## 🔄 Migration Troubleshooting\n\nIf you need to rollback (use with caution):\n```bash\npsql -U postgres -d heycloset < data/migration_rollback_tagging_system.sql\n```\n\n## 📊 Database Statistics\n\nCheck your tagging progress:\n```sql\n-- Items with categories\nSELECT COUNT(*) as categorized_items FROM item WHERE category IS NOT NULL;\n\n-- Items with tags\nSELECT COUNT(DISTINCT dk_itemid) as tagged_items FROM itemtag;\n\n-- Custom tags\nSELECT COUNT(*) as custom_tags FROM customtag WHERE tag_category = 'user_defined';\n\n-- Tag distribution\nSELECT tag_name, COUNT(*) as count\nFROM customtag\nGROUP BY tag_name\nORDER BY count DESC;\n```\n\n## 🚀 Performance Tips\n\n1. **Use indexes** - All tag fields have indexes\n2. **Cache metadata** - useTagMetadata() caches results\n3. **Batch operations** - Use Promise.all() for multiple updates\n4. **Use views** - item_with_tags view for complex queries\n5. **Lazy load** - Load tags only when needed\n\n## 🤖 AI Integration (Future)\n\nThe system is ready for AI-generated tags:\n\n```tsx\n// Future: Call AI service to generate tags\nconst aiTags = await generateAITags(itemPhoto);\n\n// Store AI tags\nfor (const tag of aiTags) {\n  await addCustomTag(tag.name, 'ai_generated');\n}\n```\n\n## 📞 Support\n\nFor issues:\n1. Check `TAGGING_SYSTEM_GUIDE.md` for detailed API documentation\n2. Review example usage in this file\n3. Check component props and types\n4. Review test migrations\n\n## ✅ Implementation Checklist\n\n- [ ] Run migration_001_tagging_system.sql\n- [ ] Run migration_002_populate_tags.sql\n- [ ] Verify database changes\n- [ ] Update api.ts ID_FIELDS (done)\n- [ ] Import components in your pages\n- [ ] Update ItemModal or use ItemModalWithTags\n- [ ] Update Inventory/Search pages with filtering\n- [ ] Test item creation with tags\n- [ ] Test filtering by tags\n- [ ] Test custom tag creation\n- [ ] Review TypeScript types\n- [ ] Test on mobile (responsive UI)\n\n---\n\n**Last Updated:** May 23, 2024\n**Version:** 1.0.0\n
+# HeyCloset Tagging System Setup
+
+## Database Model
+
+The tagging migration adds new tag tables only:
+
+- `season`
+- `occasion`
+- `itemtag`
+- `customtag`
+- `item_with_tags` view
+
+It does not add `category`, `subcategory`, `primary_color`, `secondary_color`, `warmth_level`, `fit`, or `brand` to the base `item` table. Those values are either stored in the existing normalized schema or derived for read-only filtering:
+
+- Category/subcategory: derived from `item.itemtype`
+- Primary/secondary color: `info -> colour.colouroverall`, `majorcolour`, `minorcolour`
+- Fit: `info -> style.stylefitsize`
+- Style: `info/itemtag -> style.styletype`
+- Warmth: currently derived from `info -> material.thickness`
+
+## Run Migrations
+
+```bash
+psql -U postgres -d heycloset < data/migration_001_tagging_system.sql
+psql -U postgres -d heycloset < data/migration_002_populate_tags.sql
+```
+
+Verify:
+
+```sql
+SELECT COUNT(*) FROM season;
+SELECT COUNT(*) FROM occasion;
+SELECT COUNT(*) FROM itemtag;
+SELECT COUNT(*) FROM item_with_tags;
+```
+
+Rollback:
+
+```bash
+psql -U postgres -d heycloset < data/migration_rollback_tagging_system.sql
+```
+
+## Frontend Usage
+
+Use the existing generic API service. The API ID normalization already includes:
+
+- `pk_seasonid`
+- `pk_occasionid`
+- `pk_itemtagid`
+- `pk_customtagid`
+
+For creation, save wardrobe metadata to the normalized tables:
+
+1. Create `item` with base fields like `itemtype`, `itemsize`, `itemcost`.
+2. Create `colour`, `material`, and `style`.
+3. Create the `info` junction row linking those records to the item.
+4. Create `itemtag` rows for season/style/occasion tags.
+5. Create `customtag` rows for free-form user or AI tags.
+
+For filtering, either use enriched item data from `item_with_tags` or client-side helpers in `src/lib/tagFiltering.ts`. Base `item` records do not contain color or fit fields by themselves.
+
+## Useful Files
+
+- `src/hooks/useTagManagement.ts`: fetches tag metadata and manages `itemtag`/`customtag`.
+- `src/lib/tagFiltering.ts`: derives category/subcategory from `itemtype` and filters enriched items.
+- `src/components/ItemModalWithTags.tsx`: saves metadata through `colour`, `material`, `style`, and `info`.
+- `src/pages/AdvancedSearchExample.tsx`: example filter UI using derived fields.
+
+## Notes
+
+If a page needs color, fit, warmth, or aggregated tags, do not query only `item` and expect those fields to exist. Query the view if your API exposes it, or join/enrich with `info`, `colour`, `material`, `style`, `itemtag`, `season`, `occasion`, and `customtag`.

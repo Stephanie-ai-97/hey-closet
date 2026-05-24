@@ -25,7 +25,8 @@ export interface Item {
   itemwashmethod: string;
   wash_status: 'clean' | 'washing' | 'drying' | 'dirty';
   in_temp: boolean;
-  // New tagging system fields
+  // Derived fields exposed by item_with_tags or enriched client-side data.
+  // These are not stored on the base item table.
   category?: string;
   subcategory?: string;
   primary_color?: string;
@@ -48,10 +49,11 @@ export interface Season {
 
 export interface Style {
   id: number;
-  style_name: string;
-  styletype?: string;
+  styletype: string;
   styleyear?: number;
   stylefitsize?: string;
+  /** @deprecated Use styletype. Kept optional for older view/API payloads. */
+  style_name?: string;
   created_at?: string;
   updated_at?: string;
 }
@@ -69,7 +71,6 @@ export interface ItemTag {
   dk_seasonid?: number;
   dk_styleid?: number;
   dk_occasionid?: number;
-  tag_type: 'system' | 'user' | 'ai';
   tag_source: 'system' | 'user' | 'ai';
   created_at?: string;
   updated_at?: string;

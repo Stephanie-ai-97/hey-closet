@@ -1,1 +1,206 @@
-import { Item } from '../types';\nimport {\n  Season,\n  ColorOption,\n  WarmthLevel,\n  FitType,\n} from '../lib/tagConstants';\n\nexport interface TagFilterOptions {\n  categories?: string[];\n  subcategories?: string[];\n  primaryColors?: ColorOption[];\n  secondaryColors?: ColorOption[];\n  seasons?: Season[];\n  styles?: string[];\n  occasions?: string[];\n  warmthLevels?: WarmthLevel[];\n  fitTypes?: FitType[];\n  brands?: string[];\n  customTags?: string[];\n  minPrice?: number;\n  maxPrice?: number;\n  minRating?: number;\n}\n\n/**\n * Filter items by tag criteria\n * Supports multiple filtering dimensions for flexible searching\n */\nexport function filterItemsByTags(items: Item[], filters: TagFilterOptions): Item[] {\n  return items.filter((item) => {\n    // Category filter\n    if (filters.categories && filters.categories.length > 0) {\n      if (!item.category || !filters.categories.includes(item.category)) {\n        return false;\n      }\n    }\n\n    // Subcategory filter\n    if (filters.subcategories && filters.subcategories.length > 0) {\n      if (!item.subcategory || !filters.subcategories.includes(item.subcategory)) {\n        return false;\n      }\n    }\n\n    // Primary color filter\n    if (filters.primaryColors && filters.primaryColors.length > 0) {\n      if (!item.primary_color || !filters.primaryColors.includes(item.primary_color as ColorOption)) {\n        return false;\n      }\n    }\n\n    // Secondary color filter\n    if (filters.secondaryColors && filters.secondaryColors.length > 0) {\n      if (!item.secondary_color || !filters.secondaryColors.includes(item.secondary_color as ColorOption)) {\n        return false;\n      }\n    }\n\n    // Warmth level filter\n    if (filters.warmthLevels && filters.warmthLevels.length > 0) {\n      if (!item.warmth_level || !filters.warmthLevels.includes(item.warmth_level as WarmthLevel)) {\n        return false;\n      }\n    }\n\n    // Fit type filter\n    if (filters.fitTypes && filters.fitTypes.length > 0) {\n      if (!item.fit || !filters.fitTypes.includes(item.fit as FitType)) {\n        return false;\n      }\n    }\n\n    // Brand filter\n    if (filters.brands && filters.brands.length > 0) {\n      if (!item.brand || !filters.brands.includes(item.brand)) {\n        return false;\n      }\n    }\n\n    // Price range filter\n    if (filters.minPrice !== undefined && item.itemcost < filters.minPrice) {\n      return false;\n    }\n\n    if (filters.maxPrice !== undefined && item.itemcost > filters.maxPrice) {\n      return false;\n    }\n\n    // Like rating filter\n    if (filters.minRating !== undefined && item.itemlikerating < filters.minRating) {\n      return false;\n    }\n\n    return true;\n  });\n}\n\n/**\n * Extract unique tag values from items for filter options\n */\nexport function extractUniqueTagValues(\n  items: Item[],\n  tagType: keyof Omit<Item, 'id' | 'dk_closet' | 'itemtype' | 'itemsize' | 'isoncamera' | 'itemlikerating' | 'itemcost' | 'itemcomment' | 'itemwashmethod' | 'wash_status' | 'in_temp' | 'created_at' | 'updated_at'>\n): string[] {\n  const values = new Set<string>();\n  items.forEach((item) => {\n    const value = item[tagType];\n    if (value) {\n      values.add(value);\n    }\n  });\n  return Array.from(values).sort();\n}\n\n/**\n * Get statistics about item tags\n */\nexport function getTagStatistics(items: Item[]) {\n  const stats = {\n    categories: new Map<string, number>(),\n    colors: new Map<string, number>(),\n    warmthLevels: new Map<string, number>(),\n    brands: new Map<string, number>(),\n    avgRating: 0,\n    avgPrice: 0,\n    totalItems: items.length,\n  };\n\n  let totalRating = 0;\n  let totalPrice = 0;\n  let itemsWithRating = 0;\n  let itemsWithPrice = 0;\n\n  items.forEach((item) => {\n    // Category stats\n    if (item.category) {\n      stats.categories.set(\n        item.category,\n        (stats.categories.get(item.category) || 0) + 1\n      );\n    }\n\n    // Color stats\n    if (item.primary_color) {\n      stats.colors.set(\n        item.primary_color,\n        (stats.colors.get(item.primary_color) || 0) + 1\n      );\n    }\n\n    // Warmth level stats\n    if (item.warmth_level) {\n      stats.warmthLevels.set(\n        item.warmth_level,\n        (stats.warmthLevels.get(item.warmth_level) || 0) + 1\n      );\n    }\n\n    // Brand stats\n    if (item.brand) {\n      stats.brands.set(\n        item.brand,\n        (stats.brands.get(item.brand) || 0) + 1\n      );\n    }\n\n    // Calculate averages\n    if (item.itemlikerating && item.itemlikerating > 0) {\n      totalRating += item.itemlikerating;\n      itemsWithRating++;\n    }\n\n    if (item.itemcost && item.itemcost > 0) {\n      totalPrice += item.itemcost;\n      itemsWithPrice++;\n    }\n  });\n\n  stats.avgRating = itemsWithRating > 0 ? totalRating / itemsWithRating : 0;\n  stats.avgPrice = itemsWithPrice > 0 ? totalPrice / itemsWithPrice : 0;\n\n  return stats;\n}\n\n/**\n * Sort items by various criteria\n */\nexport function sortItems(\n  items: Item[],\n  sortBy: 'name' | 'price' | 'rating' | 'newest' | 'oldest' | 'random'\n): Item[] {\n  const sorted = [...items];\n\n  switch (sortBy) {\n    case 'price':\n      sorted.sort((a, b) => (a.itemcost ?? 0) - (b.itemcost ?? 0));\n      break;\n    case 'rating':\n      sorted.sort((a, b) => (b.itemlikerating ?? 0) - (a.itemlikerating ?? 0));\n      break;\n    case 'newest':\n      sorted.sort((a, b) => {\n        const dateA = new Date(a.created_at || 0).getTime();\n        const dateB = new Date(b.created_at || 0).getTime();\n        return dateB - dateA;\n      });\n      break;\n    case 'oldest':\n      sorted.sort((a, b) => {\n        const dateA = new Date(a.created_at || 0).getTime();\n        const dateB = new Date(b.created_at || 0).getTime();\n        return dateA - dateB;\n      });\n      break;\n    case 'random':\n      for (let i = sorted.length - 1; i > 0; i--) {\n        const j = Math.floor(Math.random() * (i + 1));\n        [sorted[i], sorted[j]] = [sorted[j], sorted[i]];\n      }\n      break;\n    case 'name':\n    default:\n      sorted.sort((a, b) => (a.itemtype ?? '').localeCompare(b.itemtype ?? ''));\n      break;\n  }\n\n  return sorted;\n}\n\n/**\n * Search items by multiple fields\n */\nexport function searchItems(items: Item[], query: string): Item[] {\n  const lowerQuery = query.toLowerCase();\n\n  return items.filter((item) => {\n    return (\n      (item.itemtype && item.itemtype.toLowerCase().includes(lowerQuery)) ||\n      (item.category && item.category.toLowerCase().includes(lowerQuery)) ||\n      (item.subcategory && item.subcategory.toLowerCase().includes(lowerQuery)) ||\n      (item.primary_color && item.primary_color.toLowerCase().includes(lowerQuery)) ||\n      (item.brand && item.brand.toLowerCase().includes(lowerQuery)) ||\n      (item.itemcomment && item.itemcomment.toLowerCase().includes(lowerQuery))\n    );\n  });\n}\n\nexport default {\n  filterItemsByTags,\n  extractUniqueTagValues,\n  getTagStatistics,\n  sortItems,\n  searchItems,\n};\n
+import { Item } from '../types';
+import { ClothingCategory, ColorOption, FitType, SUBCATEGORIES, WarmthLevel } from './tagConstants';
+
+export interface TagFilterOptions {
+  categories?: string[];
+  subcategories?: string[];
+  primaryColors?: ColorOption[];
+  secondaryColors?: ColorOption[];
+  styles?: string[];
+  occasions?: string[];
+  warmthLevels?: WarmthLevel[];
+  fitTypes?: FitType[];
+  brands?: string[];
+  customTags?: string[];
+  minPrice?: number;
+  maxPrice?: number;
+  minRating?: number;
+}
+
+export type FilterableItem = Item & {
+  seasons?: string[];
+  styles?: string[];
+  occasions?: string[];
+  custom_tags?: string[];
+};
+
+export function getItemSubcategory(item: Pick<Item, 'itemtype' | 'subcategory'>): string {
+  return (item.subcategory || item.itemtype || '').toLowerCase();
+}
+
+export function getItemCategory(item: Pick<Item, 'itemtype' | 'category' | 'subcategory'>): string {
+  if (item.category) return item.category;
+
+  const subcategory = getItemSubcategory(item);
+  const match = Object.entries(SUBCATEGORIES).find(([, subcategories]) =>
+    subcategories.includes(subcategory)
+  );
+
+  return (match?.[0] as ClothingCategory | undefined) ?? 'accessories';
+}
+
+function includesAny<T>(values: T[] | undefined, selected: T[] | undefined): boolean {
+  return !selected?.length || Boolean(values?.some((value) => selected.includes(value)));
+}
+
+export function filterItemsByTags<T extends FilterableItem>(items: T[], filters: TagFilterOptions): T[] {
+  return items.filter((item) => {
+    if (filters.categories?.length && !filters.categories.includes(getItemCategory(item))) {
+      return false;
+    }
+
+    if (filters.subcategories?.length && !filters.subcategories.includes(getItemSubcategory(item))) {
+      return false;
+    }
+
+    if (filters.primaryColors?.length && !filters.primaryColors.includes(item.primary_color as ColorOption)) {
+      return false;
+    }
+
+    if (filters.secondaryColors?.length && !filters.secondaryColors.includes(item.secondary_color as ColorOption)) {
+      return false;
+    }
+
+    if (filters.warmthLevels?.length && !filters.warmthLevels.includes(item.warmth_level as WarmthLevel)) {
+      return false;
+    }
+
+    if (filters.fitTypes?.length && !filters.fitTypes.includes(item.fit as FitType)) {
+      return false;
+    }
+
+    if (filters.brands?.length && (!item.brand || !filters.brands.includes(item.brand))) {
+      return false;
+    }
+
+    if (!includesAny(item.styles, filters.styles)) return false;
+    if (!includesAny(item.occasions, filters.occasions)) return false;
+    if (!includesAny(item.custom_tags, filters.customTags)) return false;
+
+    if (filters.minPrice !== undefined && (item.itemcost ?? 0) < filters.minPrice) return false;
+    if (filters.maxPrice !== undefined && (item.itemcost ?? 0) > filters.maxPrice) return false;
+    if (filters.minRating !== undefined && (item.itemlikerating ?? 0) < filters.minRating) return false;
+
+    return true;
+  });
+}
+
+export function extractUniqueTagValues<T extends FilterableItem>(items: T[], tagType: keyof T): string[] {
+  const values = new Set<string>();
+
+  items.forEach((item) => {
+    const value = item[tagType];
+    if (typeof value === 'string' && value) values.add(value);
+  });
+
+  return Array.from(values).sort();
+}
+
+export function getTagStatistics<T extends FilterableItem>(items: T[]) {
+  const stats = {
+    categories: new Map<string, number>(),
+    colors: new Map<string, number>(),
+    warmthLevels: new Map<string, number>(),
+    brands: new Map<string, number>(),
+    avgRating: 0,
+    avgPrice: 0,
+    totalItems: items.length,
+  };
+
+  let totalRating = 0;
+  let totalPrice = 0;
+  let itemsWithRating = 0;
+  let itemsWithPrice = 0;
+
+  items.forEach((item) => {
+    const category = getItemCategory(item);
+    stats.categories.set(category, (stats.categories.get(category) || 0) + 1);
+
+    if (item.primary_color) {
+      stats.colors.set(item.primary_color, (stats.colors.get(item.primary_color) || 0) + 1);
+    }
+
+    if (item.warmth_level) {
+      stats.warmthLevels.set(item.warmth_level, (stats.warmthLevels.get(item.warmth_level) || 0) + 1);
+    }
+
+    if (item.brand) {
+      stats.brands.set(item.brand, (stats.brands.get(item.brand) || 0) + 1);
+    }
+
+    if (item.itemlikerating > 0) {
+      totalRating += item.itemlikerating;
+      itemsWithRating += 1;
+    }
+
+    if (item.itemcost > 0) {
+      totalPrice += item.itemcost;
+      itemsWithPrice += 1;
+    }
+  });
+
+  stats.avgRating = itemsWithRating > 0 ? totalRating / itemsWithRating : 0;
+  stats.avgPrice = itemsWithPrice > 0 ? totalPrice / itemsWithPrice : 0;
+
+  return stats;
+}
+
+export function sortItems<T extends Item>(
+  items: T[],
+  sortBy: 'name' | 'price' | 'rating' | 'newest' | 'oldest' | 'random'
+): T[] {
+  const sorted = [...items];
+
+  switch (sortBy) {
+    case 'price':
+      sorted.sort((a, b) => (a.itemcost ?? 0) - (b.itemcost ?? 0));
+      break;
+    case 'rating':
+      sorted.sort((a, b) => (b.itemlikerating ?? 0) - (a.itemlikerating ?? 0));
+      break;
+    case 'newest':
+      sorted.sort((a, b) => new Date(b.created_at || 0).getTime() - new Date(a.created_at || 0).getTime());
+      break;
+    case 'oldest':
+      sorted.sort((a, b) => new Date(a.created_at || 0).getTime() - new Date(b.created_at || 0).getTime());
+      break;
+    case 'random':
+      sorted.sort(() => Math.random() - 0.5);
+      break;
+    case 'name':
+    default:
+      sorted.sort((a, b) => (a.itemtype ?? '').localeCompare(b.itemtype ?? ''));
+      break;
+  }
+
+  return sorted;
+}
+
+export function searchItems<T extends FilterableItem>(items: T[], query: string): T[] {
+  const lowerQuery = query.trim().toLowerCase();
+  if (!lowerQuery) return items;
+
+  return items.filter((item) =>
+    [
+      item.itemtype,
+      getItemCategory(item),
+      getItemSubcategory(item),
+      item.primary_color,
+      item.secondary_color,
+      item.brand,
+      item.fit,
+      item.warmth_level,
+      item.itemcomment,
+    ].some((value) => value?.toLowerCase().includes(lowerQuery))
+  );
+}
+
+export default {
+  filterItemsByTags,
+  extractUniqueTagValues,
+  getItemCategory,
+  getItemSubcategory,
+  getTagStatistics,
+  sortItems,
+  searchItems,
+};

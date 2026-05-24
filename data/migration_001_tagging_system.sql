@@ -2,42 +2,30 @@
 -- MIGRATION: Add Tagging System to HeyCloset Database
 -- Version: 1.0.0
 -- Date: 2024-05-23
--- Purpose: Extend clothing item schema to support scalable tagging
+-- Purpose: Add scalable tag tables without duplicating item metadata
 -- ============================================================
 
--- ============================================================
--- 1. ALTER EXISTING ITEM TABLE
--- ============================================================
--- Add new columns for extended tagging support
-ALTER TABLE item ADD COLUMN IF NOT EXISTS category VARCHAR(100);
-ALTER TABLE item ADD COLUMN IF NOT EXISTS subcategory VARCHAR(100);
-ALTER TABLE item ADD COLUMN IF NOT EXISTS primary_color VARCHAR(100);
-ALTER TABLE item ADD COLUMN IF NOT EXISTS secondary_color VARCHAR(100);
-ALTER TABLE item ADD COLUMN IF NOT EXISTS brand VARCHAR(100);
-ALTER TABLE item ADD COLUMN IF NOT EXISTS warmth_level VARCHAR(50);
-ALTER TABLE item ADD COLUMN IF NOT EXISTS fit VARCHAR(50);
-
--- Add indexes for better query performance on new columns
-CREATE INDEX IF NOT EXISTS idx_item_category ON item(category);
-CREATE INDEX IF NOT EXISTS idx_item_subcategory ON item(subcategory);
-CREATE INDEX IF NOT EXISTS idx_item_primary_color ON item(primary_color);
-CREATE INDEX IF NOT EXISTS idx_item_secondary_color ON item(secondary_color);
-CREATE INDEX IF NOT EXISTS idx_item_brand ON item(brand);
-CREATE INDEX IF NOT EXISTS idx_item_warmth_level ON item(warmth_level);
-CREATE INDEX IF NOT EXISTS idx_item_fit ON item(fit);
+-- The base schema already stores dimensional item metadata in normalized tables:
+-- - item.itemtype and item.itemsize
+-- - colour.colouroverall, colour.majorcolour, colour.minorcolour via info
+-- - style.styletype, style.styleyear, style.stylefitsize via info
+-- - material.texture, material.softness, material.thickness via info
+--
+-- Do not add duplicate columns such as item.primary_color, item.secondary_color,
+-- item.fit, or style.style_name. The item_with_tags view below exposes
+-- frontend-friendly aliases derived from the existing normalized schema.
 
 -- ============================================================
--- 2. CREATE NEW SEASON TABLE
+-- 1. CREATE SEASON TABLE
 -- ============================================================
-CREATE TABLE IF NOT EXISTS season (
+CREATE TABLE IF NOT EXISTS public.season (
     pk_seasonid INT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
     season_name VARCHAR(100) NOT NULL UNIQUE,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
--- Insert default seasons
-INSERT INTO season (season_name) VALUES 
+INSERT INTO public.season (season_name) VALUES
 ('spring'),
 ('summer'),
 ('fall'),
@@ -45,20 +33,24 @@ INSERT INTO season (season_name) VALUES
 ('all-season')
 ON CONFLICT (season_name) DO NOTHING;
 
-CREATE INDEX IF NOT EXISTS idx_season_name ON season(season_name);
+CREATE INDEX IF NOT EXISTS idx_season_name ON public.season(season_name);
+
+DROP TRIGGER IF EXISTS trg_season_updated ON public.season;
+CREATE TRIGGER trg_season_updated BEFORE
+UPDATE ON public.season FOR EACH ROW
+EXECUTE FUNCTION update_updated_at_column();
 
 -- ============================================================
--- 3. CREATE NEW OCCASION TABLE
+-- 2. CREATE OCCASION TABLE
 -- ============================================================
-CREATE TABLE IF NOT EXISTS occasion (
+CREATE TABLE IF NOT EXISTS public.occasion (
     pk_occasionid INT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
     occasion_name VARCHAR(100) NOT NULL UNIQUE,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
--- Insert default occasions
-INSERT INTO occasion (occasion_name) VALUES 
+INSERT INTO public.occasion (occasion_name) VALUES
 ('everyday'),
 ('work'),
 ('business-meeting'),
@@ -75,42 +67,46 @@ INSERT INTO occasion (occasion_name) VALUES
 ('interview')
 ON CONFLICT (occasion_name) DO NOTHING;
 
-CREATE INDEX IF NOT EXISTS idx_occasion_name ON occasion(occasion_name);
+CREATE INDEX IF NOT EXISTS idx_occasion_name ON public.occasion(occasion_name);
+
+DROP TRIGGER IF EXISTS trg_occasion_updated ON public.occasion;
+CREATE TRIGGER trg_occasion_updated BEFORE
+UPDATE ON public.occasion FOR EACH ROW
+EXECUTE FUNCTION update_updated_at_column();
 
 -- ============================================================
--- 4. UPDATE STYLE TABLE
+-- 3. SEED STYLE VALUES IN EXISTING STYLE TABLE
 -- ============================================================
--- Note: The existing style table is being retained but we're adding
--- a style_name column to support the new tagging system
-ALTER TABLE style ADD COLUMN IF NOT EXISTS style_name VARCHAR(100);
+INSERT INTO public.style (styletype)
+SELECT seed.styletype
+FROM (VALUES
+    ('casual'),
+    ('formal'),
+    ('business'),
+    ('sporty'),
+    ('bohemian'),
+    ('minimalist'),
+    ('vintage'),
+    ('trendy'),
+    ('preppy'),
+    ('edgy'),
+    ('romantic'),
+    ('athletic'),
+    ('classic')
+) AS seed(styletype)
+WHERE NOT EXISTS (
+    SELECT 1
+    FROM public.style st
+    WHERE st.styletype = seed.styletype
+);
 
--- Copy existing styletype values to style_name if they don't exist
-UPDATE style SET style_name = styletype WHERE style_name IS NULL;
-
--- Insert additional style records for common styles if not exists
-INSERT INTO style (style_name, styletype) VALUES 
-('casual', 'casual'),
-('formal', 'formal'),
-('business', 'business'),
-('sporty', 'sporty'),
-('bohemian', 'bohemian'),
-('minimalist', 'minimalist'),
-('vintage', 'vintage'),
-('trendy', 'trendy'),
-('preppy', 'preppy'),
-('edgy', 'edgy'),
-('romantic', 'romantic'),
-('athletic', 'athletic'),
-('classic', 'classic')
-ON CONFLICT DO NOTHING;
-
-CREATE INDEX IF NOT EXISTS idx_style_name ON style(style_name);
+CREATE INDEX IF NOT EXISTS idx_style_styletype ON public.style(styletype);
+CREATE INDEX IF NOT EXISTS idx_style_stylefitsize ON public.style(stylefitsize);
 
 -- ============================================================
--- 5. CREATE ITEMTAG JUNCTION TABLE
+-- 4. CREATE ITEMTAG JUNCTION TABLE
 -- ============================================================
--- Links items to their season, style, and occasion tags
-CREATE TABLE IF NOT EXISTS itemtag (
+CREATE TABLE IF NOT EXISTS public.itemtag (
     pk_itemtagid INT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
     dk_itemid INT NOT NULL,
     dk_seasonid INT,
@@ -119,106 +115,191 @@ CREATE TABLE IF NOT EXISTS itemtag (
     tag_source VARCHAR(20) CHECK (tag_source IN ('system', 'user', 'ai')) DEFAULT 'user',
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (dk_itemid) REFERENCES item(pk_itemid) ON DELETE CASCADE,
-    FOREIGN KEY (dk_seasonid) REFERENCES season(pk_seasonid) ON DELETE CASCADE,
-    FOREIGN KEY (dk_styleid) REFERENCES style(pk_styleid) ON DELETE CASCADE,
-    FOREIGN KEY (dk_occasionid) REFERENCES occasion(pk_occasionid) ON DELETE CASCADE,
-    UNIQUE(dk_itemid, dk_seasonid, dk_styleid, dk_occasionid)
+    CONSTRAINT fk_itemtag_item FOREIGN KEY (dk_itemid) REFERENCES public.item(pk_itemid) ON DELETE CASCADE,
+    CONSTRAINT fk_itemtag_season FOREIGN KEY (dk_seasonid) REFERENCES public.season(pk_seasonid) ON DELETE CASCADE,
+    CONSTRAINT fk_itemtag_style FOREIGN KEY (dk_styleid) REFERENCES public.style(pk_styleid) ON DELETE CASCADE,
+    CONSTRAINT fk_itemtag_occasion FOREIGN KEY (dk_occasionid) REFERENCES public.occasion(pk_occasionid) ON DELETE CASCADE,
+    CONSTRAINT chk_itemtag_has_tag CHECK (
+        dk_seasonid IS NOT NULL
+        OR dk_styleid IS NOT NULL
+        OR dk_occasionid IS NOT NULL
+    )
 );
 
-CREATE INDEX IF NOT EXISTS idx_itemtag_item ON itemtag(dk_itemid);
-CREATE INDEX IF NOT EXISTS idx_itemtag_season ON itemtag(dk_seasonid);
-CREATE INDEX IF NOT EXISTS idx_itemtag_style ON itemtag(dk_styleid);
-CREATE INDEX IF NOT EXISTS idx_itemtag_occasion ON itemtag(dk_occasionid);
+CREATE UNIQUE INDEX IF NOT EXISTS uq_itemtag_season
+ON public.itemtag(dk_itemid, dk_seasonid)
+WHERE dk_seasonid IS NOT NULL;
+
+CREATE UNIQUE INDEX IF NOT EXISTS uq_itemtag_style
+ON public.itemtag(dk_itemid, dk_styleid)
+WHERE dk_styleid IS NOT NULL;
+
+CREATE UNIQUE INDEX IF NOT EXISTS uq_itemtag_occasion
+ON public.itemtag(dk_itemid, dk_occasionid)
+WHERE dk_occasionid IS NOT NULL;
+
+CREATE INDEX IF NOT EXISTS idx_itemtag_item ON public.itemtag(dk_itemid);
+CREATE INDEX IF NOT EXISTS idx_itemtag_season ON public.itemtag(dk_seasonid);
+CREATE INDEX IF NOT EXISTS idx_itemtag_style ON public.itemtag(dk_styleid);
+CREATE INDEX IF NOT EXISTS idx_itemtag_occasion ON public.itemtag(dk_occasionid);
+CREATE INDEX IF NOT EXISTS idx_itemtag_source_created ON public.itemtag(tag_source, created_at);
+
+DROP TRIGGER IF EXISTS trg_itemtag_updated ON public.itemtag;
+CREATE TRIGGER trg_itemtag_updated BEFORE
+UPDATE ON public.itemtag FOR EACH ROW
+EXECUTE FUNCTION update_updated_at_column();
 
 -- ============================================================
--- 6. CREATE CUSTOMTAG TABLE
+-- 5. CREATE CUSTOMTAG TABLE
 -- ============================================================
--- Stores user-defined and AI-generated custom tags for items
-CREATE TABLE IF NOT EXISTS customtag (
+CREATE TABLE IF NOT EXISTS public.customtag (
     pk_customtagid INT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
     dk_itemid INT NOT NULL,
     tag_name VARCHAR(100) NOT NULL,
     tag_category VARCHAR(50) CHECK (tag_category IN ('user_defined', 'ai_generated')) DEFAULT 'user_defined',
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (dk_itemid) REFERENCES item(pk_itemid) ON DELETE CASCADE,
-    UNIQUE(dk_itemid, tag_name, tag_category)
+    CONSTRAINT fk_customtag_item FOREIGN KEY (dk_itemid) REFERENCES public.item(pk_itemid) ON DELETE CASCADE,
+    CONSTRAINT uq_customtag UNIQUE(dk_itemid, tag_name, tag_category)
 );
 
-CREATE INDEX IF NOT EXISTS idx_customtag_item ON customtag(dk_itemid);
-CREATE INDEX IF NOT EXISTS idx_customtag_name ON customtag(tag_name);
-CREATE INDEX IF NOT EXISTS idx_customtag_category ON customtag(tag_category);
+CREATE INDEX IF NOT EXISTS idx_customtag_item ON public.customtag(dk_itemid);
+CREATE INDEX IF NOT EXISTS idx_customtag_name ON public.customtag(tag_name);
+CREATE INDEX IF NOT EXISTS idx_customtag_category ON public.customtag(tag_category);
+
+DROP TRIGGER IF EXISTS trg_customtag_updated ON public.customtag;
+CREATE TRIGGER trg_customtag_updated BEFORE
+UPDATE ON public.customtag FOR EACH ROW
+EXECUTE FUNCTION update_updated_at_column();
 
 -- ============================================================
--- 7. CREATE COMPREHENSIVE FILTER VIEW
+-- 6. CREATE COMPREHENSIVE FILTER VIEW
 -- ============================================================
--- This view makes it easier to query items with all their tags
-CREATE OR REPLACE VIEW item_with_tags AS
-SELECT 
-    i.pk_itemid as item_id,
+CREATE OR REPLACE VIEW public.item_with_tags AS
+SELECT
+    i.pk_itemid AS item_id,
     i.dk_closet,
     i.itemtype,
     i.itemsize,
-    i.category,
-    i.subcategory,
-    i.primary_color,
-    i.secondary_color,
-    i.brand,
-    i.warmth_level,
-    i.fit,
+    (CASE LOWER(i.itemtype)
+        WHEN 'shirt' THEN 'tops'
+        WHEN 'blouse' THEN 'tops'
+        WHEN 't-shirt' THEN 'tops'
+        WHEN 'tshirt' THEN 'tops'
+        WHEN 'sweater' THEN 'tops'
+        WHEN 'cardigan' THEN 'tops'
+        WHEN 'hoodie' THEN 'tops'
+        WHEN 'crop-top' THEN 'tops'
+        WHEN 'tank-top' THEN 'tops'
+        WHEN 'polo' THEN 'tops'
+        WHEN 'thermal' THEN 'tops'
+        WHEN 'jeans' THEN 'bottoms'
+        WHEN 'pants' THEN 'bottoms'
+        WHEN 'chinos' THEN 'bottoms'
+        WHEN 'shorts' THEN 'bottoms'
+        WHEN 'skirt' THEN 'bottoms'
+        WHEN 'leggings' THEN 'bottoms'
+        WHEN 'joggers' THEN 'bottoms'
+        WHEN 'cargo' THEN 'bottoms'
+        WHEN 'dress' THEN 'dresses'
+        WHEN 'casual-dress' THEN 'dresses'
+        WHEN 'cocktail-dress' THEN 'dresses'
+        WHEN 'evening-dress' THEN 'dresses'
+        WHEN 'maxi-dress' THEN 'dresses'
+        WHEN 'mini-dress' THEN 'dresses'
+        WHEN 'jacket' THEN 'outerwear'
+        WHEN 'coat' THEN 'outerwear'
+        WHEN 'blazer' THEN 'outerwear'
+        WHEN 'puffer' THEN 'outerwear'
+        WHEN 'trench' THEN 'outerwear'
+        WHEN 'sneakers' THEN 'shoes'
+        WHEN 'heels' THEN 'shoes'
+        WHEN 'flats' THEN 'shoes'
+        WHEN 'boots' THEN 'shoes'
+        WHEN 'sandals' THEN 'shoes'
+        WHEN 'scarf' THEN 'accessories'
+        WHEN 'hat' THEN 'accessories'
+        WHEN 'belt' THEN 'accessories'
+        WHEN 'bag' THEN 'accessories'
+        WHEN 'watch' THEN 'accessories'
+        WHEN 'yoga-pants' THEN 'activewear'
+        WHEN 'gym-shirt' THEN 'activewear'
+        WHEN 'workout-shorts' THEN 'activewear'
+        WHEN 'pajamas' THEN 'sleepwear'
+        WHEN 'nightgown' THEN 'sleepwear'
+        ELSE 'accessories'
+    END)::VARCHAR(100) AS category,
+    LOWER(i.itemtype)::VARCHAR(100) AS subcategory,
+    LOWER(COALESCE(metadata.colouroverall, metadata.majorcolour))::VARCHAR(100) AS primary_color,
+    LOWER(metadata.minorcolour)::VARCHAR(100) AS secondary_color,
+    NULL::VARCHAR(100) AS brand,
+    LOWER(metadata.thickness)::VARCHAR(50) AS warmth_level,
+    LOWER(metadata.stylefitsize)::VARCHAR(50) AS fit,
     i.itemlikerating,
     i.itemcost,
     i.itemcomment,
     i.itemwashmethod,
     i.isoncamera,
-    i.wash_status,
-    i.in_temp,
+    NULL::VARCHAR(20) AS wash_status,
+    NULL::BOOLEAN AS in_temp,
     i.created_at,
     i.updated_at,
-    json_agg(DISTINCT s.season_name) FILTER (WHERE s.season_name IS NOT NULL) as seasons,
-    json_agg(DISTINCT st.style_name) FILTER (WHERE st.style_name IS NOT NULL) as styles,
-    json_agg(DISTINCT o.occasion_name) FILTER (WHERE o.occasion_name IS NOT NULL) as occasions,
-    json_agg(DISTINCT ct.tag_name) FILTER (WHERE ct.tag_name IS NOT NULL) as custom_tags
-FROM item i
-LEFT JOIN itemtag it ON i.pk_itemid = it.dk_itemid
-LEFT JOIN season s ON it.dk_seasonid = s.pk_seasonid
-LEFT JOIN style st ON it.dk_styleid = st.pk_styleid
-LEFT JOIN occasion o ON it.dk_occasionid = o.pk_occasionid
-LEFT JOIN customtag ct ON i.pk_itemid = ct.dk_itemid
-GROUP BY i.pk_itemid;
+    COALESCE(
+        json_agg(DISTINCT s.season_name) FILTER (WHERE s.season_name IS NOT NULL),
+        '[]'::json
+    ) AS seasons,
+    COALESCE(
+        json_agg(DISTINCT st.styletype) FILTER (WHERE st.styletype IS NOT NULL),
+        '[]'::json
+    ) AS styles,
+    COALESCE(
+        json_agg(DISTINCT o.occasion_name) FILTER (WHERE o.occasion_name IS NOT NULL),
+        '[]'::json
+    ) AS occasions,
+    COALESCE(
+        json_agg(DISTINCT ct.tag_name) FILTER (WHERE ct.tag_name IS NOT NULL),
+        '[]'::json
+    ) AS custom_tags
+FROM public.item i
+LEFT JOIN LATERAL (
+    SELECT
+        c.colouroverall,
+        c.majorcolour,
+        c.minorcolour,
+        st_info.stylefitsize,
+        m.thickness
+    FROM public.info inf
+    LEFT JOIN public.colour c ON inf.dk_colourid = c.pk_colourid
+    LEFT JOIN public.style st_info ON inf.dk_styleid = st_info.pk_styleid
+    LEFT JOIN public.material m ON inf.dk_material = m.pk_material
+    WHERE inf.dk_itemid = i.pk_itemid
+    ORDER BY inf.pk_infoid
+    LIMIT 1
+) metadata ON TRUE
+LEFT JOIN public.itemtag it ON i.pk_itemid = it.dk_itemid
+LEFT JOIN public.season s ON it.dk_seasonid = s.pk_seasonid
+LEFT JOIN public.style st ON it.dk_styleid = st.pk_styleid
+LEFT JOIN public.occasion o ON it.dk_occasionid = o.pk_occasionid
+LEFT JOIN public.customtag ct ON i.pk_itemid = ct.dk_itemid
+GROUP BY
+    i.pk_itemid,
+    metadata.colouroverall,
+    metadata.majorcolour,
+    metadata.minorcolour,
+    metadata.thickness,
+    metadata.stylefitsize;
 
 -- ============================================================
--- 8. CREATE MIGRATION TRACKING TABLE
+-- 7. CREATE MIGRATION TRACKING TABLE
 -- ============================================================
--- Optional: Track which migrations have been applied
-CREATE TABLE IF NOT EXISTS schema_migrations (
+CREATE TABLE IF NOT EXISTS public.schema_migrations (
     version VARCHAR(50) PRIMARY KEY,
     applied_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
-INSERT INTO schema_migrations (version) VALUES ('tagging-system-v1.0') 
+INSERT INTO public.schema_migrations (version) VALUES ('tagging-system-v1.0')
 ON CONFLICT DO NOTHING;
 
 -- ============================================================
--- 9. INDEXES FOR PERFORMANCE
--- ============================================================
--- Create composite indexes for common queries
-CREATE INDEX IF NOT EXISTS idx_item_category_subcategory ON item(category, subcategory);
-CREATE INDEX IF NOT EXISTS idx_item_color_warmth ON item(primary_color, warmth_level);
-CREATE INDEX IF NOT EXISTS idx_itemtag_source_created ON itemtag(tag_source, created_at);
-
--- ============================================================
 -- END OF MIGRATION
--- ============================================================
--- Summary of changes:
--- 1. Extended item table with 7 new columns (category, subcategory, colors, brand, warmth, fit)
--- 2. Created season table with default seasons
--- 3. Created occasion table with default occasions
--- 4. Updated style table to support new tagging system
--- 5. Created itemtag junction table for season/style/occasion associations
--- 6. Created customtag table for user-defined and AI-generated tags
--- 7. Created item_with_tags view for easy filtering and querying
--- 8. Added comprehensive indexes for query performance
--- 9. Created schema_migrations table for tracking
 -- ============================================================

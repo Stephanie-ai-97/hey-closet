@@ -198,4 +198,36 @@ export const ColorPicker: React.FC<ColorPickerProps> = ({
           <div
             className="w-5 h-5 rounded border border-gray-300"
             style={{ backgroundColor: colorMap[selectedColor.toLowerCase()] || selectedColor }}
-          />\n          <span className="text-gray-700">{formatTagLabel(selectedColor)}</span>\n        </div>\n      )}\n\n      {/* Custom Color Option */}\n      {allowCustom && (\n        <div className=\"mt-3 pt-3 border-t border-gray-200\">\n          <button\n            type=\"button\"\n            onClick={() => setShowCustom(!showCustom)}\n            className=\"text-sm text-blue-600 hover:text-blue-700 font-medium\"\n          >\n            {showCustom ? 'Hide custom color' : 'Add custom color'}\n          </button>\n          {showCustom && (\n            <input\n              type=\"color\"\n              value={customColor || '#000000'}\n              onChange={(e) => {\n                setCustomColor(e.target.value);\n                onColorChange(e.target.value);\n              }}\n              className=\"mt-2 w-full h-10 rounded-lg cursor-pointer\"\n            />\n          )}\n        </div>\n      )}\n    </div>\n  );\n};\n\nexport default MultiSelect;\n
+          />
+          <span className="text-gray-700">{formatTagLabel(selectedColor)}</span>
+        </div>
+      )}
+
+      {/* Custom Color Option */}
+      {allowCustom && (
+        <div className="mt-3 pt-3 border-t border-gray-200">
+          <button
+            type="button"
+            onClick={() => setShowCustom(!showCustom)}
+            className="text-sm text-blue-600 hover:text-blue-700 font-medium"
+          >
+            {showCustom ? 'Hide custom color' : 'Add custom color'}
+          </button>
+          {showCustom && (
+            <input
+              type="color"
+              value={customColor || '#000000'}
+              onChange={(e) => {
+                setCustomColor(e.target.value);
+                onColorChange(e.target.value);
+              }}
+              className="mt-2 w-full h-10 rounded-lg cursor-pointer"
+            />
+          )}
+        </div>
+      )}
+    </div>
+  );
+};
+
+export default MultiSelect;

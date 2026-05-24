@@ -2,55 +2,41 @@
 -- ROLLBACK MIGRATION: Remove Tagging System
 -- Version: 1.0.0 Rollback
 -- Date: 2024-05-23
--- WARNING: This will remove all tagging data. Use with caution!
+-- WARNING: This removes tagging tables and tag data. Base item,
+-- colour, style, material, and info data remain intact.
 -- ============================================================
 
 -- ============================================================
--- 1. DROP VIEWS
+-- 1. DROP VIEW
 -- ============================================================
-DROP VIEW IF EXISTS item_with_tags;
+DROP VIEW IF EXISTS public.item_with_tags;
 
 -- ============================================================
--- 2. DROP TABLES
+-- 2. DROP TABLES OWNED BY THE TAGGING MIGRATION
 -- ============================================================
-DROP TABLE IF EXISTS customtag;
-DROP TABLE IF EXISTS itemtag;
-DROP TABLE IF EXISTS occasion;
-DROP TABLE IF EXISTS season;
+DROP TABLE IF EXISTS public.customtag;
+DROP TABLE IF EXISTS public.itemtag;
+DROP TABLE IF EXISTS public.occasion;
+DROP TABLE IF EXISTS public.season;
 
 -- ============================================================
--- 3. REMOVE COLUMNS FROM ITEM TABLE
+-- 3. REMOVE MIGRATION RECORDS AND EMPTY TRACKING TABLE
 -- ============================================================
-ALTER TABLE item DROP COLUMN IF EXISTS category;
-ALTER TABLE item DROP COLUMN IF EXISTS subcategory;
-ALTER TABLE item DROP COLUMN IF EXISTS primary_color;
-ALTER TABLE item DROP COLUMN IF EXISTS secondary_color;
-ALTER TABLE item DROP COLUMN IF EXISTS brand;
-ALTER TABLE item DROP COLUMN IF EXISTS warmth_level;
-ALTER TABLE item DROP COLUMN IF EXISTS fit;
+DO $$
+BEGIN
+    IF to_regclass('public.schema_migrations') IS NOT NULL THEN
+        DELETE FROM public.schema_migrations
+        WHERE version IN (
+            'tagging-system-v1.0',
+            'data-migration-populate-tags-v1.1'
+        );
 
--- ============================================================
--- 4. REMOVE COLUMN FROM STYLE TABLE
--- ============================================================
-ALTER TABLE style DROP COLUMN IF EXISTS style_name;
-
--- ============================================================
--- 5. REMOVE MIGRATION RECORDS
--- ============================================================
-DELETE FROM schema_migrations 
-WHERE version IN (
-    'tagging-system-v1.0',
-    'data-migration-populate-tags-v1.1'
-);
-
--- ============================================================
--- 6. DROP FUNCTION IF EXISTS
--- ============================================================
-DROP FUNCTION IF EXISTS get_item_category(VARCHAR);
+        IF NOT EXISTS (SELECT 1 FROM public.schema_migrations) THEN
+            DROP TABLE public.schema_migrations;
+        END IF;
+    END IF;
+END $$;
 
 -- ============================================================
 -- END OF ROLLBACK
--- ============================================================
--- All tagging system components have been removed.
--- Your item data remains intact but without the new fields.
 -- ============================================================

@@ -1,1 +1,140 @@
-import React, { useState, useMemo } from 'react';\nimport { Search, RotateCcw } from 'lucide-react';\nimport { useTagMetadata, useTagFilter } from '../hooks/useTagManagement';\nimport { useDashboardData } from '../hooks/useDashboardData';\nimport { filterItemsByTags, searchItems, sortItems, getTagStatistics } from '../lib/tagFiltering';\nimport { COLOR_OPTIONS, formatTagLabel, getWarmthLevelsArray, getStylesArray, getOccasionsArray } from '../lib/tagConstants';\nimport { MultiSelect, ColorPicker } from '../components/MultiSelect';\nimport { CategorySelector } from '../components/CategorySelector';\n\n/**\n * Advanced Search Page with Tagging System\n * Demonstrates filtering, searching, and sorting items by tags\n */\nexport const AdvancedSearchExample: React.FC = () => {\n  const { items = [], loading, error } = useDashboardData();\n  const { seasons, styles, occasions } = useTagMetadata();\n  const filter = useTagFilter();\n  const [searchQuery, setSearchQuery] = useState('');\n  const [sortBy, setSortBy] = useState<'newest' | 'price' | 'rating'>('newest');\n\n  // Convert metadata to option format\n  const seasonOptions = seasons.map((s) => ({\n    id: s.id.toString(),\n    label: formatTagLabel(s.season_name),\n  }));\n\n  const styleOptions = styles.map((s) => ({\n    id: s.id.toString(),\n    label: formatTagLabel(s.style_name || s.styletype || 'unknown'),\n  }));\n\n  const occasionOptions = occasions.map((o) => ({\n    id: o.id.toString(),\n    label: formatTagLabel(o.occasion_name),\n  }));\n\n  const warmthOptions = getWarmthLevelsArray().map((w) => ({\n    id: w,\n    label: formatTagLabel(w),\n  }));\n\n  // Apply all filters\n  const filteredItems = useMemo(() => {\n    let results = items;\n\n    // Filter by tags and metadata\n    results = filterItemsByTags(results, {\n      categories: filter.categoryFilter ? [filter.categoryFilter] : undefined,\n      primaryColors: filter.colorFilter ? [filter.colorFilter] : undefined,\n      warmthLevels: filter.warmthFilter ? [filter.warmthFilter] : undefined,\n    });\n\n    // Search\n    results = searchItems(results, searchQuery);\n\n    // Sort\n    results = sortItems(results, sortBy);\n\n    return results;\n  }, [items, filter, searchQuery, sortBy]);\n\n  const stats = useMemo(() => getTagStatistics(items), [items]);\n\n  const handleResetFilters = () => {\n    filter.resetFilters();\n    setSearchQuery('');\n    setSortBy('newest');\n  };\n\n  if (loading) {\n    return (\n      <div className=\"flex items-center justify-center h-96\">\n        <div className=\"text-gray-500\">Loading items...</div>\n      </div>\n    );\n  }\n\n  if (error) {\n    return (\n      <div className=\"bg-red-50 border border-red-200 rounded-lg p-4 text-red-800\">\n        Error loading items: {error.message}\n      </div>\n    );\n  }\n\n  return (\n    <div className=\"max-w-7xl mx-auto p-6\">\n      <div className=\"mb-8\">\n        <h1 className=\"text-3xl font-bold text-gray-900 mb-2\">Advanced Search</h1>\n        <p className=\"text-gray-600\">Find items using multiple filters and tags</p>\n      </div>\n\n      <div className=\"grid grid-cols-1 lg:grid-cols-4 gap-6\">\n        {/* Sidebar - Filters */}\n        <div className=\"lg:col-span-1\">\n          <div className=\"bg-white rounded-lg shadow p-6 sticky top-6 space-y-6\">\n            <div className=\"flex items-center justify-between\">\n              <h2 className=\"text-lg font-semibold text-gray-900\">Filters</h2>\n              {filter.hasActiveFilters && (\n                <button\n                  onClick={handleResetFilters}\n                  className=\"text-sm text-blue-600 hover:text-blue-700 flex items-center gap-1\"\n                >\n                  <RotateCcw size={14} />\n                  Reset\n                </button>\n              )}\n            </div>\n\n            {/* Search */}\n            <div>\n              <label className=\"block text-sm font-medium text-gray-700 mb-2\">Search</label>\n              <div className=\"relative\">\n                <Search size={16} className=\"absolute left-2 top-2.5 text-gray-400\" />\n                <input\n                  type=\"text\"\n                  placeholder=\"Item name, brand...\"\n                  value={searchQuery}\n                  onChange={(e) => setSearchQuery(e.target.value)}\n                  className=\"w-full pl-8 pr-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500\"\n                />\n              </div>\n            </div>\n\n            {/* Category */}\n            <CategorySelector\n              selectedCategory={filter.categoryFilter}\n              selectedSubcategory=\"\"\n              onCategoryChange={filter.setCategoryFilter}\n              onSubcategoryChange={() => {}}\n            />\n\n            {/* Color */}\n            <ColorPicker\n              label=\"Color\"\n              selectedColor={filter.colorFilter}\n              colors={COLOR_OPTIONS as unknown as string[]}\n              onColorChange={filter.setColorFilter}\n              allowCustom={false}\n            />\n\n            {/* Warmth */}\n            <MultiSelect\n              label=\"Warmth Level\"\n              options={warmthOptions}\n              selectedIds={filter.warmthFilter ? [filter.warmthFilter] : []}\n              onSelectionChange={(ids) => filter.setWarmthFilter(ids[0] || '')}\n              maxSelections={1}\n            />\n\n            {/* Seasons */}\n            <MultiSelect\n              label=\"Seasons\"\n              options={seasonOptions}\n              selectedIds={filter.seasonIds.map(String)}\n              onSelectionChange={(ids) => filter.setSeasonIds(ids.map(Number))}\n              maxSelections={4}\n            />\n\n            {/* Styles */}\n            <MultiSelect\n              label=\"Styles\"\n              options={styleOptions}\n              selectedIds={filter.styleIds.map(String)}\n              onSelectionChange={(ids) => filter.setStyleIds(ids.map(Number))}\n              maxSelections={3}\n            />\n\n            {/* Occasions */}\n            <MultiSelect\n              label=\"Occasions\"\n              options={occasionOptions}\n              selectedIds={filter.occasionIds.map(String)}\n              onSelectionChange={(ids) => filter.setOccasionIds(ids.map(Number))}\n              maxSelections={5}\n            />\n          </div>\n        </div>\n\n        {/* Main Content */}\n        <div className=\"lg:col-span-3\">\n          {/* Results Header */}\n          <div className=\"flex items-center justify-between mb-6\">\n            <div>\n              <h2 className=\"text-xl font-semibold text-gray-900\">\n                Results ({filteredItems.length})\n              </h2>\n              <p className=\"text-sm text-gray-600 mt-1\">\n                {filter.hasActiveFilters\n                  ? 'Filtered results'\n                  : `Showing all ${items.length} items`}\n              </p>\n            </div>\n\n            {/* Sort */}\n            <select\n              value={sortBy}\n              onChange={(e) => setSortBy(e.target.value as 'newest' | 'price' | 'rating')}\n              className=\"px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500\"\n            >\n              <option value=\"newest\">Newest First</option>\n              <option value=\"price\">Price: Low to High</option>\n              <option value=\"rating\">Highest Rated</option>\n            </select>\n          </div>\n\n          {/* Statistics */}\n          {stats.totalItems > 0 && (\n            <div className=\"grid grid-cols-3 gap-4 mb-6\">\n              <div className=\"bg-gradient-to-br from-blue-50 to-blue-100 rounded-lg p-4\">\n                <div className=\"text-2xl font-bold text-blue-900\">{stats.totalItems}</div>\n                <div className=\"text-sm text-blue-700\">Total Items</div>\n              </div>\n              <div className=\"bg-gradient-to-br from-green-50 to-green-100 rounded-lg p-4\">\n                <div className=\"text-2xl font-bold text-green-900\">${stats.avgPrice.toFixed(2)}</div>\n                <div className=\"text-sm text-green-700\">Average Price</div>\n              </div>\n              <div className=\"bg-gradient-to-br from-yellow-50 to-yellow-100 rounded-lg p-4\">\n                <div className=\"text-2xl font-bold text-yellow-900\">{stats.avgRating.toFixed(1)}</div>\n                <div className=\"text-sm text-yellow-700\">Average Rating</div>\n              </div>\n            </div>\n          )}\n\n          {/* Items Grid */}\n          {filteredItems.length > 0 ? (\n            <div className=\"grid grid-cols-1 md:grid-cols-2 gap-4\">\n              {filteredItems.map((item) => (\n                <div\n                  key={item.id}\n                  className=\"bg-white rounded-lg shadow hover:shadow-lg transition overflow-hidden border border-gray-200\"\n                >\n                  {/* Item Header */}\n                  <div className=\"bg-gradient-to-r from-blue-50 to-indigo-50 p-4 border-b\">\n                    <h3 className=\"font-semibold text-gray-900 capitalize\">\n                      {item.itemtype}\n                    </h3>\n                    <div className=\"flex items-center justify-between mt-1\">\n                      <span className=\"text-sm text-gray-600\">\n                        {item.category && formatTagLabel(item.category)}\n                      </span>\n                      <span className=\"text-sm font-medium text-gray-900\">\n                        ${item.itemcost?.toFixed(2) || 'N/A'}\n                      </span>\n                    </div>\n                  </div>\n\n                  {/* Item Body */}\n                  <div className=\"p-4 space-y-3\">\n                    {/* Colors */}\n                    {item.primary_color && (\n                      <div className=\"flex items-center gap-2\">\n                        <span className=\"text-xs font-medium text-gray-600\">Color:</span>\n                        <div className=\"flex gap-1\">\n                          <div\n                            className=\"w-5 h-5 rounded-full border-2 border-gray-300\"\n                            style={{\n                              backgroundColor: item.primary_color,\n                            }}\n                            title={item.primary_color}\n                          />\n                          {item.secondary_color && (\n                            <div\n                              className=\"w-5 h-5 rounded-full border-2 border-gray-300\"\n                              style={{\n                                backgroundColor: item.secondary_color,\n                              }}\n                              title={item.secondary_color}\n                            />\n                          )}\n                        </div>\n                      </div>\n                    )}\n\n                    {/* Brand */}\n                    {item.brand && (\n                      <div className=\"text-sm\">\n                        <span className=\"text-gray-600\">Brand: </span>\n                        <span className=\"font-medium text-gray-900\">{item.brand}</span>\n                      </div>\n                    )}\n\n                    {/* Tags */}\n                    <div className=\"flex flex-wrap gap-1\">\n                      {item.category && (\n                        <span className=\"inline-block px-2 py-1 bg-blue-100 text-blue-700 text-xs rounded\">\n                          {formatTagLabel(item.category)}\n                        </span>\n                      )}\n                      {item.warmth_level && (\n                        <span className=\"inline-block px-2 py-1 bg-orange-100 text-orange-700 text-xs rounded\">\n                          {formatTagLabel(item.warmth_level)}\n                        </span>\n                      )}\n                      {item.fit && (\n                        <span className=\"inline-block px-2 py-1 bg-green-100 text-green-700 text-xs rounded\">\n                          {formatTagLabel(item.fit)}\n                        </span>\n                      )}\n                    </div>\n                  </div>\n\n                  {/* Item Footer */}\n                  <div className=\"bg-gray-50 px-4 py-3 border-t flex items-center justify-between\">\n                    <div className=\"text-sm text-gray-600\">\n                      Rating: <span className=\"font-medium\">{item.itemlikerating}/10</span>\n                    </div>\n                    <button className=\"text-sm text-blue-600 hover:text-blue-700 font-medium\">\n                      View Details\n                    </button>\n                  </div>\n                </div>\n              ))}\n            </div>\n          ) : (\n            <div className=\"text-center py-12\">\n              <h3 className=\"text-lg font-medium text-gray-900\">No items found</h3>\n              <p className=\"text-gray-600 mt-1\">Try adjusting your filters</p>\n              <button\n                onClick={handleResetFilters}\n                className=\"mt-4 text-blue-600 hover:text-blue-700 font-medium\"\n              >\n                Reset Filters\n              </button>\n            </div>\n          )}\n        </div>\n      </div>\n    </div>\n  );\n};\n\nexport default AdvancedSearchExample;\n
+import React, { useMemo, useState } from 'react';
+import { RotateCcw, Search } from 'lucide-react';
+import { CategorySelector } from '../components/CategorySelector';
+import { ColorPicker, MultiSelect } from '../components/MultiSelect';
+import { useDashboardData } from '../hooks/useDashboardData';
+import { useTagFilter, useTagMetadata } from '../hooks/useTagManagement';
+import { COLOR_OPTIONS, formatTagLabel, getWarmthLevelsArray } from '../lib/tagConstants';
+import {
+  filterItemsByTags,
+  getItemCategory,
+  getTagStatistics,
+  searchItems,
+  sortItems,
+} from '../lib/tagFiltering';
+
+export const AdvancedSearchExample: React.FC = () => {
+  const { items = [], loading, error } = useDashboardData();
+  const { seasons, styles, occasions } = useTagMetadata();
+  const filter = useTagFilter();
+  const [searchQuery, setSearchQuery] = useState('');
+  const [sortBy, setSortBy] = useState<'newest' | 'price' | 'rating'>('newest');
+
+  const filteredItems = useMemo(() => {
+    const filtered = filterItemsByTags(items, {
+      categories: filter.categoryFilter ? [filter.categoryFilter] : undefined,
+      primaryColors: filter.colorFilter ? [filter.colorFilter] : undefined,
+      warmthLevels: filter.warmthFilter ? [filter.warmthFilter] : undefined,
+    });
+
+    return sortItems(searchItems(filtered, searchQuery), sortBy);
+  }, [items, filter.categoryFilter, filter.colorFilter, filter.warmthFilter, searchQuery, sortBy]);
+
+  const stats = useMemo(() => getTagStatistics(items), [items]);
+
+  const reset = () => {
+    filter.resetFilters();
+    setSearchQuery('');
+    setSortBy('newest');
+  };
+
+  if (loading) return <div className="p-6 text-gray-500">Loading items...</div>;
+  if (error) return <div className="p-6 text-red-700">Error loading items: {error}</div>;
+
+  return (
+    <div className="max-w-7xl mx-auto p-6">
+      <div className="mb-6 flex items-center justify-between">
+        <div>
+          <h1 className="text-3xl font-bold text-gray-900">Advanced Search</h1>
+          <p className="text-gray-600">Filters use derived item metadata and normalized tag tables.</p>
+        </div>
+        {filter.hasActiveFilters && (
+          <button
+            type="button"
+            onClick={reset}
+            className="inline-flex items-center gap-2 px-3 py-2 text-sm text-blue-700 hover:text-blue-900"
+          >
+            <RotateCcw size={16} />
+            Reset
+          </button>
+        )}
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
+        <aside className="space-y-5">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">Search</label>
+            <div className="relative">
+              <Search size={16} className="absolute left-2 top-2.5 text-gray-400" />
+              <input
+                value={searchQuery}
+                onChange={(event) => setSearchQuery(event.target.value)}
+                className="w-full pl-8 pr-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                placeholder="Item type, color, notes..."
+              />
+            </div>
+          </div>
+
+          <CategorySelector
+            selectedCategory={filter.categoryFilter}
+            selectedSubcategory=""
+            onCategoryChange={filter.setCategoryFilter}
+            onSubcategoryChange={() => undefined}
+          />
+
+          <ColorPicker
+            label="Colour"
+            selectedColor={filter.colorFilter}
+            colors={COLOR_OPTIONS as unknown as string[]}
+            onColorChange={filter.setColorFilter}
+          />
+
+          <MultiSelect
+            label="Warmth"
+            options={getWarmthLevelsArray().map((value) => ({ id: value, label: formatTagLabel(value) }))}
+            selectedIds={filter.warmthFilter ? [filter.warmthFilter] : []}
+            onSelectionChange={(ids) => filter.setWarmthFilter(ids[0] || '')}
+            maxSelections={1}
+          />
+        </aside>
+
+        <main className="lg:col-span-3 space-y-4">
+          <div className="flex items-center justify-between">
+            <div>
+              <h2 className="text-xl font-semibold text-gray-900">Results ({filteredItems.length})</h2>
+              <p className="text-sm text-gray-500">
+                {stats.totalItems} items, {seasons.length} seasons, {styles.length} styles, {occasions.length} occasions
+              </p>
+            </div>
+            <select
+              value={sortBy}
+              onChange={(event) => setSortBy(event.target.value as typeof sortBy)}
+              className="px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+            >
+              <option value="newest">Newest First</option>
+              <option value="price">Price</option>
+              <option value="rating">Rating</option>
+            </select>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {filteredItems.map((item) => (
+              <article key={item.id} className="bg-white rounded-lg border border-gray-200 p-4">
+                <div className="flex items-start justify-between gap-3">
+                  <div>
+                    <h3 className="font-semibold text-gray-900 capitalize">{item.itemtype}</h3>
+                    <p className="text-sm text-gray-500">{formatTagLabel(getItemCategory(item))}</p>
+                  </div>
+                  <span className="text-sm font-medium text-gray-900">${item.itemcost?.toFixed(2) || 'N/A'}</span>
+                </div>
+                {item.itemcomment && <p className="mt-3 text-sm text-gray-600">{item.itemcomment}</p>}
+              </article>
+            ))}
+          </div>
+        </main>
+      </div>
+    </div>
+  );
+};
+
+export default AdvancedSearchExample;

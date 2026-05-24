@@ -1,1 +1,384 @@
-import React, { useState } from 'react';\nimport { X } from 'lucide-react';\nimport { api } from '../services/api';\nimport { Item } from '../types';\nimport { useTagMetadata, useItemTags } from '../hooks/useTagManagement';\nimport { CategorySelector } from './CategorySelector';\nimport { TagSelector } from './TagSelector';\nimport { MultiSelect, ColorPicker } from './MultiSelect';\nimport { getStylesArray, getOccasionsArray, COLOR_OPTIONS, getFitTypesArray, getWarmthLevelsArray, formatTagLabel } from '../lib/tagConstants';\n\ninterface ItemModalWithTagsProps {\n  closetId: number;\n  onClose: () => void;\n  onSave: (item: Item) => void;\n  existingItem?: Item;\n}\n\n/**\n * Enhanced ItemModal with Tagging System\n * Includes category, colors, brand, warmth level, fit, and custom tags\n */\nexport const ItemModalWithTags: React.FC<ItemModalWithTagsProps> = ({\n  closetId,\n  onClose,\n  onSave,\n  existingItem,\n}) => {\n  // Basic Item Fields\n  const [itemtype, setItemtype] = useState(existingItem?.itemtype || '');\n  const [itemsize, setItemsize] = useState(existingItem?.itemsize || '');\n  const [itemcost, setItemcost] = useState(existingItem?.itemcost || 0);\n  const [itemlikerating, setItemlikerating] = useState(existingItem?.itemlikerating || 5);\n  const [itemcomment, setItemcomment] = useState(existingItem?.itemcomment || '');\n  const [itemwashmethod, setItemwashmethod] = useState(existingItem?.itemwashmethod || '');\n\n  // New Tagging Fields\n  const [category, setCategory] = useState(existingItem?.category || '');\n  const [subcategory, setSubcategory] = useState(existingItem?.subcategory || '');\n  const [primaryColor, setPrimaryColor] = useState(existingItem?.primary_color || '');\n  const [secondaryColor, setSecondaryColor] = useState(existingItem?.secondary_color || '');\n  const [brand, setBrand] = useState(existingItem?.brand || '');\n  const [warmthLevel, setWarmthLevel] = useState(existingItem?.warmth_level || 'neutral');\n  const [fit, setFit] = useState(existingItem?.fit || 'regular');\n\n  // Tag Fields\n  const [selectedSeasons, setSelectedSeasons] = useState<number[]>([]);\n  const [selectedStyles, setSelectedStyles] = useState<number[]>([]);\n  const [selectedOccasions, setSelectedOccasions] = useState<number[]>([]);\n  const [customTagInput, setCustomTagInput] = useState('');\n  const [customTags, setCustomTags] = useState<string[]>([]);\n\n  const [loading, setLoading] = useState(false);\n  const [error, setError] = useState<string | null>(null);\n\n  // Fetch tag metadata\n  const { seasons, styles, occasions } = useTagMetadata();\n  const itemTags = existingItem ? useItemTags(existingItem.id) : null;\n\n  // Convert metadata to selector format\n  const seasonOptions = seasons.map((s) => ({ id: s.id.toString(), label: formatTagLabel(s.season_name) }));\n  const styleOptions = styles.map((s) => ({ id: s.id.toString(), label: formatTagLabel(s.style_name || s.styletype) }));\n  const occasionOptions = occasions.map((o) => ({ id: o.id.toString(), label: formatTagLabel(o.occasion_name) }));\n  const warmthOptions = getWarmthLevelsArray().map((w) => ({ id: w, label: formatTagLabel(w) }));\n  const fitOptions = getFitTypesArray().map((f) => ({ id: f, label: formatTagLabel(f) }));\n\n  const handleAddCustomTag = () => {\n    if (customTagInput.trim()) {\n      const newTag = customTagInput.trim().toLowerCase().replace(/\\s+/g, '-');\n      if (!customTags.includes(newTag)) {\n        setCustomTags([...customTags, newTag]);\n      }\n      setCustomTagInput('');\n    }\n  };\n\n  const handleRemoveCustomTag = (tag: string) => {\n    setCustomTags(customTags.filter((t) => t !== tag));\n  };\n\n  const handleSubmit = async (e: React.FormEvent) => {\n    e.preventDefault();\n    setLoading(true);\n    setError(null);\n\n    try {\n      // Create or update item\n      const itemData = {\n        dk_closet: closetId,\n        itemtype,\n        itemsize,\n        itemcost: parseFloat(itemcost.toString()),\n        itemlikerating: parseInt(itemlikerating.toString()),\n        itemcomment,\n        itemwashmethod,\n        // New tagging fields\n        category: category || undefined,\n        subcategory: subcategory || undefined,\n        primary_color: primaryColor || undefined,\n        secondary_color: secondaryColor || undefined,\n        brand: brand || undefined,\n        warmth_level: warmthLevel || undefined,\n        fit: fit || undefined,\n      };\n\n      let savedItem: Item;\n      if (existingItem) {\n        await api.update<Item>('item', existingItem.id, itemData);\n        savedItem = { ...existingItem, ...itemData };\n      } else {\n        savedItem = await api.create<Item>('item', itemData);\n      }\n\n      // Add item tags\n      for (const seasonId of selectedSeasons) {\n        await api.create('itemtag', {\n          dk_itemid: savedItem.id,\n          dk_seasonid: parseInt(seasonId.toString()),\n          tag_source: 'user',\n        });\n      }\n\n      for (const styleId of selectedStyles) {\n        await api.create('itemtag', {\n          dk_itemid: savedItem.id,\n          dk_styleid: parseInt(styleId.toString()),\n          tag_source: 'user',\n        });\n      }\n\n      for (const occasionId of selectedOccasions) {\n        await api.create('itemtag', {\n          dk_itemid: savedItem.id,\n          dk_occasionid: parseInt(occasionId.toString()),\n          tag_source: 'user',\n        });\n      }\n\n      // Add custom tags\n      for (const tag of customTags) {\n        await api.create('customtag', {\n          dk_itemid: savedItem.id,\n          tag_name: tag,\n          tag_category: 'user_defined',\n        });\n      }\n\n      onSave(savedItem);\n      onClose();\n    } catch (err) {\n      const errorMsg = err instanceof Error ? err.message : 'Failed to save item';\n      setError(errorMsg);\n      console.error('[ItemModalWithTags]', errorMsg);\n    } finally {\n      setLoading(false);\n    }\n  };\n\n  return (\n    <div className=\"fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50\">\n      <div className=\"bg-white rounded-lg max-h-[90vh] overflow-y-auto w-full max-w-2xl shadow-xl\">\n        {/* Header */}\n        <div className=\"sticky top-0 flex items-center justify-between p-6 border-b bg-white\">\n          <h2 className=\"text-xl font-semibold\">{existingItem ? 'Edit Item' : 'Add New Item'}</h2>\n          <button\n            onClick={onClose}\n            className=\"text-gray-400 hover:text-gray-600\"\n          >\n            <X size={24} />\n          </button>\n        </div>\n\n        {/* Content */}\n        <form onSubmit={handleSubmit} className=\"p-6 space-y-6\">\n          {error && (\n            <div className=\"bg-red-50 border border-red-200 rounded-lg p-4 text-red-800 text-sm\">\n              {error}\n            </div>\n          )}\n\n          {/* Basic Item Fields */}\n          <div className=\"space-y-4\">\n            <h3 className=\"font-semibold text-gray-900\">Basic Information</h3>\n\n            <div className=\"grid grid-cols-2 gap-4\">\n              <input\n                type=\"text\"\n                placeholder=\"Item Type\"\n                value={itemtype}\n                onChange={(e) => setItemtype(e.target.value)}\n                className=\"px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500\"\n              />\n              <input\n                type=\"text\"\n                placeholder=\"Size\"\n                value={itemsize}\n                onChange={(e) => setItemsize(e.target.value)}\n                className=\"px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500\"\n              />\n            </div>\n\n            <input\n              type=\"number\"\n              placeholder=\"Cost\"\n              value={itemcost}\n              onChange={(e) => setItemcost(parseFloat(e.target.value))}\n              className=\"w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500\"\n            />\n\n            <textarea\n              placeholder=\"Comments\"\n              value={itemcomment}\n              onChange={(e) => setItemcomment(e.target.value)}\n              className=\"w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none\"\n              rows={3}\n            />\n          </div>\n\n          {/* Category & Subcategory */}\n          <div>\n            <h3 className=\"font-semibold text-gray-900 mb-4\">Categorization</h3>\n            <CategorySelector\n              selectedCategory={category}\n              selectedSubcategory={subcategory}\n              onCategoryChange={setCategory}\n              onSubcategoryChange={setSubcategory}\n            />\n          </div>\n\n          {/* Colors & Appearance */}\n          <div className=\"space-y-4\">\n            <h3 className=\"font-semibold text-gray-900\">Appearance</h3>\n\n            <div className=\"grid grid-cols-2 gap-4\">\n              <ColorPicker\n                label=\"Primary Color\"\n                selectedColor={primaryColor}\n                colors={COLOR_OPTIONS as unknown as string[]}\n                onColorChange={setPrimaryColor}\n                allowCustom={true}\n              />\n              <ColorPicker\n                label=\"Secondary Color\"\n                selectedColor={secondaryColor}\n                colors={COLOR_OPTIONS as unknown as string[]}\n                onColorChange={setSecondaryColor}\n                allowCustom={true}\n              />\n            </div>\n\n            <div className=\"grid grid-cols-2 gap-4\">\n              <div>\n                <label className=\"block text-sm font-medium text-gray-700 mb-2\">Brand</label>\n                <input\n                  type=\"text\"\n                  placeholder=\"e.g., Everlane, Zara\"\n                  value={brand}\n                  onChange={(e) => setBrand(e.target.value)}\n                  className=\"w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500\"\n                />\n              </div>\n              <div>\n                <label className=\"block text-sm font-medium text-gray-700 mb-2\">Wash Method</label>\n                <input\n                  type=\"text\"\n                  placeholder=\"e.g., Machine wash cold\"\n                  value={itemwashmethod}\n                  onChange={(e) => setItemwashmethod(e.target.value)}\n                  className=\"w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500\"\n                />\n              </div>\n            </div>\n          </div>\n\n          {/* Physical Properties */}\n          <div>\n            <h3 className=\"font-semibold text-gray-900 mb-4\">Physical Properties</h3>\n            <div className=\"grid grid-cols-2 gap-4\">\n              <MultiSelect\n                label=\"Warmth Level\"\n                options={warmthOptions}\n                selectedIds={[warmthLevel]}\n                onSelectionChange={(ids) => setWarmthLevel(ids[0] || 'neutral')}\n                maxSelections={1}\n              />\n              <MultiSelect\n                label=\"Fit\"\n                options={fitOptions}\n                selectedIds={[fit]}\n                onSelectionChange={(ids) => setFit(ids[0] || 'regular')}\n                maxSelections={1}\n              />\n            </div>\n          </div>\n\n          {/* Tags */}\n          <div className=\"space-y-4\">\n            <h3 className=\"font-semibold text-gray-900\">Tags & Occasions</h3>\n\n            <MultiSelect\n              label=\"Seasons\"\n              options={seasonOptions}\n              selectedIds={selectedSeasons.map((id) => id.toString())}\n              onSelectionChange={(ids) => setSelectedSeasons(ids.map((id) => parseInt(id)))}\n              maxSelections={4}\n            />\n\n            <MultiSelect\n              label=\"Styles\"\n              options={styleOptions}\n              selectedIds={selectedStyles.map((id) => id.toString())}\n              onSelectionChange={(ids) => setSelectedStyles(ids.map((id) => parseInt(id)))}\n              maxSelections={3}\n            />\n\n            <MultiSelect\n              label=\"Occasions\"\n              options={occasionOptions}\n              selectedIds={selectedOccasions.map((id) => id.toString())}\n              onSelectionChange={(ids) => setSelectedOccasions(ids.map((id) => parseInt(id)))}\n              maxSelections={5}\n            />\n          </div>\n\n          {/* Custom Tags */}\n          <div>\n            <label className=\"block text-sm font-medium text-gray-700 mb-2\">Custom Tags</label>\n            <div className=\"flex gap-2 mb-2\">\n              <input\n                type=\"text\"\n                placeholder=\"Add a custom tag...\"\n                value={customTagInput}\n                onChange={(e) => setCustomTagInput(e.target.value)}\n                onKeyPress={(e) => {\n                  if (e.key === 'Enter') {\n                    e.preventDefault();\n                    handleAddCustomTag();\n                  }\n                }}\n                className=\"flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500\"\n              />\n              <button\n                type=\"button\"\n                onClick={handleAddCustomTag}\n                className=\"px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700\"\n              >\n                Add\n              </button>\n            </div>\n            <div className=\"flex flex-wrap gap-2\">\n              {customTags.map((tag) => (\n                <div\n                  key={tag}\n                  className=\"inline-flex items-center gap-2 px-3 py-1 bg-green-100 text-green-800 rounded-full text-sm\"\n                >\n                  {tag}\n                  <button\n                    type=\"button\"\n                    onClick={() => handleRemoveCustomTag(tag)}\n                    className=\"hover:text-green-900\"\n                  >\n                    <X size={14} />\n                  </button>\n                </div>\n              ))}\n            </div>\n          </div>\n\n          {/* Rating */}\n          <div>\n            <label className=\"block text-sm font-medium text-gray-700 mb-2\">Like Rating (1-10)</label>\n            <input\n              type=\"range\"\n              min=\"1\"\n              max=\"10\"\n              value={itemlikerating}\n              onChange={(e) => setItemlikerating(parseInt(e.target.value))}\n              className=\"w-full\"\n            />\n            <div className=\"text-center text-sm text-gray-600 mt-1\">{itemlikerating}/10</div>\n          </div>\n\n          {/* Footer */}\n          <div className=\"flex gap-4 pt-4 border-t\">\n            <button\n              type=\"button\"\n              onClick={onClose}\n              className=\"flex-1 px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50\"\n            >\n              Cancel\n            </button>\n            <button\n              type=\"submit\"\n              disabled={loading}\n              className=\"flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50\"\n            >\n              {loading ? 'Saving...' : 'Save Item'}\n            </button>\n          </div>\n        </form>\n      </div>\n    </div>\n  );\n};\n\nexport default ItemModalWithTags;\n
+import React, { useMemo, useState } from 'react';
+import { X } from 'lucide-react';
+import { api } from '../services/api';
+import { Info, Item } from '../types';
+import { useMetadata } from '../hooks/useMetadata';
+import { useTagMetadata } from '../hooks/useTagManagement';
+import { CategorySelector } from './CategorySelector';
+import { ColorPicker, MultiSelect } from './MultiSelect';
+import {
+  COLOR_OPTIONS,
+  getFitTypesArray,
+  getWarmthLevelsArray,
+  formatTagLabel,
+} from '../lib/tagConstants';
+import { getItemCategory, getItemSubcategory } from '../lib/tagFiltering';
+
+interface ItemModalWithTagsProps {
+  closetId: number;
+  onClose: () => void;
+  onSave: (item: Item) => void;
+  existingItem?: Item;
+}
+
+function getResponseId(response: any, pkField: string): number {
+  return response?.data?.[pkField] ?? response?.[pkField] ?? response?.data?.id ?? response?.id;
+}
+
+export const ItemModalWithTags: React.FC<ItemModalWithTagsProps> = ({
+  closetId,
+  onClose,
+  onSave,
+  existingItem,
+}) => {
+  const { colours, materials, styles } = useMetadata();
+  const { seasons, occasions } = useTagMetadata();
+
+  const [category, setCategory] = useState(existingItem ? getItemCategory(existingItem) : '');
+  const [subcategory, setSubcategory] = useState(existingItem ? getItemSubcategory(existingItem) : '');
+  const [itemsize, setItemsize] = useState(existingItem?.itemsize || '');
+  const [itemcost, setItemcost] = useState(existingItem?.itemcost?.toString() || '');
+  const [itemlikerating, setItemlikerating] = useState(existingItem?.itemlikerating || 5);
+  const [itemcomment, setItemcomment] = useState(existingItem?.itemcomment || '');
+  const [itemwashmethod, setItemwashmethod] = useState(existingItem?.itemwashmethod || '');
+  const [primaryColor, setPrimaryColor] = useState(existingItem?.primary_color || '');
+  const [secondaryColor, setSecondaryColor] = useState(existingItem?.secondary_color || '');
+  const [texture, setTexture] = useState('');
+  const [fit, setFit] = useState(existingItem?.fit || '');
+  const [warmthLevel, setWarmthLevel] = useState(existingItem?.warmth_level || '');
+  const [selectedSeasons, setSelectedSeasons] = useState<number[]>([]);
+  const [selectedStyles, setSelectedStyles] = useState<number[]>([]);
+  const [selectedOccasions, setSelectedOccasions] = useState<number[]>([]);
+  const [customTagInput, setCustomTagInput] = useState('');
+  const [customTags, setCustomTags] = useState<string[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const styleOptions = useMemo(
+    () =>
+      styles
+        .filter((style) => style.styletype)
+        .map((style) => ({ id: style.id.toString(), label: formatTagLabel(style.styletype) })),
+    [styles]
+  );
+
+  const seasonOptions = seasons.map((season) => ({
+    id: season.id.toString(),
+    label: formatTagLabel(season.season_name),
+  }));
+
+  const occasionOptions = occasions.map((occasion) => ({
+    id: occasion.id.toString(),
+    label: formatTagLabel(occasion.occasion_name),
+  }));
+
+  const materialOptions = Array.from(
+    new Set<string>(
+      materials
+        .map((material) => material.texture)
+        .filter((texture): texture is string => typeof texture === 'string' && texture.length > 0)
+    )
+  ).map((material) => ({ id: material, label: formatTagLabel(material) }));
+
+  const warmthOptions = getWarmthLevelsArray().map((level) => ({
+    id: level,
+    label: formatTagLabel(level),
+  }));
+
+  const fitOptions = getFitTypesArray().map((fitType) => ({
+    id: fitType,
+    label: formatTagLabel(fitType),
+  }));
+
+  const handleAddCustomTag = () => {
+    const nextTag = customTagInput.trim().toLowerCase().replace(/\s+/g, '-');
+    if (nextTag && !customTags.includes(nextTag)) {
+      setCustomTags((prev) => [...prev, nextTag]);
+    }
+    setCustomTagInput('');
+  };
+
+  const handleSubmit = async (event: React.FormEvent) => {
+    event.preventDefault();
+    setLoading(true);
+    setError(null);
+
+    try {
+      const itemData = {
+        dk_closet: closetId,
+        itemtype: subcategory || category,
+        itemsize,
+        itemcost: itemcost ? parseFloat(itemcost) : 0,
+        itemlikerating,
+        itemcomment,
+        itemwashmethod,
+        isoncamera: existingItem?.isoncamera ?? false,
+      };
+
+      let savedItem: Item;
+      if (existingItem) {
+        await api.update<Item>('item', existingItem.id, itemData);
+        savedItem = { ...existingItem, ...itemData };
+      } else {
+        savedItem = await api.create<Item>('item', itemData);
+      }
+
+      const itemId = savedItem.id ?? getResponseId(savedItem, 'pk_itemid');
+
+      if (!existingItem) {
+        const colourResponse = await api.create<any>('colour', {
+          colouroverall: primaryColor,
+          majorcolour: primaryColor,
+          minorcolour: secondaryColor || primaryColor,
+        });
+
+        const materialResponse = await api.create<any>('material', {
+          texture,
+          softness: '',
+          thickness: warmthLevel,
+        });
+
+        const selectedStyleId = selectedStyles[0];
+        const styleResponse = selectedStyleId
+          ? null
+          : await api.create<any>('style', {
+              styletype: category || subcategory,
+              styleyear: new Date().getFullYear(),
+              stylefitsize: fit || itemsize,
+            });
+
+        await api.create<Info>('info', {
+          dk_itemid: itemId,
+          dk_styleid: selectedStyleId ?? getResponseId(styleResponse, 'pk_styleid'),
+          dk_colourid: getResponseId(colourResponse, 'pk_colourid'),
+          dk_material: getResponseId(materialResponse, 'pk_material'),
+        });
+      }
+
+      for (const seasonId of selectedSeasons) {
+        await api.create('itemtag', { dk_itemid: itemId, dk_seasonid: seasonId, tag_source: 'user' });
+      }
+
+      for (const styleId of selectedStyles) {
+        await api.create('itemtag', { dk_itemid: itemId, dk_styleid: styleId, tag_source: 'user' });
+      }
+
+      for (const occasionId of selectedOccasions) {
+        await api.create('itemtag', { dk_itemid: itemId, dk_occasionid: occasionId, tag_source: 'user' });
+      }
+
+      for (const tagName of customTags) {
+        await api.create('customtag', { dk_itemid: itemId, tag_name: tagName, tag_category: 'user_defined' });
+      }
+
+      onSave(savedItem);
+      onClose();
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Failed to save item';
+      setError(message);
+      console.error('[ItemModalWithTags]', err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
+      <div className="bg-white rounded-lg max-h-[90vh] overflow-y-auto w-full max-w-2xl shadow-xl">
+        <div className="sticky top-0 flex items-center justify-between p-6 border-b bg-white">
+          <h2 className="text-xl font-semibold">{existingItem ? 'Edit Item' : 'Add New Item'}</h2>
+          <button type="button" onClick={onClose} className="text-gray-400 hover:text-gray-600">
+            <X size={24} />
+          </button>
+        </div>
+
+        <form onSubmit={handleSubmit} className="p-6 space-y-6">
+          {error && (
+            <div className="bg-red-50 border border-red-200 rounded-lg p-4 text-red-800 text-sm">
+              {error}
+            </div>
+          )}
+
+          <div className="space-y-4">
+            <h3 className="font-semibold text-gray-900">Item</h3>
+            <CategorySelector
+              selectedCategory={category}
+              selectedSubcategory={subcategory}
+              onCategoryChange={setCategory}
+              onSubcategoryChange={setSubcategory}
+            />
+            <div className="grid grid-cols-2 gap-4">
+              <input
+                type="text"
+                placeholder="Size"
+                value={itemsize}
+                onChange={(event) => setItemsize(event.target.value)}
+                className="px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
+              <input
+                type="number"
+                placeholder="Cost"
+                value={itemcost}
+                onChange={(event) => setItemcost(event.target.value)}
+                className="px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
+            </div>
+          </div>
+
+          <div className="space-y-4">
+            <h3 className="font-semibold text-gray-900">Normalized Metadata</h3>
+            <div className="grid grid-cols-2 gap-4">
+              <ColorPicker
+                label="Overall Colour"
+                selectedColor={primaryColor}
+                colors={COLOR_OPTIONS as unknown as string[]}
+                onColorChange={setPrimaryColor}
+                allowCustom
+              />
+              <ColorPicker
+                label="Minor Colour"
+                selectedColor={secondaryColor}
+                colors={COLOR_OPTIONS as unknown as string[]}
+                onColorChange={setSecondaryColor}
+                allowCustom
+              />
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <MultiSelect
+                label="Material"
+                options={materialOptions}
+                selectedIds={texture ? [texture] : []}
+                onSelectionChange={(ids) => setTexture(ids[0] || '')}
+                maxSelections={1}
+              />
+              <MultiSelect
+                label="Warmth"
+                options={warmthOptions}
+                selectedIds={warmthLevel ? [warmthLevel] : []}
+                onSelectionChange={(ids) => setWarmthLevel(ids[0] || '')}
+                maxSelections={1}
+              />
+            </div>
+            <MultiSelect
+              label="Fit"
+              options={fitOptions}
+              selectedIds={fit ? [fit] : []}
+              onSelectionChange={(ids) => setFit(ids[0] || '')}
+              maxSelections={1}
+            />
+          </div>
+
+          <div className="space-y-4">
+            <h3 className="font-semibold text-gray-900">Tags</h3>
+            <MultiSelect
+              label="Seasons"
+              options={seasonOptions}
+              selectedIds={selectedSeasons.map(String)}
+              onSelectionChange={(ids) => setSelectedSeasons(ids.map(Number))}
+            />
+            <MultiSelect
+              label="Styles"
+              options={styleOptions}
+              selectedIds={selectedStyles.map(String)}
+              onSelectionChange={(ids) => setSelectedStyles(ids.map(Number))}
+            />
+            <MultiSelect
+              label="Occasions"
+              options={occasionOptions}
+              selectedIds={selectedOccasions.map(String)}
+              onSelectionChange={(ids) => setSelectedOccasions(ids.map(Number))}
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">Custom Tags</label>
+            <div className="flex gap-2 mb-2">
+              <input
+                type="text"
+                placeholder="Add a custom tag..."
+                value={customTagInput}
+                onChange={(event) => setCustomTagInput(event.target.value)}
+                onKeyDown={(event) => {
+                  if (event.key === 'Enter') {
+                    event.preventDefault();
+                    handleAddCustomTag();
+                  }
+                }}
+                className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
+              <button
+                type="button"
+                onClick={handleAddCustomTag}
+                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+              >
+                Add
+              </button>
+            </div>
+            <div className="flex flex-wrap gap-2">
+              {customTags.map((tag) => (
+                <button
+                  key={tag}
+                  type="button"
+                  onClick={() => setCustomTags((prev) => prev.filter((value) => value !== tag))}
+                  className="inline-flex items-center gap-2 px-3 py-1 bg-green-100 text-green-800 rounded-full text-sm"
+                >
+                  {tag}
+                  <X size={14} />
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div className="space-y-4">
+            <textarea
+              placeholder="Comments"
+              value={itemcomment}
+              onChange={(event) => setItemcomment(event.target.value)}
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
+              rows={3}
+            />
+            <input
+              type="text"
+              placeholder="Wash method"
+              value={itemwashmethod}
+              onChange={(event) => setItemwashmethod(event.target.value)}
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+            />
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Like Rating ({itemlikerating}/10)
+              </label>
+              <input
+                type="range"
+                min="1"
+                max="10"
+                value={itemlikerating}
+                onChange={(event) => setItemlikerating(parseInt(event.target.value, 10))}
+                className="w-full"
+              />
+            </div>
+          </div>
+
+          <div className="flex gap-4 pt-4 border-t">
+            <button
+              type="button"
+              onClick={onClose}
+              className="flex-1 px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50"
+            >
+              Cancel
+            </button>
+            <button
+              type="submit"
+              disabled={loading || !category || !subcategory || (!existingItem && !primaryColor)}
+              className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50"
+            >
+              {loading ? 'Saving...' : 'Save Item'}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+};
+
+export default ItemModalWithTags;

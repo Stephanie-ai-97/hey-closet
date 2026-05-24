@@ -2,10 +2,6 @@ import { useState, useCallback, useEffect } from 'react';
 import { api } from '../services/api';
 import { Season, Style, Occasion, ItemTag, CustomTag } from '../types';
 
-/**
- * Hook for managing tag metadata (seasons, styles, occasions)
- * Caches results to minimize API calls
- */
 export function useTagMetadata() {
   const [seasons, setSeasons] = useState<Season[]>([]);
   const [styles, setStyles] = useState<Style[]>([]);
@@ -22,14 +18,14 @@ export function useTagMetadata() {
         api.list<Occasion>('occasion'),
       ]);
 
-      setSeasons(seasonsData || []);
-      setStyles(stylesData || []);
-      setOccasions(occasionsData || []);
+      setSeasons(seasonsData);
+      setStyles(stylesData);
+      setOccasions(occasionsData);
       setError(null);
     } catch (err) {
-      const error = err instanceof Error ? err : new Error('Failed to fetch tag metadata');
-      setError(error);
-      console.error('[useTagMetadata] Error:', error);
+      const nextError = err instanceof Error ? err : new Error('Failed to fetch tag metadata');
+      setError(nextError);
+      console.error('[useTagMetadata] Error:', nextError);
     } finally {
       setLoading(false);
     }
@@ -42,10 +38,6 @@ export function useTagMetadata() {
   return { seasons, styles, occasions, loading, error, refetch: fetchMetadata };
 }
 
-/**
- * Hook for managing item tags
- * Handles reading and writing itemtag and customtag records
- */
 export function useItemTags(itemId: number) {
   const [itemTags, setItemTags] = useState<ItemTag[]>([]);
   const [customTags, setCustomTags] = useState<CustomTag[]>([]);
@@ -53,7 +45,12 @@ export function useItemTags(itemId: number) {
   const [error, setError] = useState<Error | null>(null);
 
   const fetchItemTags = useCallback(async () => {
-    if (!itemId) return;
+    if (!itemId) {
+      setItemTags([]);
+      setCustomTags([]);
+      setLoading(false);
+      return;
+    }
 
     try {
       setLoading(true);
@@ -62,13 +59,13 @@ export function useItemTags(itemId: number) {
         api.list<CustomTag>('customtag', { dk_itemid: itemId }),
       ]);
 
-      setItemTags(tagsData || []);
-      setCustomTags(customTagsData || []);
+      setItemTags(tagsData);
+      setCustomTags(customTagsData);
       setError(null);
     } catch (err) {
-      const error = err instanceof Error ? err : new Error('Failed to fetch item tags');
-      setError(error);
-      console.error('[useItemTags] Error:', error);
+      const nextError = err instanceof Error ? err : new Error('Failed to fetch item tags');
+      setError(nextError);
+      console.error('[useItemTags] Error:', nextError);
     } finally {
       setLoading(false);
     }
@@ -79,35 +76,136 @@ export function useItemTags(itemId: number) {
   }, [fetchItemTags]);
 
   const addTag = useCallback(
-    async (tag: ItemTag) => {
-      try {
-        const created = await api.create<ItemTag>('itemtag', {
-          ...tag,
-          dk_itemid: itemId,
-        });
-        setItemTags((prev) => [...prev, created]);
-        return created;
-      } catch (err) {
-        const error = err instanceof Error ? err : new Error('Failed to add tag');
-        console.error('[useItemTags] Error adding tag:', error);
-        throw error;
-      }
+    async (tag: Partial<Omit<ItemTag, 'id' | 'dk_itemid'>>) => {
+      const created = await api.create<ItemTag>('itemtag', {
+        ...tag,
+        dk_itemid: itemId,
+        tag_source: tag.tag_source ?? 'user',
+      });
+      setItemTags((prev) => [...prev, created]);
+      return created;
     },
     [itemId]
   );
 
   const removeTag = useCallback(async (tagId: number) => {
-    try {
-      await api.delete('itemtag', tagId);
-      setItemTags((prev) => prev.filter((t) => t.id !== tagId));
-    } catch (err) {
-      const error = err instanceof Error ? err : new Error('Failed to remove tag');
-      console.error('[useItemTags] Error removing tag:', error);
-      throw error;
-    }
+    await api.delete('itemtag', tagId);
+    setItemTags((prev) => prev.filter((tag) => tag.id !== tagId));
   }, []);
 
   const addCustomTag = useCallback(
-    async (tagName: string, category: 'user_defined' | 'ai_generated' = 'user_defined') => {
-      try {
-        const created = await api.create<CustomTag>('customtag', {\n          dk_itemid: itemId,\n          tag_name: tagName.toLowerCase().replace(/\\s+/g, '-'),\n          tag_category: category,\n        });\n        setCustomTags((prev) => [...prev, created]);\n        return created;\n      } catch (err) {\n        const error = err instanceof Error ? err : new Error('Failed to add custom tag');\n        console.error('[useItemTags] Error adding custom tag:', error);\n        throw error;\n      }\n    },\n    [itemId]\n  );\n\n  const removeCustomTag = useCallback(async (tagId: number) => {\n    try {\n      await api.delete('customtag', tagId);\n      setCustomTags((prev) => prev.filter((t) => t.id !== tagId));\n    } catch (err) {\n      const error = err instanceof Error ? err : new Error('Failed to remove custom tag');\n      console.error('[useItemTags] Error removing custom tag:', error);\n      throw error;\n    }\n  }, []);\n\n  return {\n    itemTags,\n    customTags,\n    loading,\n    error,\n    refetch: fetchItemTags,\n    addTag,\n    removeTag,\n    addCustomTag,\n    removeCustomTag,\n  };\n}\n\n/**\n * Hook for filtering items by tags\n * Generates filter queries based on selected tags\n */\nexport function useTagFilter() {\n  const [seasonIds, setSeasonIds] = useState<number[]>([]);\n  const [styleIds, setStyleIds] = useState<number[]>([]);\n  const [occasionIds, setOccasionIds] = useState<number[]>([]);\n  const [categoryFilter, setCategoryFilter] = useState<string>('');\n  const [colorFilter, setColorFilter] = useState<string>('');\n  const [warmthFilter, setWarmthFilter] = useState<string>('');\n\n  const buildFilterQuery = useCallback(() => {\n    const filters: Record<string, string | number | (string | number)[]> = {};\n\n    if (categoryFilter) filters.category = categoryFilter;\n    if (colorFilter) filters.primary_color = colorFilter;\n    if (warmthFilter) filters.warmth_level = warmthFilter;\n\n    return filters;\n  }, [categoryFilter, colorFilter, warmthFilter]);\n\n  const resetFilters = useCallback(() => {\n    setSeasonIds([]);\n    setStyleIds([]);\n    setOccasionIds([]);\n    setCategoryFilter('');\n    setColorFilter('');\n    setWarmthFilter('');\n  }, []);\n\n  return {\n    // Filter states\n    seasonIds,\n    styleIds,\n    occasionIds,\n    categoryFilter,\n    colorFilter,\n    warmthFilter,\n    // Setters\n    setSeasonIds,\n    setStyleIds,\n    setOccasionIds,\n    setCategoryFilter,\n    setColorFilter,\n    setWarmthFilter,\n    // Utilities\n    buildFilterQuery,\n    resetFilters,\n    hasActiveFilters:\n      seasonIds.length > 0 ||\n      styleIds.length > 0 ||\n      occasionIds.length > 0 ||\n      !!categoryFilter ||\n      !!colorFilter ||\n      !!warmthFilter,\n  };\n}\n\n/**\n * Hook for managing tag suggestions and AI compatibility\n * Prepares data structure for AI tag generation\n */\nexport function useTagSuggestions(itemData: Record<string, any>) {\n  const [suggestions, setSuggestions] = useState<string[]>([]);\n  const [loading, setLoading] = useState(false);\n  const [error, setError] = useState<Error | null>(null);\n\n  /**\n   * Generate basic tag suggestions based on item properties\n   * Can be extended to call AI service\n   */\n  const generateSuggestions = useCallback(async () => {\n    try {\n      setLoading(true);\n      const generated: string[] = [];\n\n      // Basic logic for suggestions\n      if (itemData.category) generated.push(itemData.category);\n      if (itemData.subcategory) generated.push(itemData.subcategory);\n      if (itemData.primary_color) generated.push(`color: ${itemData.primary_color}`);\n      if (itemData.brand) generated.push(`brand: ${itemData.brand}`);\n\n      // This is a placeholder for future AI integration\n      // In the future, this could call an AI service:\n      // const aiTags = await generateAITags(itemData);\n      // generated.push(...aiTags);\n\n      setSuggestions(generated);\n      setError(null);\n    } catch (err) {\n      const error = err instanceof Error ? err : new Error('Failed to generate suggestions');\n      setError(error);\n      console.error('[useTagSuggestions] Error:', error);\n    } finally {\n      setLoading(false);\n    }\n  }, [itemData]);\n\n  useEffect(() => {\n    if (itemData && Object.keys(itemData).length > 0) {\n      generateSuggestions();\n    }\n  }, [itemData, generateSuggestions]);\n\n  return { suggestions, loading, error, regenerate: generateSuggestions };\n}\n\nexport default useTagMetadata;\n
+    async (tagName: string, category: CustomTag['tag_category'] = 'user_defined') => {
+      const created = await api.create<CustomTag>('customtag', {
+        dk_itemid: itemId,
+        tag_name: tagName.toLowerCase().trim().replace(/\s+/g, '-'),
+        tag_category: category,
+      });
+      setCustomTags((prev) => [...prev, created]);
+      return created;
+    },
+    [itemId]
+  );
+
+  const removeCustomTag = useCallback(async (tagId: number) => {
+    await api.delete('customtag', tagId);
+    setCustomTags((prev) => prev.filter((tag) => tag.id !== tagId));
+  }, []);
+
+  return {
+    itemTags,
+    customTags,
+    loading,
+    error,
+    refetch: fetchItemTags,
+    addTag,
+    removeTag,
+    addCustomTag,
+    removeCustomTag,
+  };
+}
+
+export function useTagFilter() {
+  const [seasonIds, setSeasonIds] = useState<number[]>([]);
+  const [styleIds, setStyleIds] = useState<number[]>([]);
+  const [occasionIds, setOccasionIds] = useState<number[]>([]);
+  const [categoryFilter, setCategoryFilter] = useState('');
+  const [colorFilter, setColorFilter] = useState('');
+  const [warmthFilter, setWarmthFilter] = useState('');
+
+  const buildFilterQuery = useCallback(() => {
+    const filters: Record<string, string> = {};
+
+    if (categoryFilter) filters.category = categoryFilter;
+    if (colorFilter) filters.primary_color = colorFilter;
+    if (warmthFilter) filters.warmth_level = warmthFilter;
+
+    return filters;
+  }, [categoryFilter, colorFilter, warmthFilter]);
+
+  const resetFilters = useCallback(() => {
+    setSeasonIds([]);
+    setStyleIds([]);
+    setOccasionIds([]);
+    setCategoryFilter('');
+    setColorFilter('');
+    setWarmthFilter('');
+  }, []);
+
+  return {
+    seasonIds,
+    styleIds,
+    occasionIds,
+    categoryFilter,
+    colorFilter,
+    warmthFilter,
+    setSeasonIds,
+    setStyleIds,
+    setOccasionIds,
+    setCategoryFilter,
+    setColorFilter,
+    setWarmthFilter,
+    buildFilterQuery,
+    resetFilters,
+    hasActiveFilters:
+      seasonIds.length > 0 ||
+      styleIds.length > 0 ||
+      occasionIds.length > 0 ||
+      Boolean(categoryFilter) ||
+      Boolean(colorFilter) ||
+      Boolean(warmthFilter),
+  };
+}
+
+export function useTagSuggestions(itemData: Record<string, unknown>) {
+  const [suggestions, setSuggestions] = useState<string[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<Error | null>(null);
+
+  const generateSuggestions = useCallback(async () => {
+    try {
+      setLoading(true);
+      const generated = [
+        itemData.category,
+        itemData.subcategory,
+        itemData.primary_color ? `color: ${itemData.primary_color}` : undefined,
+        itemData.fit ? `fit: ${itemData.fit}` : undefined,
+      ].filter((value): value is string => typeof value === 'string' && value.length > 0);
+
+      setSuggestions(generated);
+      setError(null);
+    } catch (err) {
+      const nextError = err instanceof Error ? err : new Error('Failed to generate suggestions');
+      setError(nextError);
+    } finally {
+      setLoading(false);
+    }
+  }, [itemData]);
+
+  useEffect(() => {
+    if (Object.keys(itemData).length > 0) generateSuggestions();
+  }, [itemData, generateSuggestions]);
+
+  return { suggestions, loading, error, regenerate: generateSuggestions };
+}
+
+export default useTagMetadata;
