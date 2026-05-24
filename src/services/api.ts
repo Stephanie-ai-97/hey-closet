@@ -17,6 +17,10 @@ const ID_FIELDS = [
   'pk_outfitid',
   'pk_outfititemid',
   'pk_itemphotoid',
+  'pk_seasonid',
+  'pk_occasionid',
+  'pk_itemtagid',
+  'pk_customtagid',
 ] as const;
 
 function normalizeIds<T>(value: T): T {

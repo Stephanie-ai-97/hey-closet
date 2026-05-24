@@ -25,15 +25,63 @@ export interface Item {
   itemwashmethod: string;
   wash_status: 'clean' | 'washing' | 'drying' | 'dirty';
   in_temp: boolean;
+  // New tagging system fields
+  category?: string;
+  subcategory?: string;
+  primary_color?: string;
+  secondary_color?: string;
+  brand?: string;
+  warmth_level?: string;
+  fit?: string;
   created_at?: string;
   updated_at?: string;
 }
 
-export interface Colour {
+// ============= TAG SYSTEM INTERFACES =============
+
+export interface Season {
   id: number;
-  colouroverall: string;
-  majorcolour: string;
-  minorcolour: string;
+  season_name: string;
+  created_at?: string;
+  updated_at?: string;
+}
+
+export interface Style {
+  id: number;
+  style_name: string;
+  styletype?: string;
+  styleyear?: number;
+  stylefitsize?: string;
+  created_at?: string;
+  updated_at?: string;
+}
+
+export interface Occasion {
+  id: number;
+  occasion_name: string;
+  created_at?: string;
+  updated_at?: string;
+}
+
+export interface ItemTag {
+  id: number;
+  dk_itemid: number;
+  dk_seasonid?: number;
+  dk_styleid?: number;
+  dk_occasionid?: number;
+  tag_type: 'system' | 'user' | 'ai';
+  tag_source: 'system' | 'user' | 'ai';
+  created_at?: string;
+  updated_at?: string;
+}
+
+export interface CustomTag {
+  id: number;
+  dk_itemid: number;
+  tag_name: string;
+  tag_category: 'user_defined' | 'ai_generated';
+  created_at?: string;
+  updated_at?: string;
 }
 
 export interface Material {
@@ -43,11 +91,11 @@ export interface Material {
   thickness: string;
 }
 
-export interface Style {
+export interface Colour {
   id: number;
-  styletype: string;
-  styleyear: number;
-  stylefitsize: string;
+  colouroverall: string;
+  majorcolour: string;
+  minorcolour: string;
 }
 
 export interface Info {
@@ -122,4 +170,4 @@ export interface GeolocationCoordinates {
   longitude: number;
 }
 
-export type TableName = 'home' | 'storage' | 'item' | 'colour' | 'material' | 'style' | 'info' | 'wash' | 'for_location' | 'wearlog' | 'outfit' | 'outfititem' | 'itemphoto';
+export type TableName = 'home' | 'storage' | 'item' | 'colour' | 'material' | 'style' | 'season' | 'occasion' | 'itemtag' | 'customtag' | 'info' | 'wash' | 'for_location' | 'wearlog' | 'outfit' | 'outfititem' | 'itemphoto';
