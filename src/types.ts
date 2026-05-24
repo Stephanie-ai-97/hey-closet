@@ -109,7 +109,7 @@ export interface Info {
   dk_styleid: number;
   dk_colourid: number;
   dk_material: number;
-  tag_source: 'system' | 'user';
+  tag_source: 'system' | 'user' | 'ai';
 }
 
 export interface Wash {
@@ -171,8 +171,13 @@ export interface ItemPhoto {
   id: number;
   dk_itemid: number;
   storage_path: string;
+  processed_storage_path?: string;
   is_primary: boolean;
   caption?: string;
+  ai_confidence_score?: number;
+  ai_tags?: string[];
+  ai_metadata?: Record<string, unknown>;
+  ai_status?: 'pending' | 'completed' | 'failed' | 'skipped';
   created_at?: string;
 }
 

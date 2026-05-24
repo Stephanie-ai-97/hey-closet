@@ -1,10 +1,17 @@
-import { useState, type FormEvent } from 'react';
-import { X } from 'lucide-react';
-import { Storage, Home, Info } from '../types';
+import { useEffect, useState, type FormEvent } from 'react';
+import { AlertCircle, ImagePlus, RefreshCw, Sparkles, X } from 'lucide-react';
+import { Storage, Home, Info, ItemPhoto } from '../types';
 import { api } from '../services/api';
 import { useMetadata } from '../hooks/useMetadata';
+import { useTagMetadata } from '../hooks/useTagManagement';
 import { RATING_OPTIONS, SIZE_OPTION_GROUPS, SIZE_OPTIONS, WASH_METHOD_OPTIONS } from '../lib/itemOptions';
 import { ComboboxInput } from './ComboboxInput';
+import {
+  analyzeClothingImage,
+  optimizeClothingImage,
+  type AiClothingMetadata,
+  type OptimizedClothingImage,
+} from '../services/aiClothingScan';
 
 interface ItemModalProps {
   isOpen: boolean;
@@ -16,6 +23,7 @@ interface ItemModalProps {
 
 export function ItemModal({ isOpen, storages, homes, onClose, onItemAdded }: ItemModalProps) {
   const { colours, materials, styles } = useMetadata();
+  const { seasons, occasions } = useTagMetadata();
   
   const [dk_closet, setDk_closet] = useState<string>('');
   const [itemtype, setItemtype] = useState('');
@@ -32,6 +40,13 @@ export function ItemModal({ isOpen, storages, homes, onClose, onItemAdded }: Ite
   const [texture, setTexture] = useState('');
   const [styletype, setStyletype] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [scanLoading, setScanLoading] = useState(false);
+  const [scanProgress, setScanProgress] = useState('');
+  const [scanError, setScanError] = useState<string | null>(null);
+  const [backgroundRemoval, setBackgroundRemoval] = useState(false);
+  const [originalImageFile, setOriginalImageFile] = useState<File | null>(null);
+  const [optimizedImage, setOptimizedImage] = useState<OptimizedClothingImage | null>(null);
+  const [aiMetadata, setAiMetadata] = useState<AiClothingMetadata | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
 
@@ -45,6 +60,89 @@ export function ItemModal({ isOpen, storages, homes, onClose, onItemAdded }: Ite
   const existingStyles = Array.from(new Set<string>(
     styles.map(s => s.styletype).filter((style): style is string => typeof style === 'string' && Boolean(style))
   )).sort();
+
+  useEffect(() => {
+    return () => {
+      if (optimizedImage?.previewUrl) URL.revokeObjectURL(optimizedImage.previewUrl);
+    };
+  }, [optimizedImage?.previewUrl]);
+
+  const resetScanState = () => {
+    setScanLoading(false);
+    setScanProgress('');
+    setScanError(null);
+    setOriginalImageFile(null);
+    if (optimizedImage?.previewUrl) URL.revokeObjectURL(optimizedImage.previewUrl);
+    setOptimizedImage(null);
+    setAiMetadata(null);
+  };
+
+  const applyAiMetadata = (metadata: AiClothingMetadata) => {
+    setItemtype(metadata.subcategory);
+    setColouroverall(metadata.primaryColor);
+    setMajorcolour(metadata.primaryColor);
+    setMinorcolour(metadata.secondaryColor || metadata.primaryColor);
+    setIsMultiColour(Boolean(metadata.secondaryColor && metadata.secondaryColor !== metadata.primaryColor));
+    setTexture(metadata.material);
+    setStyletype(metadata.style);
+    setItemcomment((current) => current || metadata.notes);
+  };
+
+  const handleImageScan = async (file: File) => {
+    if (!['image/jpeg', 'image/png', 'image/webp'].includes(file.type)) {
+      setScanError('Only JPEG, PNG, and WebP images can be scanned.');
+      return;
+    }
+
+    setScanLoading(true);
+    setScanError(null);
+    setAiMetadata(null);
+    setOriginalImageFile(file);
+
+    try {
+      setScanProgress('Optimizing image...');
+      if (optimizedImage?.previewUrl) URL.revokeObjectURL(optimizedImage.previewUrl);
+      const optimized = await optimizeClothingImage(file, backgroundRemoval);
+      setOptimizedImage(optimized);
+
+      setScanProgress('Analyzing clothing...');
+      const metadata = await analyzeClothingImage(optimized, backgroundRemoval);
+      setAiMetadata(metadata);
+      applyAiMetadata(metadata);
+      setScanProgress('Review AI suggestions below.');
+    } catch (err) {
+      setScanError(err instanceof Error ? err.message : 'AI scanning failed. You can retry or enter details manually.');
+      setScanProgress('Manual entry is available.');
+    } finally {
+      setScanLoading(false);
+    }
+  };
+
+  const createAiTags = async (itemId: number, metadata: AiClothingMetadata) => {
+    const normalized = (value: string) => value.toLowerCase().trim();
+    const matchingSeason = seasons.find((season) => normalized(season.season_name) === normalized(metadata.season));
+    const matchingStyle = styles.find((style) => normalized(style.styletype) === normalized(metadata.style));
+    const matchingOccasion = occasions.find((occasion) => normalized(occasion.occasion_name) === normalized(metadata.occasion));
+
+    await Promise.all([
+      matchingSeason
+        ? api.create('itemtag', { dk_itemid: itemId, dk_seasonid: matchingSeason.id, tag_source: 'ai' }).catch(() => null)
+        : Promise.resolve(null),
+      matchingStyle
+        ? api.create('itemtag', { dk_itemid: itemId, dk_styleid: matchingStyle.id, tag_source: 'ai' }).catch(() => null)
+        : Promise.resolve(null),
+      matchingOccasion
+        ? api.create('itemtag', { dk_itemid: itemId, dk_occasionid: matchingOccasion.id, tag_source: 'ai' }).catch(() => null)
+        : Promise.resolve(null),
+      ...metadata.generatedTags.map((tagName) =>
+        api.create('customtag', {
+          dk_itemid: itemId,
+          tag_name: tagName.toLowerCase().trim().replace(/\s+/g, '-'),
+          tag_category: 'ai_generated',
+        }).catch(() => null)
+      ),
+    ]);
+  };
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
 
@@ -99,23 +197,47 @@ export function ItemModal({ isOpen, storages, homes, onClose, onItemAdded }: Ite
       const materialResponse = await api.create<any>('material', {
         texture,
         softness: '',
-        thickness: '',
+        thickness: aiMetadata?.warmthLevel || '',
       });
 
       // Step 4: Create style
       const styleResponse = await api.create<any>('style', {
         styletype,
         styleyear: new Date().getFullYear(),
-        stylefitsize: itemsize,
+        stylefitsize: aiMetadata?.fit || itemsize,
       });
 
       // Step 5: Create info junction using pk_* fields from each response
+      const itemId = itemResponse.data?.pk_itemid ?? itemResponse.pk_itemid;
       await api.create<Info>('info', {
-        dk_itemid: itemResponse.data?.pk_itemid ?? itemResponse.pk_itemid,
+        dk_itemid: itemId,
         dk_styleid: styleResponse.data?.pk_styleid ?? styleResponse.pk_styleid,
         dk_colourid: colourResponse.data?.pk_colourid ?? colourResponse.pk_colourid,
         dk_material: materialResponse.data?.pk_material ?? materialResponse.pk_material,
       });
+
+      if (originalImageFile && optimizedImage) {
+        const [originalPath, processedPath] = await Promise.all([
+          api.uploadPhoto(itemId, originalImageFile),
+          api.uploadPhoto(itemId, optimizedImage.file),
+        ]);
+
+        await api.create<ItemPhoto>('itemphoto', {
+          dk_itemid: itemId,
+          storage_path: originalPath,
+          processed_storage_path: processedPath,
+          is_primary: true,
+          caption: aiMetadata ? 'AI scanned clothing photo' : '',
+          ai_confidence_score: aiMetadata?.confidenceScore,
+          ai_tags: aiMetadata?.generatedTags ?? [],
+          ai_metadata: aiMetadata ?? undefined,
+          ai_status: aiMetadata ? 'completed' : 'skipped',
+        });
+      }
+
+      if (aiMetadata) {
+        await createAiTags(itemId, aiMetadata);
+      }
 
       // Reset form
       setDk_closet('');
@@ -132,6 +254,7 @@ export function ItemModal({ isOpen, storages, homes, onClose, onItemAdded }: Ite
       setMinorcolour('');
       setTexture('');
       setStyletype('');
+      resetScanState();
       setFieldErrors({});
       setError(null);
       
@@ -179,6 +302,123 @@ export function ItemModal({ isOpen, storages, homes, onClose, onItemAdded }: Ite
               {error}
             </div>
           )}
+
+          <div className="space-y-3 rounded-xl border border-zinc-200 bg-zinc-50 p-4 dark:border-zinc-800 dark:bg-zinc-950">
+            <div className="flex items-start justify-between gap-4">
+              <div>
+                <div className="flex items-center gap-2 text-sm font-semibold text-zinc-900 dark:text-zinc-50">
+                  <Sparkles size={16} />
+                  AI clothing scan
+                </div>
+                <p className="mt-1 text-xs text-zinc-500 dark:text-zinc-400">
+                  Upload a clothing photo to prefill the editable fields below.
+                </p>
+              </div>
+              {aiMetadata && (
+                <span className="rounded-full bg-emerald-100 px-2.5 py-1 text-xs font-semibold text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300">
+                  {Math.round(aiMetadata.confidenceScore * 100)}% confidence
+                </span>
+              )}
+            </div>
+
+            <div className="flex items-center gap-3 rounded-lg bg-white p-3 dark:bg-zinc-900">
+              <input
+                type="checkbox"
+                id="background-removal"
+                checked={backgroundRemoval}
+                onChange={(event) => setBackgroundRemoval(event.target.checked)}
+                className="h-4 w-4 rounded border-zinc-300"
+                disabled={scanLoading}
+              />
+              <label htmlFor="background-removal" className="text-sm text-zinc-700 dark:text-zinc-200">
+                Optimize with a clean background
+              </label>
+            </div>
+
+            <div className="grid gap-3 sm:grid-cols-[9rem_1fr]">
+              <label className="flex aspect-square cursor-pointer items-center justify-center overflow-hidden rounded-lg border border-dashed border-zinc-300 bg-white text-zinc-500 transition-colors hover:border-zinc-500 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-400">
+                {optimizedImage ? (
+                  <img src={optimizedImage.previewUrl} alt="Processed clothing preview" className="h-full w-full object-cover" />
+                ) : (
+                  <span className="flex flex-col items-center gap-2 text-xs font-medium">
+                    <ImagePlus size={24} />
+                    Upload
+                  </span>
+                )}
+                <input
+                  type="file"
+                  accept="image/jpeg,image/png,image/webp"
+                  className="hidden"
+                  disabled={scanLoading}
+                  onChange={(event) => {
+                    const file = event.target.files?.[0];
+                    if (file) void handleImageScan(file);
+                    event.target.value = '';
+                  }}
+                />
+              </label>
+
+              <div className="min-w-0 space-y-3">
+                <div className="rounded-lg border border-zinc-200 bg-white p-3 dark:border-zinc-800 dark:bg-zinc-900">
+                  <div className="flex items-center gap-2 text-sm text-zinc-700 dark:text-zinc-200">
+                    {scanLoading && <RefreshCw size={15} className="animate-spin" />}
+                    {!scanLoading && scanError && <AlertCircle size={15} className="text-amber-500" />}
+                    {!scanLoading && !scanError && <Sparkles size={15} />}
+                    <span>{scanProgress || 'Choose an image to start AI analysis.'}</span>
+                  </div>
+                  {scanError && (
+                    <div className="mt-2 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                      <p className="text-xs text-amber-700 dark:text-amber-300">{scanError}</p>
+                      {originalImageFile && (
+                        <button
+                          type="button"
+                          onClick={() => void handleImageScan(originalImageFile)}
+                          className="inline-flex items-center justify-center gap-1.5 rounded-lg border border-amber-300 px-2.5 py-1 text-xs font-semibold text-amber-700 hover:bg-amber-50 dark:border-amber-800 dark:text-amber-300 dark:hover:bg-amber-950"
+                          disabled={scanLoading}
+                        >
+                          <RefreshCw size={12} />
+                          Retry
+                        </button>
+                      )}
+                    </div>
+                  )}
+                </div>
+
+                {aiMetadata && (
+                  <div className="space-y-2">
+                    <div className="grid grid-cols-2 gap-2 text-xs">
+                      <div className="rounded-lg bg-white p-2 dark:bg-zinc-900">
+                        <span className="block text-zinc-500">Category</span>
+                        <span className="font-semibold text-zinc-900 dark:text-zinc-50">{aiMetadata.category}</span>
+                      </div>
+                      <div className="rounded-lg bg-white p-2 dark:bg-zinc-900">
+                        <span className="block text-zinc-500">Occasion</span>
+                        <span className="font-semibold text-zinc-900 dark:text-zinc-50">{aiMetadata.occasion}</span>
+                      </div>
+                      <div className="rounded-lg bg-white p-2 dark:bg-zinc-900">
+                        <span className="block text-zinc-500">Fit</span>
+                        <span className="font-semibold text-zinc-900 dark:text-zinc-50">{aiMetadata.fit}</span>
+                      </div>
+                      <div className="rounded-lg bg-white p-2 dark:bg-zinc-900">
+                        <span className="block text-zinc-500">Warmth</span>
+                        <span className="font-semibold text-zinc-900 dark:text-zinc-50">{aiMetadata.warmthLevel}</span>
+                      </div>
+                    </div>
+                    <div className="flex flex-wrap gap-1.5">
+                      {aiMetadata.generatedTags.map((tag) => (
+                        <span key={tag} className="rounded-full bg-zinc-200 px-2 py-1 text-xs font-medium text-zinc-700 dark:bg-zinc-800 dark:text-zinc-200">
+                          {tag}
+                        </span>
+                      ))}
+                    </div>
+                    {aiMetadata.warnings.length > 0 && (
+                      <p className="text-xs text-amber-700 dark:text-amber-300">{aiMetadata.warnings.join(' ')}</p>
+                    )}
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
 
           {/* Storage Location - Required */}
           <div>

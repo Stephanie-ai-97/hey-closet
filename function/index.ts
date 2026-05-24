@@ -1,11 +1,200 @@
 // Setup type definitions for built-in Supabase Runtime APIs
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient, type SupabaseClient } from 'jsr:@supabase/supabase-js@2'
+import { z } from 'npm:zod@3.25.76'
 
 const allowedOrigins = [
   'https://hey-closet.vercel.app',
   'http://localhost:3000',
 ]
+
+const scanRateLimits = new Map<string, { count: number; resetAt: number }>()
+const SCAN_WINDOW_MS = 60_000
+const SCAN_LIMIT = 6
+
+const clothingCategories = [
+  'tops',
+  'bottoms',
+  'dresses',
+  'outerwear',
+  'shoes',
+  'accessories',
+  'activewear',
+  'sleepwear',
+  'intimates',
+] as const
+
+const clothingSubcategories = [
+  'shirt',
+  'blouse',
+  'tshirt',
+  'sweater',
+  'cardigan',
+  'hoodie',
+  'crop-top',
+  'tank-top',
+  'polo',
+  'thermal',
+  'jeans',
+  'pants',
+  'chinos',
+  'shorts',
+  'skirt',
+  'leggings',
+  'joggers',
+  'cargo',
+  'dress-pants',
+  'casual-dress',
+  'cocktail-dress',
+  'evening-dress',
+  'maxi-dress',
+  'mini-dress',
+  'shirt-dress',
+  'wrap-dress',
+  'jacket',
+  'coat',
+  'blazer',
+  'puffer',
+  'trench',
+  'leather-jacket',
+  'denim-jacket',
+  'windbreaker',
+  'sneakers',
+  'heels',
+  'flats',
+  'boots',
+  'loafers',
+  'sandals',
+  'flip-flops',
+  'slippers',
+  'wedges',
+  'scarf',
+  'hat',
+  'belt',
+  'gloves',
+  'bag',
+  'backpack',
+  'watch',
+  'jewelry',
+  'sunglasses',
+  'yoga-pants',
+  'gym-shirt',
+  'sports-bra',
+  'running-shoes',
+  'workout-shorts',
+  'athletic-tights',
+  'pajamas',
+  'nightgown',
+  'nightshirt',
+  'sleep-shorts',
+  'bra',
+  'underwear',
+  'socks',
+  'stockings',
+  'shapewear',
+] as const
+
+const colours = [
+  'white',
+  'black',
+  'gray',
+  'red',
+  'pink',
+  'magenta',
+  'purple',
+  'blue',
+  'navy',
+  'cyan',
+  'teal',
+  'green',
+  'olive',
+  'yellow',
+  'gold',
+  'orange',
+  'brown',
+  'tan',
+  'beige',
+  'cream',
+] as const
+
+const materials = [
+  'cotton',
+  'polyester',
+  'wool',
+  'silk',
+  'linen',
+  'denim',
+  'leather',
+  'suede',
+  'nylon',
+  'spandex',
+  'rayon',
+  'cashmere',
+  'blend',
+  'knit',
+  'mesh',
+  'fleece',
+] as const
+
+const seasons = ['spring', 'summer', 'fall', 'winter', 'all-season'] as const
+const styles = [
+  'casual',
+  'formal',
+  'business',
+  'sporty',
+  'bohemian',
+  'minimalist',
+  'vintage',
+  'trendy',
+  'preppy',
+  'edgy',
+  'romantic',
+  'athletic',
+  'classic',
+] as const
+const occasions = [
+  'everyday',
+  'work',
+  'business-meeting',
+  'casual-date',
+  'formal-date',
+  'party',
+  'wedding',
+  'gym',
+  'outdoor-activity',
+  'beach',
+  'sleep',
+  'lounge',
+  'travel',
+  'interview',
+] as const
+const fits = ['extra-slim', 'slim', 'regular', 'relaxed', 'oversized', 'fitted', 'loose'] as const
+const warmthLevels = ['very-cool', 'cool', 'neutral', 'warm', 'very-warm'] as const
+
+const scanRequestSchema = z.object({
+  imageDataUrl: z.string().startsWith('data:image/').max(12_000_000),
+  mimeType: z.enum(['image/jpeg', 'image/png', 'image/webp']),
+  backgroundRemoval: z.boolean().optional().default(false),
+})
+
+const aiClothingMetadataSchema = z.object({
+  category: z.enum(clothingCategories),
+  subcategory: z.enum(clothingSubcategories),
+  primaryColor: z.enum(colours),
+  secondaryColor: z.enum(colours).nullable(),
+  material: z.enum(materials),
+  season: z.enum(seasons),
+  style: z.enum(styles),
+  occasion: z.enum(occasions),
+  fit: z.enum(fits),
+  warmthLevel: z.enum(warmthLevels),
+  confidenceScore: z.number().min(0).max(1),
+  generatedTags: z.array(z.string().min(1).max(40)).min(1).max(12),
+  notes: z.string().max(240),
+  warnings: z.array(z.string().max(120)).max(5),
+})
+
+type AiClothingMetadata = z.infer<typeof aiClothingMetadataSchema>
 
 function getCorsHeaders(origin: string | null): Record<string, string> {
   const allowedOrigin = origin && allowedOrigins.includes(origin)
@@ -184,6 +373,194 @@ function errorToMessage(error: unknown): string {
   return String(error)
 }
 
+function getClientKey(req: Request): string {
+  return req.headers.get('x-forwarded-for')?.split(',')[0]?.trim()
+    || req.headers.get('cf-connecting-ip')
+    || 'anonymous'
+}
+
+function enforceScanRateLimit(req: Request): void {
+  const key = getClientKey(req)
+  const now = Date.now()
+  const current = scanRateLimits.get(key)
+
+  if (!current || current.resetAt <= now) {
+    scanRateLimits.set(key, { count: 1, resetAt: now + SCAN_WINDOW_MS })
+    return
+  }
+
+  if (current.count >= SCAN_LIMIT) {
+    throw new Error('AI scan rate limit reached. Please wait a minute and try again.')
+  }
+
+  scanRateLimits.set(key, { ...current, count: current.count + 1 })
+}
+
+const scanJsonSchema = {
+  type: 'object',
+  additionalProperties: false,
+  required: [
+    'category',
+    'subcategory',
+    'primaryColor',
+    'secondaryColor',
+    'material',
+    'season',
+    'style',
+    'occasion',
+    'fit',
+    'warmthLevel',
+    'confidenceScore',
+    'generatedTags',
+    'notes',
+    'warnings',
+  ],
+  properties: {
+    category: { type: 'string', enum: clothingCategories },
+    subcategory: { type: 'string', enum: clothingSubcategories },
+    primaryColor: { type: 'string', enum: colours },
+    secondaryColor: { anyOf: [{ type: 'string', enum: colours }, { type: 'null' }] },
+    material: { type: 'string', enum: materials },
+    season: { type: 'string', enum: seasons },
+    style: { type: 'string', enum: styles },
+    occasion: { type: 'string', enum: occasions },
+    fit: { type: 'string', enum: fits },
+    warmthLevel: { type: 'string', enum: warmthLevels },
+    confidenceScore: { type: 'number', minimum: 0, maximum: 1 },
+    generatedTags: {
+      type: 'array',
+      minItems: 1,
+      maxItems: 12,
+      items: { type: 'string' },
+    },
+    notes: { type: 'string' },
+    warnings: {
+      type: 'array',
+      maxItems: 5,
+      items: { type: 'string' },
+    },
+  },
+} as const
+
+function extractResponseText(responseBody: Record<string, unknown>): string {
+  if (typeof responseBody.output_text === 'string') return responseBody.output_text
+
+  const output = Array.isArray(responseBody.output) ? responseBody.output : []
+  for (const item of output) {
+    if (!item || typeof item !== 'object') continue
+    const content = Array.isArray((item as { content?: unknown }).content)
+      ? (item as { content: unknown[] }).content
+      : []
+    for (const part of content) {
+      if (!part || typeof part !== 'object') continue
+      const text = (part as { text?: unknown }).text
+      if (typeof text === 'string') return text
+    }
+  }
+
+  throw new Error('AI response did not include structured text output.')
+}
+
+async function analyzeClothingImage(req: Request, corsHeaders: Record<string, string>): Promise<Response> {
+  enforceScanRateLimit(req)
+
+  const openAiApiKey = Deno.env.get('OPENAI_API_KEY')
+  if (!openAiApiKey) {
+    return json(
+      {
+        error: 'AI scanning is not configured. Add OPENAI_API_KEY to the Supabase function environment.',
+        fallback: 'manual-entry',
+      },
+      corsHeaders,
+      503,
+    )
+  }
+
+  const requestBody = scanRequestSchema.parse(await req.json())
+  const model = Deno.env.get('OPENAI_VISION_MODEL') || 'gpt-4.1-mini'
+  const openAiResponse = await fetch('https://api.openai.com/v1/responses', {
+    method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${openAiApiKey}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      model,
+      input: [
+        {
+          role: 'system',
+          content: [
+            {
+              type: 'input_text',
+              text: [
+                'Analyze a single clothing item image for a closet inventory app.',
+                'Return only visible or strongly inferable wardrobe metadata.',
+                'Prefer conservative, normalized enum values over guesses.',
+                'If the image is unclear, lower confidence and add a warning.',
+              ].join(' '),
+            },
+          ],
+        },
+        {
+          role: 'user',
+          content: [
+            {
+              type: 'input_text',
+              text: `Extract metadata. Background removal requested: ${requestBody.backgroundRemoval ? 'yes' : 'no'}.`,
+            },
+            {
+              type: 'input_image',
+              image_url: requestBody.imageDataUrl,
+              detail: 'high',
+            },
+          ],
+        },
+      ],
+      text: {
+        format: {
+          type: 'json_schema',
+          name: 'clothing_scan',
+          strict: true,
+          schema: scanJsonSchema,
+        },
+      },
+    }),
+  })
+
+  if (!openAiResponse.ok) {
+    const errorBody = await openAiResponse.text()
+    console.error('[AI scan] OpenAI error', openAiResponse.status, errorBody)
+    return json(
+      {
+        error: openAiResponse.status === 429
+          ? 'AI scanning is temporarily rate limited. Please try again soon.'
+          : 'AI scanning failed. You can retry or enter details manually.',
+        fallback: 'manual-entry',
+      },
+      corsHeaders,
+      openAiResponse.status === 429 ? 429 : 502,
+    )
+  }
+
+  const responseBody = await openAiResponse.json() as Record<string, unknown>
+  const refusal = JSON.stringify(responseBody).includes('"refusal"')
+  if (refusal) {
+    return json(
+      {
+        error: 'AI scanning declined this image. Please retry with a clearer clothing photo or enter details manually.',
+        fallback: 'manual-entry',
+      },
+      corsHeaders,
+      422,
+    )
+  }
+
+  const parsed = JSON.parse(extractResponseText(responseBody))
+  const metadata: AiClothingMetadata = aiClothingMetadataSchema.parse(parsed)
+
+  return json({ data: metadata }, corsHeaders)
+}
+
 function resolveResource(pathname: string): { resource: string; resourceId: string | null } {
   const pathParts = pathname.split('/').filter(Boolean)
   const tableIdx = pathParts.findIndex((part, index) => {
@@ -287,6 +664,11 @@ Deno.serve(async (req) => {
 
     const urlObj = new URL(url)
     const searchParams = urlObj.searchParams
+
+    if (urlObj.pathname.endsWith('/ai/scan')) {
+      if (method !== 'POST') return json({ error: 'Method not allowed' }, corsHeaders, 405)
+      return analyzeClothingImage(req, corsHeaders)
+    }
 
     const { resource, resourceId } = resolveResource(urlObj.pathname)
 

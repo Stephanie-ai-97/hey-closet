@@ -1,4 +1,5 @@
 import { TableName } from '../types';
+import type { AiClothingMetadata } from './aiClothingScan';
 
 const BASE_URL = 'https://nuqpcxgonlqlxtujxmhx.supabase.co/functions/v1/storage';
 const API_KEY = (import.meta as any).env.VITE_SUPABASE_API_KEY || (process.env as any).VITE_SUPABASE_API_KEY;
@@ -145,6 +146,18 @@ export const api = {
     return request(`/${table}/${id}`, {
       method: 'DELETE',
     });
+  },
+
+  analyzeClothingImage: async (payload: {
+    imageDataUrl: string;
+    mimeType: 'image/jpeg' | 'image/png' | 'image/webp';
+    backgroundRemoval: boolean;
+  }): Promise<AiClothingMetadata> => {
+    const result = await request<{ data: AiClothingMetadata }>('/ai/scan', {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    });
+    return result.data;
   },
 
   uploadPhoto: async (itemId: number, file: File): Promise<string> => {
