@@ -36,6 +36,10 @@ export interface Item {
   fit?: string;
   created_at?: string;
   updated_at?: string;
+  seasons?: string[];
+  styles?: string[];
+  occasions?: string[];
+  photo_url?: string;
 }
 
 // ============= TAG SYSTEM INTERFACES =============
@@ -135,9 +139,14 @@ export interface WearLog {
 export interface Outfit {
   id: number;
   outfitname: string;
-  occasion: string;
-  season: string;
+  occasion?: string;
+  season?: string;
   notes?: string;
+  styles?: string[];
+  seasons?: string[];
+  occasions?: string[];
+  favorite?: boolean;
+  createdAt?: string;
   created_at?: string;
 }
 
@@ -145,6 +154,17 @@ export interface OutfitItem {
   id: number;
   dk_outfitid: number;
   dk_itemid: number;
+  slot?: OutfitSlot;
+}
+
+export type OutfitSlot = 'top' | 'bottom' | 'shoes' | 'outerwear' | 'accessories';
+
+export interface OutfitSelection {
+  top?: Item;
+  bottom?: Item;
+  shoes?: Item;
+  outerwear?: Item;
+  accessories?: Item[];
 }
 
 export interface ItemPhoto {

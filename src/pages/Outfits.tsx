@@ -1,27 +1,79 @@
+import { useMemo, useState } from 'react';
+import { Filter, Heart, Layers, Plus, X } from 'lucide-react';
 import { PageContainer } from '../components/PageContainer';
 import { OutfitModal } from '../components/OutfitModal';
 import { DeleteConfirmModal } from '../components/DeleteConfirmModal';
-import { ItemSVGIcon } from '../components/ItemSVGIcon';
-import { useOutfits } from '../hooks/useOutfits';
+import { OutfitCard } from '../components/OutfitCard';
+import { useOutfits, OutfitWithItems } from '../hooks/useOutfits';
 import { useItemColours } from '../hooks/useItemColours';
 import { api } from '../services/api';
-import { useState } from 'react';
-import { Plus, Layers, Tag, Calendar, Trash2 } from 'lucide-react';
+import { Outfit } from '../types';
 import { cn } from '../lib/utils';
+
+function unwrap<T>(value: T): T {
+  return ((value as any)?.data ?? value) as T;
+}
 
 export default function Outfits() {
   const { outfits, allItems, loading, error, refetch } = useOutfits();
   const { itemsWithColours } = useItemColours(allItems);
   const [modalOpen, setModalOpen] = useState(false);
-  const [deleteTarget, setDeleteTarget] = useState<{ id: number; name: string } | null>(null);
+  const [editing, setEditing] = useState<OutfitWithItems | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<OutfitWithItems | null>(null);
+  const [seasonFilter, setSeasonFilter] = useState('');
+  const [styleFilter, setStyleFilter] = useState('');
+  const [favoritesOnly, setFavoritesOnly] = useState(false);
+
+  const seasonOptions = useMemo(() => {
+    return Array.from(new Set(outfits.flatMap(({ outfit }) => outfit.seasons || []))).filter(Boolean).sort();
+  }, [outfits]);
+
+  const styleOptions = useMemo(() => {
+    return Array.from(new Set(outfits.flatMap(({ outfit }) => outfit.styles || []))).filter(Boolean).sort();
+  }, [outfits]);
+
+  const filteredOutfits = useMemo(() => {
+    return outfits.filter(({ outfit }) => {
+      const matchesSeason = !seasonFilter || outfit.seasons?.includes(seasonFilter);
+      const matchesStyle = !styleFilter || outfit.styles?.includes(styleFilter);
+      const matchesFavorite = !favoritesOnly || outfit.favorite;
+      return matchesSeason && matchesStyle && matchesFavorite;
+    });
+  }, [favoritesOnly, outfits, seasonFilter, styleFilter]);
+
+  const getColouredItems = (items: OutfitWithItems['items']) => {
+    const ids = new Set(items.map(item => item.id));
+    return itemsWithColours.filter(item => ids.has(item.id));
+  };
 
   const handleDelete = async () => {
     if (!deleteTarget) return;
-    await api.delete('outfit', deleteTarget.id);
+    await Promise.all(deleteTarget.outfitItems.map(link => api.delete('outfititem', link.id)));
+    await api.delete('outfit', deleteTarget.outfit.id);
+    setDeleteTarget(null);
     await refetch();
   };
 
-  if (loading) return <div className="p-8 animate-pulse text-center dark:text-zinc-400">Loading outfit archive...</div>;
+  const handleToggleFavorite = async (outfit: Outfit) => {
+    const nextFavorite = !outfit.favorite;
+    try {
+      unwrap(await api.update<Outfit>('outfit', outfit.id, { favorite: nextFavorite }));
+    } catch {
+      await api.update<Outfit>('outfit', outfit.id, {
+        outfitname: outfit.outfitname,
+        season: outfit.season || outfit.seasons?.[0] || 'all-season',
+        occasion: outfit.occasion || outfit.occasions?.[0] || 'everyday',
+      });
+    }
+    await refetch();
+  };
+
+  const closeModal = () => {
+    setModalOpen(false);
+    setEditing(null);
+  };
+
+  if (loading) return <div className="p-8 text-center text-zinc-400 dark:text-zinc-500">Loading outfit gallery...</div>;
   if (error) return <div className="p-8 text-red-500">{error}</div>;
 
   return (
@@ -29,112 +81,115 @@ export default function Outfits() {
       <OutfitModal
         isOpen={modalOpen}
         allItems={itemsWithColours}
-        onClose={() => setModalOpen(false)}
-        onOutfitCreated={refetch}
+        editingOutfit={editing?.outfit}
+        editingItems={editing ? getColouredItems(editing.items) : []}
+        editingOutfitItems={editing?.outfitItems}
+        onClose={closeModal}
+        onOutfitSaved={refetch}
       />
       <DeleteConfirmModal
         isOpen={!!deleteTarget}
-        itemName={deleteTarget?.name ?? ''}
+        itemName={deleteTarget?.outfit.outfitname ?? ''}
         onClose={() => setDeleteTarget(null)}
         onConfirm={handleDelete}
       />
+
       <PageContainer
-        title="Outfit Archive"
-        subtitle="Curated combinations from your wardrobe."
+        title="Outfit Gallery"
+        subtitle="Build and manage complete outfits from your wardrobe."
         actions={
           <button
             onClick={() => setModalOpen(true)}
-            className="flex items-center gap-2 px-4 py-2 bg-zinc-900 dark:bg-zinc-100 text-white dark:text-zinc-900 rounded-xl text-sm font-semibold hover:bg-zinc-800 dark:hover:bg-zinc-200 transition-all shadow-md shadow-black/10"
+            className="flex items-center gap-2 rounded-xl bg-zinc-900 px-4 py-2 text-sm font-semibold text-white shadow-md shadow-black/10 transition-all hover:bg-zinc-800 dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-zinc-200"
           >
             <Plus size={18} />
             New Outfit
           </button>
         }
       >
+        <div className="mb-5 flex flex-col gap-3 rounded-xl border border-zinc-200 bg-white p-3 dark:border-zinc-800 dark:bg-zinc-900 md:flex-row md:items-center">
+          <div className="flex items-center gap-2 text-sm font-semibold text-zinc-700 dark:text-zinc-300">
+            <Filter size={16} />
+            Filters
+          </div>
+          <select
+            value={seasonFilter}
+            onChange={(event) => setSeasonFilter(event.target.value)}
+            className="rounded-lg border border-zinc-200 bg-white px-3 py-2 text-sm text-zinc-900 outline-none dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-50"
+            aria-label="Filter outfits by season"
+          >
+            <option value="">All seasons</option>
+            {seasonOptions.map(season => <option key={season} value={season}>{season}</option>)}
+          </select>
+          <select
+            value={styleFilter}
+            onChange={(event) => setStyleFilter(event.target.value)}
+            className="rounded-lg border border-zinc-200 bg-white px-3 py-2 text-sm text-zinc-900 outline-none dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-50"
+            aria-label="Filter outfits by style"
+          >
+            <option value="">All styles</option>
+            {styleOptions.map(style => <option key={style} value={style}>{style}</option>)}
+          </select>
+          <button
+            type="button"
+            onClick={() => setFavoritesOnly(prev => !prev)}
+            className={cn(
+              'flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-semibold transition-colors',
+              favoritesOnly
+                ? 'bg-rose-50 text-rose-600 dark:bg-rose-950/40 dark:text-rose-300'
+                : 'bg-zinc-100 text-zinc-500 hover:text-zinc-900 dark:bg-zinc-800 dark:text-zinc-400 dark:hover:text-zinc-50'
+            )}
+          >
+            <Heart size={16} fill={favoritesOnly ? 'currentColor' : 'none'} />
+            Favorites
+          </button>
+          {(seasonFilter || styleFilter || favoritesOnly) && (
+            <button
+              type="button"
+              onClick={() => {
+                setSeasonFilter('');
+                setStyleFilter('');
+                setFavoritesOnly(false);
+              }}
+              className="ml-auto flex items-center gap-1.5 rounded-lg px-3 py-2 text-sm font-semibold text-zinc-400 transition-colors hover:bg-zinc-100 hover:text-zinc-900 dark:hover:bg-zinc-800 dark:hover:text-zinc-50"
+            >
+              <X size={15} />
+              Clear
+            </button>
+          )}
+        </div>
+
         {outfits.length === 0 ? (
-          <div className="py-24 flex flex-col items-center justify-center text-zinc-400 dark:text-zinc-500 space-y-4">
+          <div className="flex flex-col items-center justify-center space-y-4 py-24 text-zinc-400 dark:text-zinc-500">
             <Layers size={48} className="opacity-20" />
-            <p className="text-lg font-medium">No outfits archived yet</p>
+            <p className="text-lg font-medium">No outfits saved yet</p>
             <button
               onClick={() => setModalOpen(true)}
-              className="px-5 py-2 bg-zinc-900 dark:bg-zinc-100 text-white dark:text-zinc-900 rounded-xl text-sm font-semibold hover:bg-zinc-800 dark:hover:bg-zinc-200 transition-colors"
+              className="rounded-xl bg-zinc-900 px-5 py-2 text-sm font-semibold text-white transition-colors hover:bg-zinc-800 dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-zinc-200"
             >
-              Create your first outfit
+              Build your first outfit
             </button>
           </div>
+        ) : filteredOutfits.length === 0 ? (
+          <div className="flex h-56 items-center justify-center rounded-xl border border-dashed border-zinc-200 text-sm text-zinc-400 dark:border-zinc-800 dark:text-zinc-500">
+            No outfits match these filters
+          </div>
         ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-            {outfits.map(({ outfit, items: linkedItems }) => {
-              const linkedItemIds = new Set(linkedItems.map(item => item.id));
-              const itemsWithColourData = itemsWithColours.filter(item => linkedItemIds.has(item.id));
-              return (
-              <div
-                key={outfit.id}
-                className="bg-white dark:bg-zinc-900 rounded-2xl border border-zinc-200 dark:border-zinc-800 p-5 shadow-sm hover:shadow-md transition-all flex flex-col"
-              >
-                {/* Item icons strip */}
-                <div className="flex gap-2 mb-4 overflow-x-auto pb-1 min-h-[56px] items-center">
-                  {itemsWithColourData.length === 0 ? (
-                    <div className="text-xs text-zinc-400 italic">No items linked</div>
-                  ) : (
-                    itemsWithColourData.slice(0, 6).map(item => (
-                      <div
-                        key={item.id}
-                        className={cn(
-                          "w-12 h-12 rounded-xl flex items-center justify-center shrink-0",
-                          item.in_temp
-                            ? "bg-blue-100 dark:bg-blue-900 text-blue-600"
-                            : "bg-zinc-100 dark:bg-zinc-800 text-zinc-500 dark:text-zinc-400"
-                        )}
-                        title={`${item.itemtype} · ${item.itemsize}`}
-                      >
-                        <ItemSVGIcon 
-                          itemtype={item.itemtype} 
-                          size={26}
-                          majorColour={item.colour?.majorcolour}
-                          minorColour={item.colour?.minorcolour}
-                          color={item.colour?.majorcolour}
-                        />
-                      </div>
-                    ))
-                  )}
-                  {itemsWithColourData.length > 6 && (
-                    <div className="w-12 h-12 bg-zinc-100 dark:bg-zinc-800 rounded-xl flex items-center justify-center text-zinc-500 dark:text-zinc-400 text-xs font-bold shrink-0">
-                      +{itemsWithColourData.length - 6}
-                    </div>
-                  )}
-                </div>
-
-                <div className="flex-1">
-                  <h3 className="font-bold text-zinc-900 dark:text-zinc-50 text-base mb-1">{outfit.outfitname}</h3>
-                  <div className="flex flex-wrap gap-2 mb-3">
-                    <span className="flex items-center gap-1 text-[10px] font-medium text-zinc-500 dark:text-zinc-400 bg-zinc-100 dark:bg-zinc-800 px-2 py-1 rounded-full">
-                      <Tag size={9} />
-                      {outfit.occasion}
-                    </span>
-                    <span className="flex items-center gap-1 text-[10px] font-medium text-zinc-500 dark:text-zinc-400 bg-zinc-100 dark:bg-zinc-800 px-2 py-1 rounded-full">
-                      <Calendar size={9} />
-                      {outfit.season}
-                    </span>
-                  </div>
-                  {outfit.notes && (
-                    <p className="text-xs text-zinc-400 dark:text-zinc-500 italic line-clamp-2">{outfit.notes}</p>
-                  )}
-                </div>
-
-                <div className="flex items-center justify-between mt-4 pt-4 border-t border-zinc-50 dark:border-zinc-800">
-                  <span className="text-xs text-zinc-400 dark:text-zinc-500">{itemsWithColourData.length} item{itemsWithColourData.length !== 1 ? 's' : ''}</span>
-                  <button
-                    onClick={() => setDeleteTarget({ id: outfit.id, name: outfit.outfitname })}
-                    className="p-1.5 text-zinc-300 dark:text-zinc-600 hover:text-red-500 transition-colors rounded-lg hover:bg-red-50 dark:hover:bg-red-950"
-                    title="Delete outfit"
-                  >
-                    <Trash2 size={14} />
-                  </button>
-                </div>
-              </div>
-              );
-            })}
+          <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 xl:grid-cols-3">
+            {filteredOutfits.map(outfitWithItems => (
+              <OutfitCard
+                key={outfitWithItems.outfit.id}
+                outfit={outfitWithItems.outfit}
+                items={getColouredItems(outfitWithItems.items)}
+                outfitItems={outfitWithItems.outfitItems}
+                onEdit={() => {
+                  setEditing(outfitWithItems);
+                  setModalOpen(true);
+                }}
+                onDelete={() => setDeleteTarget(outfitWithItems)}
+                onToggleFavorite={() => handleToggleFavorite(outfitWithItems.outfit)}
+              />
+            ))}
           </div>
         )}
       </PageContainer>

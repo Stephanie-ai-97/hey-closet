@@ -90,6 +90,25 @@ interface Wash {
   lastwashdate?: string | null
 }
 
+interface Outfit {
+  pk_outfitid?: number
+  outfitname: string
+  occasion?: string | null
+  season?: string | null
+  notes?: string | null
+  styles?: string[] | null
+  seasons?: string[] | null
+  occasions?: string[] | null
+  favorite?: boolean | null
+}
+
+interface OutfitItem {
+  pk_outfititemid?: number
+  dk_outfitid: number
+  dk_itemid: number
+  slot?: string | null
+}
+
 // --- Table config: maps URL segment -> table name & primary key column
 
 const TABLE_CONFIG: Record<string, { table: string; pk: string }> = {
@@ -102,6 +121,13 @@ const TABLE_CONFIG: Record<string, { table: string; pk: string }> = {
   storage:      { table: 'storage',      pk: 'pk_closet'        },
   style:        { table: 'style',        pk: 'pk_styleid'       },
   wash:         { table: 'wash',         pk: 'pk_wash'          },
+  season:       { table: 'season',       pk: 'pk_seasonid'      },
+  occasion:     { table: 'occasion',     pk: 'pk_occasionid'    },
+  itemtag:      { table: 'itemtag',      pk: 'pk_itemtagid'     },
+  customtag:    { table: 'customtag',    pk: 'pk_customtagid'   },
+  outfit:       { table: 'outfit',       pk: 'pk_outfitid'      },
+  outfititem:   { table: 'outfititem',   pk: 'pk_outfititemid'  },
+  itemphoto:    { table: 'itemphoto',    pk: 'pk_itemphotoid'   },
 }
 
 // Query params that are allowed as filters per table (foreign key columns)
@@ -111,6 +137,10 @@ const ALLOWED_FILTERS: Record<string, string[]> = {
   item:         ['dk_closet'],
   storage:      ['dk_homelocation'],
   wash:         ['dk_itemid'],
+  itemtag:      ['dk_itemid', 'dk_seasonid', 'dk_styleid', 'dk_occasionid'],
+  customtag:    ['dk_itemid'],
+  outfititem:   ['dk_outfitid', 'dk_itemid', 'slot'],
+  itemphoto:    ['dk_itemid', 'is_primary'],
 }
 
 // Tables that expose a joined select (Supabase PostgREST syntax)
@@ -120,6 +150,9 @@ const JOINED_SELECT: Record<string, string> = {
   wash: '*, item(*)',
   for_location: '*, style(*)',
   storage: '*, home(*)',
+  itemtag: '*, season(*), style(*), occasion(*)',
+  outfititem: '*, item(*)',
+  itemphoto: '*',
 }
 
 // --- Generic CRUD helpers

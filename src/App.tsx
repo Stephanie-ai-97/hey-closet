@@ -148,6 +148,7 @@ export default function App() {
             <NavItem to="/" icon={LayoutDashboard} label="Dashboard" collapsed={isSidebarCollapsed} />
             <NavItem to="/warehouse" icon={Warehouse} label="Warehouse" collapsed={isSidebarCollapsed} />
             <NavItem to="/inventory" icon={Package} label="Inventory" collapsed={isSidebarCollapsed} />
+            <NavItem to="/outfits" icon={Layers} label="Outfits" collapsed={isSidebarCollapsed} />
             <NavItem to="/search" icon={Search} label="Search" collapsed={isSidebarCollapsed} />
             <NavItem to="/washes" icon={Droplets} label="Wash Tracker" collapsed={isSidebarCollapsed} />
             <NavItem to="/wash-analysis" icon={BarChart2} label="Wash Analysis" collapsed={isSidebarCollapsed} />
@@ -177,6 +178,7 @@ export default function App() {
           <MobileNavItem to="/" icon={LayoutDashboard} label="Dashboard" />
           <MobileNavItem to="/warehouse" icon={Warehouse} label="Warehouse" />
           <MobileNavItem to="/inventory" icon={Package} label="Inventory" />
+          <MobileNavItem to="/outfits" icon={Layers} label="Outfits" />
           <MobileNavItem to="/search" icon={Search} label="Search" />
           <MobileNavItem to="/washes" icon={Droplets} label="Wash Tracker" />
           <MobileNavItem to="/wash-analysis" icon={BarChart2} label="Wash Analysis" />
