@@ -50,6 +50,7 @@ function normalizeIds<T>(value: T): T {
 async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
   const headers = {
     'apikey': API_KEY,
+    ...(API_KEY ? { 'Authorization': `Bearer ${API_KEY}` } : {}),
     'Content-Type': 'application/json',
     ...options.headers,
   };
@@ -61,6 +62,7 @@ async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
     body: options.body ? JSON.parse(options.body as string) : undefined,
     headers: {
       'apikey': API_KEY ? '***REDACTED***' : 'MISSING',
+      'Authorization': API_KEY ? 'Bearer ***REDACTED***' : 'MISSING',
       'Content-Type': 'application/json',
     },
   });

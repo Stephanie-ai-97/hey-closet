@@ -1,6 +1,6 @@
 // Setup type definitions for built-in Supabase Runtime APIs
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
-import { createClient, SupabaseClient } from 'jsr:@supabase/supabase-js@2'
+import { createClient, type SupabaseClient } from 'jsr:@supabase/supabase-js@2'
 
 const allowedOrigins = [
   'https://hey-closet.vercel.app',
@@ -16,6 +16,7 @@ function getCorsHeaders(origin: string | null): Record<string, string> {
     'Access-Control-Allow-Origin': allowedOrigin,
     'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
     'Access-Control-Allow-Methods': 'POST, GET, OPTIONS, PUT, DELETE',
+    'Vary': 'Origin',
   }
 }
 
@@ -90,6 +91,14 @@ interface Wash {
   lastwashdate?: string | null
 }
 
+interface WearLog {
+  id?: number
+  dk_itemid: number
+  worn_date: string
+  outfit_id?: number | null
+  notes?: string | null
+}
+
 interface Outfit {
   pk_outfitid?: number
   outfitname: string
@@ -121,6 +130,7 @@ const TABLE_CONFIG: Record<string, { table: string; pk: string }> = {
   storage:      { table: 'storage',      pk: 'pk_closet'        },
   style:        { table: 'style',        pk: 'pk_styleid'       },
   wash:         { table: 'wash',         pk: 'pk_wash'          },
+  wearlog:      { table: 'wearlog',      pk: 'id'               },
   season:       { table: 'season',       pk: 'pk_seasonid'      },
   occasion:     { table: 'occasion',     pk: 'pk_occasionid'    },
   itemtag:      { table: 'itemtag',      pk: 'pk_itemtagid'     },
@@ -137,6 +147,7 @@ const ALLOWED_FILTERS: Record<string, string[]> = {
   item:         ['dk_closet'],
   storage:      ['dk_homelocation'],
   wash:         ['dk_itemid'],
+  wearlog:      ['dk_itemid', 'outfit_id'],
   itemtag:      ['dk_itemid', 'dk_seasonid', 'dk_styleid', 'dk_occasionid'],
   customtag:    ['dk_itemid'],
   outfititem:   ['dk_outfitid', 'dk_itemid', 'slot'],
@@ -148,6 +159,7 @@ const JOINED_SELECT: Record<string, string> = {
   info: '*, colour(*), style(*), item(*), material(*)',
   item: '*, storage(*)',
   wash: '*, item(*)',
+  wearlog: '*, item(*)',
   for_location: '*, style(*)',
   storage: '*, home(*)',
   itemtag: '*, season(*), style(*), occasion(*)',
@@ -162,6 +174,29 @@ function json(data: unknown, corsHeaders: Record<string, string>, status = 200):
     headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     status,
   })
+}
+
+function errorToMessage(error: unknown): string {
+  if (error instanceof Error) return error.message
+  if (error && typeof error === 'object' && 'message' in error) {
+    return String((error as { message: unknown }).message)
+  }
+  return String(error)
+}
+
+function resolveResource(pathname: string): { resource: string; resourceId: string | null } {
+  const pathParts = pathname.split('/').filter(Boolean)
+  const tableIdx = pathParts.findIndex((part, index) => {
+    if (!TABLE_CONFIG[part]) return false
+    const next = pathParts[index + 1]
+    return !next || !TABLE_CONFIG[next]
+  })
+
+  const resource = tableIdx !== -1 ? pathParts[tableIdx] : ''
+  const nextSegment = tableIdx !== -1 ? pathParts[tableIdx + 1] : undefined
+  const resourceId = nextSegment && !TABLE_CONFIG[nextSegment] ? nextSegment : null
+
+  return { resource, resourceId }
 }
 
 async function getAll(
@@ -247,22 +282,13 @@ Deno.serve(async (req) => {
   try {
     const supabaseClient = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_ANON_KEY') ?? '',
+      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? Deno.env.get('SUPABASE_ANON_KEY') ?? '',
     )
 
     const urlObj = new URL(url)
     const searchParams = urlObj.searchParams
 
-    const pathParts = urlObj.pathname.split('/').filter(Boolean)
-    const tableIdx = pathParts.findIndex((p, i) => {
-      if (!TABLE_CONFIG[p]) return false
-      const next = pathParts[i + 1]
-      return !next || !TABLE_CONFIG[next]
-    })
-    const resource = tableIdx !== -1 ? pathParts[tableIdx] : ''
-    const nextSegment = tableIdx !== -1 ? pathParts[tableIdx + 1] : undefined
-    // Only treat the next segment as an ID if it is not itself a table name
-    const resourceId = nextSegment && !TABLE_CONFIG[nextSegment] ? nextSegment : null
+    const { resource, resourceId } = resolveResource(urlObj.pathname)
 
     if (resource && TABLE_CONFIG[resource]) {
       let body: Record<string, unknown> = {}
@@ -290,7 +316,7 @@ Deno.serve(async (req) => {
   } catch (error) {
     console.error(error)
 
-    return new Response(JSON.stringify({ error: error.message }), {
+    return new Response(JSON.stringify({ error: errorToMessage(error) }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       status: 400,
     })
