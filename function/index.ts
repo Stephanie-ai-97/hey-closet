@@ -477,8 +477,10 @@ async function analyzeClothingImage(req: Request, corsHeaders: Record<string, st
   }
 
   const requestBody = scanRequestSchema.parse(await req.json())
-  const model = Deno.env.get('OPENAI_VISION_MODEL') || 'gpt-4.1-mini'
-  const openAiResponse = await fetch('https://api.openai.com/v1/responses', {
+  const model = Deno.env.get('OPENAI_VISION_MODEL') || 'gpt-4o-mini'
+  
+  // Construct the OpenAI API request with vision capabilities and structured output
+  const openAiResponse = await fetch('https://api.openai.com/v1/chat/completions', {
     method: 'POST',
     headers: {
       'Authorization': `Bearer ${openAiApiKey}`,
@@ -486,17 +488,19 @@ async function analyzeClothingImage(req: Request, corsHeaders: Record<string, st
     },
     body: JSON.stringify({
       model,
-      input: [
+      messages: [
         {
           role: 'system',
           content: [
             {
-              type: 'input_text',
+              type: 'text',
               text: [
-                'Analyze a single clothing item image for a closet inventory app.',
-                'Return only visible or strongly inferable wardrobe metadata.',
+                'You are an expert clothing analyst for a personal wardrobe management system.',
+                'Analyze the provided clothing item image and extract structured metadata.',
+                'Return ONLY visible or strongly inferable wardrobe metadata.',
                 'Prefer conservative, normalized enum values over guesses.',
-                'If the image is unclear, lower confidence and add a warning.',
+                'If the image is unclear or not a clothing item, lower confidence and add a warning.',
+                'Never output invalid enum values - always choose from the allowed options.',
               ].join(' '),
             },
           ],
@@ -505,23 +509,75 @@ async function analyzeClothingImage(req: Request, corsHeaders: Record<string, st
           role: 'user',
           content: [
             {
-              type: 'input_text',
-              text: `Extract metadata. Background removal requested: ${requestBody.backgroundRemoval ? 'yes' : 'no'}.`,
+              type: 'text',
+              text: [
+                'Extract detailed clothing metadata for this item.',
+                `Background removal processing: ${requestBody.backgroundRemoval ? 'requested' : 'not requested'}`,
+                'Return the analysis as a JSON object with the exact structure specified.',
+              ].join('\n'),
             },
             {
-              type: 'input_image',
-              image_url: requestBody.imageDataUrl,
-              detail: 'high',
+              type: 'image_url',
+              image_url: {
+                url: requestBody.imageDataUrl,
+                detail: 'high',
+              },
             },
           ],
         },
       ],
-      text: {
-        format: {
-          type: 'json_schema',
-          name: 'clothing_scan',
+      temperature: 0.3, // Lower temperature for more consistent outputs
+      max_tokens: 1000,
+      response_format: {
+        type: 'json_schema',
+        json_schema: {
+          name: 'clothing_scan_metadata',
           strict: true,
-          schema: scanJsonSchema,
+          schema: {
+            type: 'object',
+            properties: {
+              category: { type: 'string', enum: clothingCategories },
+              subcategory: { type: 'string', enum: clothingSubcategories },
+              primaryColor: { type: 'string', enum: colours },
+              secondaryColor: { type: ['string', 'null'], enum: [...colours, null] },
+              material: { type: 'string', enum: materials },
+              season: { type: 'string', enum: seasons },
+              style: { type: 'string', enum: styles },
+              occasion: { type: 'string', enum: occasions },
+              fit: { type: 'string', enum: fits },
+              warmthLevel: { type: 'string', enum: warmthLevels },
+              confidenceScore: { type: 'number', minimum: 0, maximum: 1 },
+              generatedTags: {
+                type: 'array',
+                items: { type: 'string', minLength: 1, maxLength: 40 },
+                minItems: 1,
+                maxItems: 12,
+              },
+              notes: { type: 'string', maxLength: 240 },
+              warnings: {
+                type: 'array',
+                items: { type: 'string', maxLength: 120 },
+                maxItems: 5,
+              },
+            },
+            required: [
+              'category',
+              'subcategory',
+              'primaryColor',
+              'secondaryColor',
+              'material',
+              'season',
+              'style',
+              'occasion',
+              'fit',
+              'warmthLevel',
+              'confidenceScore',
+              'generatedTags',
+              'notes',
+              'warnings',
+            ],
+            additionalProperties: false,
+          },
         },
       },
     }),
@@ -530,35 +586,83 @@ async function analyzeClothingImage(req: Request, corsHeaders: Record<string, st
   if (!openAiResponse.ok) {
     const errorBody = await openAiResponse.text()
     console.error('[AI scan] OpenAI error', openAiResponse.status, errorBody)
+    
+    if (openAiResponse.status === 429) {
+      return json(
+        {
+          error: 'AI service is rate limited. Please try again in a minute.',
+          fallback: 'manual-entry',
+          retryAfter: 60,
+        },
+        corsHeaders,
+        429,
+      )
+    }
+    
+    if (openAiResponse.status >= 500) {
+      return json(
+        {
+          error: 'AI service is temporarily unavailable. Please try again soon or enter details manually.',
+          fallback: 'manual-entry',
+          retryAfter: 30,
+        },
+        corsHeaders,
+        503,
+      )
+    }
+
     return json(
       {
-        error: openAiResponse.status === 429
-          ? 'AI scanning is temporarily rate limited. Please try again soon.'
-          : 'AI scanning failed. You can retry or enter details manually.',
+        error: 'AI analysis failed. You can retry or enter clothing details manually.',
         fallback: 'manual-entry',
       },
       corsHeaders,
-      openAiResponse.status === 429 ? 429 : 502,
+      502,
     )
   }
 
-  const responseBody = await openAiResponse.json() as Record<string, unknown>
-  const refusal = JSON.stringify(responseBody).includes('"refusal"')
-  if (refusal) {
+  try {
+    const responseBody = await openAiResponse.json() as Record<string, unknown>
+    
+    // Handle OpenAI refusal
+    if (typeof responseBody.error === 'string' && responseBody.error.includes('refusal')) {
+      return json(
+        {
+          error: 'AI declined to analyze this image. Please retry with a clearer clothing photo or enter details manually.',
+          fallback: 'manual-entry',
+        },
+        corsHeaders,
+        422,
+      )
+    }
+
+    // Extract the content from OpenAI's response structure
+    const choices = Array.isArray(responseBody.choices) ? responseBody.choices : []
+    const firstChoice = choices[0] as Record<string, unknown> | undefined
+    const content = firstChoice?.message?.content
+    
+    if (typeof content !== 'string') {
+      throw new Error('No text content in OpenAI response')
+    }
+
+    // Parse the JSON from the content
+    const parsed = JSON.parse(content)
+    const metadata: AiClothingMetadata = aiClothingMetadataSchema.parse(parsed)
+
+    return json({ data: metadata }, corsHeaders)
+  } catch (error) {
+    console.error('[AI scan] Response parsing error:', error)
+    const msg = error instanceof Error ? error.message : 'Failed to parse AI response'
+    
     return json(
       {
-        error: 'AI scanning declined this image. Please retry with a clearer clothing photo or enter details manually.',
+        error: `AI response could not be processed: ${msg}. Please try again or enter details manually.`,
         fallback: 'manual-entry',
       },
       corsHeaders,
-      422,
+      400,
     )
   }
-
-  const parsed = JSON.parse(extractResponseText(responseBody))
-  const metadata: AiClothingMetadata = aiClothingMetadataSchema.parse(parsed)
-
-  return json({ data: metadata }, corsHeaders)
 }
 
 function resolveResource(pathname: string): { resource: string; resourceId: string | null } {
