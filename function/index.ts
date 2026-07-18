@@ -177,6 +177,25 @@ const scanRequestSchema = z.object({
   backgroundRemoval: z.boolean().optional().default(false),
 })
 
+const uploadPhotoSchema = z.object({
+  itemId: z.number().int().positive(),
+  fileName: z.string().min(1).max(255),
+  fileType: z.enum(['image/jpeg', 'image/png', 'image/webp']),
+  fileDataUrl: z.string().startsWith('data:image/').max(12_000_000),
+})
+
+function decodeDataUrl(dataUrl: string): Uint8Array {
+  const base64Index = dataUrl.indexOf(',')
+  if (base64Index === -1) throw new Error('Invalid data URL format')
+  const base64 = dataUrl.slice(base64Index + 1)
+  const binaryString = atob(base64)
+  const bytes = new Uint8Array(binaryString.length)
+  for (let i = 0; i < binaryString.length; i += 1) {
+    bytes[i] = binaryString.charCodeAt(i)
+  }
+  return bytes
+}
+
 const aiClothingMetadataSchema = z.object({
   category: z.enum(clothingCategories),
   subcategory: z.enum(clothingSubcategories),
@@ -790,6 +809,45 @@ Deno.serve(async (req) => {
     if (urlObj.pathname.endsWith('/ai/scan')) {
       if (method !== 'POST') return json({ error: 'Method not allowed' }, corsHeaders, 405)
       return analyzeClothingImage(req, corsHeaders)
+    }
+
+    if (urlObj.pathname.endsWith('/upload/photo')) {
+      if (method !== 'POST') {
+        return json({ error: 'Method not allowed' }, corsHeaders, 405)
+      }
+
+      const supabaseClient = createClient(
+        Deno.env.get('SUPABASE_URL') ?? '',
+        Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? Deno.env.get('SUPABASE_ANON_KEY') ?? '',
+      )
+
+      try {
+        const payload = uploadPhotoSchema.parse(await req.json())
+        const safeName = payload.fileName.replace(/[^a-zA-Z0-9._-]/g, '_')
+        const path = `${payload.itemId}/${Date.now()}-${safeName}`
+        const bytes = decodeDataUrl(payload.fileDataUrl)
+        const blob = new Blob([bytes], { type: payload.fileType })
+
+        const { error } = await supabaseClient.storage.from('item-photos').upload(path, blob, {
+          contentType: payload.fileType,
+          upsert: false,
+        })
+
+        if (error) {
+          throw error
+        }
+
+        return json({ path }, corsHeaders, 201)
+      } catch (uploadError) {
+        console.error('[Upload photo] Failed:', uploadError)
+        return json(
+          {
+            error: uploadError instanceof Error ? uploadError.message : 'Photo upload failed',
+          },
+          corsHeaders,
+          400,
+        )
+      }
     }
 
     const { resource, resourceId } = resolveResource(urlObj.pathname)

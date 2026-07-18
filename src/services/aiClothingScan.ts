@@ -11,7 +11,7 @@
  * - Progress tracking for long operations
  */
 
-import { api } from './api';
+import { api, ApiError } from './api';
 import {
   aiClothingMetadataSchema,
   type AiClothingMetadata,
@@ -256,7 +256,11 @@ function shouldRetry(error: unknown, attemptNumber: number): boolean {
     return false;
   }
 
-  // Don't retry permanent errors
+  // If we got an explicit API 429, retry
+  if (error instanceof ApiError && error.status === 429) {
+    return true;
+  }
+
   if (error instanceof Error) {
     const statusMatch = error.message.match(/status[:\s]+(\d+)/i);
     if (statusMatch) {
@@ -345,14 +349,25 @@ export async function analyzeClothingImageWithRetry(
         warnings: qualityIssues,
       };
     } catch (error) {
-      // Check if we should retry
+      const errorMsg = error instanceof Error ? error.message : 'Unknown error during analysis';
+      const retryable = error instanceof ApiError && error.status === 429;
+      const retryAfterSeconds = error instanceof ApiError ? error.retryAfter : undefined;
+
+      // Log more detail for rate-limit conditions
+      if (retryable) {
+        reportProgress(
+          'error',
+          `Rate limit hit. Retrying in ${retryAfterSeconds ?? 1} seconds...`,
+          attemptNumber
+        );
+      }
+
       if (!shouldRetry(error, attemptNumber)) {
-        const errorMsg = error instanceof Error ? error.message : 'Unknown error during analysis';
         return {
           success: false,
           error: errorMsg,
           fallbackMode: true,
-          retryable: false,
+          retryable: retryable,
           warnings: [],
         };
       }

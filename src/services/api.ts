@@ -1,8 +1,35 @@
 import { TableName } from '../types';
 import type { AiClothingMetadata } from './aiClothingScan';
 
+export class ApiError extends Error {
+  status?: number;
+  retryAfter?: number;
+
+  constructor(message: string, status?: number, retryAfter?: number) {
+    super(message);
+    this.name = 'ApiError';
+    this.status = status;
+    this.retryAfter = retryAfter;
+  }
+}
+
 const BASE_URL = 'https://nuqpcxgonlqlxtujxmhx.supabase.co/functions/v1/storage';
 const API_KEY = (import.meta as any).env.VITE_SUPABASE_API_KEY || (process.env as any).VITE_SUPABASE_API_KEY;
+
+async function fileToDataUrl(file: File): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => {
+      if (typeof reader.result === 'string') {
+        resolve(reader.result);
+      } else {
+        reject(new Error('Failed to encode file for upload'));
+      }
+    };
+    reader.onerror = () => reject(new Error('Failed to encode file for upload'));
+    reader.readAsDataURL(file);
+  });
+}
 
 const ID_FIELDS = [
   'pk_homelocation',
@@ -80,14 +107,20 @@ async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
     if (!response.ok) {
       const errorBody = await response.text();
       let errorMessage = `API Error: ${response.status}`;
+      let retryAfter: number | undefined;
+
       try {
         const errorJson = JSON.parse(errorBody);
         errorMessage = errorJson.error || errorJson.message || errorMessage;
+        if (typeof errorJson.retryAfter === 'number') {
+          retryAfter = errorJson.retryAfter;
+        }
       } catch {
         errorMessage = errorBody || errorMessage;
       }
-      console.error('[API Error]', method, url, errorMessage, errorBody);
-      throw new Error(errorMessage);
+
+      console.error('[API Error]', method, url, errorMessage, errorBody, { status: response.status, retryAfter });
+      throw new ApiError(errorMessage, response.status, retryAfter);
     }
 
     if (response.status === 204 || response.headers.get('content-length') === '0') {
@@ -161,26 +194,20 @@ export const api = {
   },
 
   uploadPhoto: async (itemId: number, file: File): Promise<string> => {
-    const SUPABASE_URL = 'https://nuqpcxgonlqlxtujxmhx.supabase.co';
-    const path = `${itemId}/${Date.now()}-${file.name.replace(/[^a-zA-Z0-9.\-_]/g, '_')}`;
-    const uploadUrl = `${SUPABASE_URL}/storage/v1/object/item-photos/${path}`;
+    const fileDataUrl = await fileToDataUrl(file);
+    const payload = {
+      itemId,
+      fileName: file.name,
+      fileType: file.type,
+      fileDataUrl,
+    };
 
-    const response = await fetch(uploadUrl, {
+    const result = await request<{ path: string }>('/upload/photo', {
       method: 'POST',
-      headers: {
-        'apikey': API_KEY,
-        'Authorization': `Bearer ${API_KEY}`,
-        'Content-Type': file.type,
-      },
-      body: file,
+      body: JSON.stringify(payload),
     });
 
-    if (!response.ok) {
-      const errorBody = await response.text();
-      throw new Error(`Upload failed: ${errorBody}`);
-    }
-
-    return path;
+    return result.path;
   },
 
   getPhotoUrl: (path: string): string => {
