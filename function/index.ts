@@ -217,12 +217,14 @@ type AiClothingMetadata = z.infer<typeof aiClothingMetadataSchema>
 
 function getCorsHeaders(origin: string | null): Record<string, string> {
   const allowedOrigin = origin || '*'
+  const allowCredentials = allowedOrigin !== '*'
 
   return {
     'Access-Control-Allow-Origin': allowedOrigin,
     'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
     'Access-Control-Allow-Methods': 'POST, GET, OPTIONS, PUT, DELETE',
-    'Access-Control-Allow-Credentials': 'true',
+    'Access-Control-Allow-Credentials': String(allowCredentials),
+    'Access-Control-Expose-Headers': 'Content-Type, Authorization, apikey',
     'Vary': 'Origin',
   }
 }
