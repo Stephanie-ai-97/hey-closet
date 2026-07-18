@@ -235,7 +235,7 @@ export function ItemModal({ isOpen, storages, homes, onClose, onItemAdded }: Ite
         });
       }
 
-      if (aiMetadata) {
+      if (originalImageFile && optimizedImage && aiMetadata) {
         await createAiTags(itemId, aiMetadata);
       }
 

@@ -216,12 +216,13 @@ const aiClothingMetadataSchema = z.object({
 type AiClothingMetadata = z.infer<typeof aiClothingMetadataSchema>
 
 function getCorsHeaders(origin: string | null): Record<string, string> {
-  const allowedOrigin = origin || allowedOrigins[0]
+  const allowedOrigin = origin || '*'
 
   return {
     'Access-Control-Allow-Origin': allowedOrigin,
     'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
     'Access-Control-Allow-Methods': 'POST, GET, OPTIONS, PUT, DELETE',
+    'Access-Control-Allow-Credentials': 'true',
     'Vary': 'Origin',
   }
 }

@@ -96,7 +96,7 @@ async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
   });
 
   try {
-    const response = await fetch(url, { ...options, headers });
+    const response = await fetch(url, { ...options, headers, mode: 'cors', credentials: 'omit' });
     
     console.debug('[API Response]', method, url, {
       status: response.status,
