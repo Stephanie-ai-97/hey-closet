@@ -85,23 +85,31 @@ async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
 
   const url = `${BASE_URL}${path}`;
   const method = options.method || 'GET';
+  const init: RequestInit = { ...options, headers, mode: 'cors', credentials: 'omit' };
   
-  console.debug('[API]', method, url, {
+  console.debug('[API Request]', method, url, {
     body: options.body ? JSON.parse(options.body as string) : undefined,
     headers: {
-      'apikey': API_KEY ? '***REDACTED***' : 'MISSING',
-      'Authorization': API_KEY ? 'Bearer ***REDACTED***' : 'MISSING',
+      apikey: API_KEY ? '***REDACTED***' : 'MISSING',
+      Authorization: API_KEY ? 'Bearer ***REDACTED***' : 'MISSING',
       'Content-Type': 'application/json',
     },
+    init,
   });
 
   try {
-    const response = await fetch(url, { ...options, headers, mode: 'cors', credentials: 'omit' });
+    const response = await fetch(url, init);
     
     console.debug('[API Response]', method, url, {
       status: response.status,
       statusText: response.statusText,
       contentType: response.headers.get('content-type'),
+      responseHeaders: {
+        'Access-Control-Allow-Origin': response.headers.get('access-control-allow-origin'),
+        'Access-Control-Allow-Methods': response.headers.get('access-control-allow-methods'),
+        'Access-Control-Allow-Headers': response.headers.get('access-control-allow-headers'),
+        'Access-Control-Expose-Headers': response.headers.get('access-control-expose-headers'),
+      },
     });
     
     if (!response.ok) {
