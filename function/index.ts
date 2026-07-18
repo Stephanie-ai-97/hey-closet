@@ -445,16 +445,43 @@ const scanJsonSchema = {
 function extractResponseText(responseBody: Record<string, unknown>): string {
   if (typeof responseBody.output_text === 'string') return responseBody.output_text
 
+  const choices = Array.isArray(responseBody.choices) ? responseBody.choices : []
+  for (const choice of choices) {
+    if (!choice || typeof choice !== 'object') continue
+    const message = (choice as { message?: unknown }).message
+    if (!message || typeof message !== 'object') continue
+
+    const content = (message as Record<string, unknown>).content
+    if (typeof content === 'string') return content
+
+    if (content && typeof content === 'object') {
+      if (typeof (content as { text?: unknown }).text === 'string') {
+        return (content as { text: string }).text
+      }
+      if (Array.isArray((content as { content?: unknown }).content)) {
+        for (const part of (content as { content: unknown[] }).content) {
+          if (!part || typeof part !== 'object') continue
+          if (typeof (part as { text?: unknown }).text === 'string') {
+            return (part as { text: string }).text
+          }
+        }
+      }
+      return JSON.stringify(content)
+    }
+  }
+
   const output = Array.isArray(responseBody.output) ? responseBody.output : []
   for (const item of output) {
     if (!item || typeof item !== 'object') continue
-    const content = Array.isArray((item as { content?: unknown }).content)
-      ? (item as { content: unknown[] }).content
-      : []
-    for (const part of content) {
-      if (!part || typeof part !== 'object') continue
-      const text = (part as { text?: unknown }).text
-      if (typeof text === 'string') return text
+    const content = (item as { content?: unknown }).content
+    if (typeof content === 'string') return content
+    if (Array.isArray(content)) {
+      for (const part of content) {
+        if (!part || typeof part !== 'object') continue
+        if (typeof (part as { text?: unknown }).text === 'string') {
+          return (part as { text: string }).text
+        }
+      }
     }
   }
 
@@ -636,17 +663,8 @@ async function analyzeClothingImage(req: Request, corsHeaders: Record<string, st
       )
     }
 
-    // Extract the content from OpenAI's response structure
-    const choices = Array.isArray(responseBody.choices) ? responseBody.choices : []
-    const firstChoice = choices[0] as Record<string, unknown> | undefined
-    const content = firstChoice?.message?.content
-    
-    if (typeof content !== 'string') {
-      throw new Error('No text content in OpenAI response')
-    }
-
-    // Parse the JSON from the content
-    const parsed = JSON.parse(content)
+    const responseText = extractResponseText(responseBody)
+    const parsed = JSON.parse(responseText)
     const metadata: AiClothingMetadata = aiClothingMetadataSchema.parse(parsed)
 
     return json({ data: metadata }, corsHeaders)
