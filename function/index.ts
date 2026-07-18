@@ -765,46 +765,59 @@ async function createOne(
       const { data: existing } = await supabase
         .from(table)
         .select('*')
-        .eq('colouroverall', colouroverall)
-        .eq('majorcolour', majorcolour)
-        .eq('minorcolour', minorcolour)
+        .ilike('colouroverall', colouroverall)
+        .ilike('majorcolour', majorcolour)
+        .ilike('minorcolour', minorcolour)
         .maybeSingle()
 
       if (existing) {
         return json({ data: existing }, corsHeaders, 200)
       }
     }
+
+    const { data, error } = await supabase
+      .from(table)
+      .insert(body, {
+        upsert: true,
+        onConflict: 'colouroverall,majorcolour,minorcolour',
+      })
+      .select()
+
+    if (error) {
+      if (typeof error.code === 'string' && error.code === '23505') {
+        const colouroverall = body.colouroverall && String(body.colouroverall).trim()
+        const majorcolour = body.majorcolour && String(body.majorcolour).trim()
+        const minorcolour = body.minorcolour && String(body.minorcolour).trim()
+
+        if (colouroverall && majorcolour && minorcolour) {
+          const { data: existing } = await supabase
+            .from(table)
+            .select('*')
+            .ilike('colouroverall', colouroverall)
+            .ilike('majorcolour', majorcolour)
+            .ilike('minorcolour', minorcolour)
+            .maybeSingle()
+
+          if (existing) {
+            console.log('[Colour create] duplicate ignored, returning existing colour', {
+              colouroverall,
+              majorcolour,
+              minorcolour,
+              colourId: existing.pk_colourid,
+            })
+            return json({ data: existing }, corsHeaders, 200)
+          }
+        }
+      }
+
+      throw error
+    }
+
+    return json({ data: data?.[0] ?? null }, corsHeaders, 201)
   }
 
   const { data, error } = await supabase.from(table).insert(body).select()
-  if (error) {
-    if (
-      resource === 'colour' &&
-      typeof error.code === 'string' &&
-      error.code === '23505'
-    ) {
-      const colouroverall = body.colouroverall && String(body.colouroverall).trim()
-      const majorcolour = body.majorcolour && String(body.majorcolour).trim()
-      const minorcolour = body.minorcolour && String(body.minorcolour).trim()
-
-      if (colouroverall && majorcolour && minorcolour) {
-        const { data: existing } = await supabase
-          .from(table)
-          .select('*')
-          .eq('colouroverall', colouroverall)
-          .eq('majorcolour', majorcolour)
-          .eq('minorcolour', minorcolour)
-          .maybeSingle()
-
-        if (existing) {
-          return json({ data: existing }, corsHeaders, 200)
-        }
-      }
-    }
-
-    throw error
-  }
-
+  if (error) throw error
   return json({ data: data?.[0] ?? null }, corsHeaders, 201)
 }
 
