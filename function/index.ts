@@ -755,8 +755,56 @@ async function createOne(
   corsHeaders: Record<string, string>,
 ): Promise<Response> {
   const { table } = TABLE_CONFIG[resource]
+
+  if (resource === 'colour') {
+    const colouroverall = body.colouroverall && String(body.colouroverall).trim()
+    const majorcolour = body.majorcolour && String(body.majorcolour).trim()
+    const minorcolour = body.minorcolour && String(body.minorcolour).trim()
+
+    if (colouroverall && majorcolour && minorcolour) {
+      const { data: existing } = await supabase
+        .from(table)
+        .select('*')
+        .eq('colouroverall', colouroverall)
+        .eq('majorcolour', majorcolour)
+        .eq('minorcolour', minorcolour)
+        .maybeSingle()
+
+      if (existing) {
+        return json({ data: existing }, corsHeaders, 200)
+      }
+    }
+  }
+
   const { data, error } = await supabase.from(table).insert(body).select()
-  if (error) throw error
+  if (error) {
+    if (
+      resource === 'colour' &&
+      typeof error.code === 'string' &&
+      error.code === '23505'
+    ) {
+      const colouroverall = body.colouroverall && String(body.colouroverall).trim()
+      const majorcolour = body.majorcolour && String(body.majorcolour).trim()
+      const minorcolour = body.minorcolour && String(body.minorcolour).trim()
+
+      if (colouroverall && majorcolour && minorcolour) {
+        const { data: existing } = await supabase
+          .from(table)
+          .select('*')
+          .eq('colouroverall', colouroverall)
+          .eq('majorcolour', majorcolour)
+          .eq('minorcolour', minorcolour)
+          .maybeSingle()
+
+        if (existing) {
+          return json({ data: existing }, corsHeaders, 200)
+        }
+      }
+    }
+
+    throw error
+  }
+
   return json({ data: data?.[0] ?? null }, corsHeaders, 201)
 }
 
