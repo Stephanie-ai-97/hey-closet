@@ -216,9 +216,7 @@ const aiClothingMetadataSchema = z.object({
 type AiClothingMetadata = z.infer<typeof aiClothingMetadataSchema>
 
 function getCorsHeaders(origin: string | null): Record<string, string> {
-  const allowedOrigin = origin && allowedOrigins.includes(origin)
-    ? origin
-    : allowedOrigins[0]
+  const allowedOrigin = origin || allowedOrigins[0]
 
   return {
     'Access-Control-Allow-Origin': allowedOrigin,
